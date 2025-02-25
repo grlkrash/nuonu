@@ -1,13 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase/client'
+import { SignOutButton } from '@/components/auth/sign-out-button'
+import { User } from '@supabase/supabase-js'
 
 const navigation = [
   { name: 'Home', href: '/' },
   { name: 'Opportunities', href: '/opportunities' },
+]
+
+const authenticatedNavigation = [
+  { name: 'Dashboard', href: '/dashboard' },
   { name: 'My Applications', href: '/applications' },
   { name: 'Profile', href: '/profile' },
 ]
@@ -15,8 +22,36 @@ const navigation = [
 export function Header() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      setIsLoading(false)
+    }
+    
+    getUser()
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null)
+      }
+    )
+    
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
   
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
+  
+  // Combine navigation items based on authentication state
+  const navItems = [
+    ...navigation,
+    ...(user ? authenticatedNavigation : []),
+  ]
   
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -30,7 +65,7 @@ export function Header() {
           
           {/* Desktop navigation */}
           <nav className="hidden md:flex space-x-8">
-            {navigation.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -45,6 +80,30 @@ export function Header() {
               </Link>
             ))}
           </nav>
+          
+          {/* Auth buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+            {isLoading ? (
+              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            ) : user ? (
+              <SignOutButton variant="outline" />
+            ) : (
+              <>
+                <Link
+                  href="/signin"
+                  className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
+          </div>
           
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
@@ -103,7 +162,7 @@ export function Header() {
         id="mobile-menu"
       >
         <div className="pt-2 pb-3 space-y-1">
-          {navigation.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.name}
               href={item.href}
@@ -117,6 +176,29 @@ export function Header() {
               {item.name}
             </Link>
           ))}
+          
+          {!isLoading && !user && (
+            <>
+              <Link
+                href="/signin"
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+          
+          {!isLoading && user && (
+            <div className="pl-3 pr-4 py-2">
+              <SignOutButton variant="outline" className="w-full justify-center" />
+            </div>
+          )}
         </div>
       </div>
     </header>

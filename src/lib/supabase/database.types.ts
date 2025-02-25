@@ -9,192 +9,115 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      artists: {
+      profiles: {
         Row: {
           id: string
-          user_id: string
-          name: string
-          email: string
-          artistic_discipline: string
-          experience_level: string | null
-          location: string | null
+          created_at: string
+          updated_at: string | null
+          full_name: string | null
           bio: string | null
-          portfolio_url: string | null
-          wallet_addresses: Json | null
-          onboarding_completed: boolean
-          onboarding_step: number
-          created_at: string
-          updated_at: string
+          website: string | null
+          avatar_url: string | null
         }
         Insert: {
-          id?: string
-          user_id: string
-          name: string
-          email: string
-          artistic_discipline: string
-          experience_level?: string | null
-          location?: string | null
-          bio?: string | null
-          portfolio_url?: string | null
-          wallet_addresses?: Json | null
-          onboarding_completed?: boolean
-          onboarding_step?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          email?: string
-          artistic_discipline?: string
-          experience_level?: string | null
-          location?: string | null
-          bio?: string | null
-          portfolio_url?: string | null
-          wallet_addresses?: Json | null
-          onboarding_completed?: boolean
-          onboarding_step?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      artist_preferences: {
-        Row: {
           id: string
-          artist_id: string
-          opportunity_types: string[] | null
-          grant_types: string[] | null
-          job_types: string[] | null
-          gig_types: string[] | null
-          min_amount: number | null
-          max_amount: number | null
-          regions: string[] | null
-          keywords: string[] | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          artist_id: string
-          opportunity_types?: string[] | null
-          grant_types?: string[] | null
-          job_types?: string[] | null
-          gig_types?: string[] | null
-          min_amount?: number | null
-          max_amount?: number | null
-          regions?: string[] | null
-          keywords?: string[] | null
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
+          full_name?: string | null
+          bio?: string | null
+          website?: string | null
+          avatar_url?: string | null
         }
         Update: {
           id?: string
-          artist_id?: string
-          opportunity_types?: string[] | null
-          grant_types?: string[] | null
-          job_types?: string[] | null
-          gig_types?: string[] | null
-          min_amount?: number | null
-          max_amount?: number | null
-          regions?: string[] | null
-          keywords?: string[] | null
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
+          full_name?: string | null
+          bio?: string | null
+          website?: string | null
+          avatar_url?: string | null
         }
       }
       opportunities: {
         Row: {
           id: string
-          title: string
-          description: string | null
-          opportunity_type: string
-          organization: string | null
-          amount: number | null
-          deadline: string | null
-          eligibility: string | null
-          application_url: string | null
-          source: string | null
-          source_id: string | null
-          platform: string | null
-          contract_address: string | null
-          status: string
           created_at: string
-          updated_at: string
+          updated_at: string | null
+          title: string
+          description: string
+          requirements: string | null
+          budget: number | null
+          deadline: string | null
+          status: string
+          creator_id: string
+          category: string | null
+          location: string | null
+          is_remote: boolean
         }
         Insert: {
           id?: string
-          title: string
-          description?: string | null
-          opportunity_type: string
-          organization?: string | null
-          amount?: number | null
-          deadline?: string | null
-          eligibility?: string | null
-          application_url?: string | null
-          source?: string | null
-          source_id?: string | null
-          platform?: string | null
-          contract_address?: string | null
-          status?: string
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
+          title: string
+          description: string
+          requirements?: string | null
+          budget?: number | null
+          deadline?: string | null
+          status?: string
+          creator_id: string
+          category?: string | null
+          location?: string | null
+          is_remote?: boolean
         }
         Update: {
           id?: string
-          title?: string
-          description?: string | null
-          opportunity_type?: string
-          organization?: string | null
-          amount?: number | null
-          deadline?: string | null
-          eligibility?: string | null
-          application_url?: string | null
-          source?: string | null
-          source_id?: string | null
-          platform?: string | null
-          contract_address?: string | null
-          status?: string
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
+          title?: string
+          description?: string
+          requirements?: string | null
+          budget?: number | null
+          deadline?: string | null
+          status?: string
+          creator_id?: string
+          category?: string | null
+          location?: string | null
+          is_remote?: boolean
         }
       }
       applications: {
         Row: {
           id: string
-          artist_id: string
-          opportunity_id: string
-          status: string
-          submission_date: string | null
-          response_date: string | null
-          notes: string | null
-          transaction_hash: string | null
           created_at: string
-          updated_at: string
+          updated_at: string | null
+          opportunity_id: string
+          applicant_id: string
+          proposal: string
+          status: string
+          portfolio_url: string | null
+          contact_info: string | null
         }
         Insert: {
           id?: string
-          artist_id: string
-          opportunity_id: string
-          status: string
-          submission_date?: string | null
-          response_date?: string | null
-          notes?: string | null
-          transaction_hash?: string | null
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
+          opportunity_id: string
+          applicant_id: string
+          proposal: string
+          status?: string
+          portfolio_url?: string | null
+          contact_info?: string | null
         }
         Update: {
           id?: string
-          artist_id?: string
-          opportunity_id?: string
-          status?: string
-          submission_date?: string | null
-          response_date?: string | null
-          notes?: string | null
-          transaction_hash?: string | null
           created_at?: string
-          updated_at?: string
+          updated_at?: string | null
+          opportunity_id?: string
+          applicant_id?: string
+          proposal?: string
+          status?: string
+          portfolio_url?: string | null
+          contact_info?: string | null
         }
       }
     }
@@ -205,7 +128,8 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      opportunity_status: 'open' | 'closed' | 'draft' | 'archived'
+      application_status: 'pending' | 'accepted' | 'rejected' | 'withdrawn'
     }
   }
 } 
