@@ -1,0 +1,51 @@
+import { z } from 'zod'
+
+const envSchema = z.object({
+  // Supabase
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  
+  // Blockchain
+  NEXT_PUBLIC_NETWORK_ID: z.string().min(1),
+  NEXT_PUBLIC_RPC_URL: z.string().url(),
+  
+  // API Keys
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  
+  // App
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+})
+
+/**
+ * Validate environment variables against schema
+ */
+function validateEnv() {
+  const parsed = envSchema.safeParse(process.env)
+  
+  if (!parsed.success) {
+    console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors)
+    throw new Error('Invalid environment variables')
+  }
+}
+
+// Call validation function
+validateEnv()
+
+/**
+ * Environment variables with type safety
+ */
+export const env = {
+  // Supabase
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  
+  // Blockchain
+  NEXT_PUBLIC_NETWORK_ID: process.env.NEXT_PUBLIC_NETWORK_ID!,
+  NEXT_PUBLIC_RPC_URL: process.env.NEXT_PUBLIC_RPC_URL!,
+  
+  // API Keys
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  
+  // App
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+} as const 
