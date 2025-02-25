@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth'
 import { getProfileById } from '@/lib/services/profiles'
-import { getOpportunities } from '@/lib/services/opportunities'
+import { getMatchedOpportunities } from '@/lib/services/ai-matching'
 import { OpportunityCard } from '@/components/opportunities/opportunity-card'
 
 export const metadata = {
@@ -24,48 +24,16 @@ export default async function DiscoverPage({
   // Get user profile for personalization
   const profile = await getProfileById(user.id).catch(() => null)
   
-  // In a real application, this would use AI to match opportunities to the user's profile
-  // For now, we'll simulate this by filtering opportunities
-  const userInterests = profile?.interests?.split(',').map(i => i.trim()) || []
-  const userSkills = profile?.skills?.split(',').map(s => s.trim()) || []
+  if (!profile) {
+    // Redirect to profile creation if profile doesn't exist
+    redirect('/profile?message=Please complete your profile to get personalized recommendations')
+  }
   
-  // Get all open opportunities
-  const { opportunities } = await getOpportunities({
-    status: 'open',
-    limit: 50,
-  }).catch(() => ({ opportunities: [], count: 0 }))
+  // Get matched opportunities using our AI matching service
+  const { highMatches, mediumMatches, otherMatches } = await getMatchedOpportunities(profile)
   
-  // Simulate AI matching by categorizing opportunities
-  const highMatchOpportunities: typeof opportunities = []
-  const mediumMatchOpportunities: typeof opportunities = []
-  const otherOpportunities: typeof opportunities = []
-  
-  // Simple matching algorithm (in a real app, this would be done with AI)
-  opportunities.forEach(opportunity => {
-    const description = opportunity.description?.toLowerCase() || ''
-    const title = opportunity.title?.toLowerCase() || ''
-    const category = opportunity.category?.toLowerCase() || ''
-    
-    // Check for high matches (multiple interests/skills match)
-    const interestMatches = userInterests.filter(interest => 
-      description.includes(interest.toLowerCase()) || 
-      title.includes(interest.toLowerCase()) ||
-      category.includes(interest.toLowerCase())
-    )
-    
-    const skillMatches = userSkills.filter(skill => 
-      description.includes(skill.toLowerCase()) || 
-      title.includes(skill.toLowerCase())
-    )
-    
-    if (interestMatches.length >= 2 || skillMatches.length >= 2) {
-      highMatchOpportunities.push(opportunity)
-    } else if (interestMatches.length > 0 || skillMatches.length > 0) {
-      mediumMatchOpportunities.push(opportunity)
-    } else {
-      otherOpportunities.push(opportunity)
-    }
-  })
+  const hasMatches = highMatches.length > 0 || mediumMatches.length > 0 || otherMatches.length > 0
+  const profileComplete = profile.interests && profile.skills
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -87,7 +55,7 @@ export default async function DiscoverPage({
         </div>
       </div>
       
-      {(!profile?.interests && !profile?.skills) && (
+      {!profileComplete && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-8">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -116,17 +84,17 @@ export default async function DiscoverPage({
       )}
       
       {/* High match opportunities */}
-      {highMatchOpportunities.length > 0 && (
+      {highMatches.length > 0 && (
         <div className="mb-12">
           <div className="flex items-center mb-6">
             <h2 className="text-xl font-semibold">High Matches</h2>
             <span className="ml-3 px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-              {highMatchOpportunities.length} opportunities
+              {highMatches.length} opportunities
             </span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {highMatchOpportunities.map(opportunity => (
+            {highMatches.map(opportunity => (
               <OpportunityCard key={opportunity.id} opportunity={opportunity} />
             ))}
           </div>
@@ -134,17 +102,17 @@ export default async function DiscoverPage({
       )}
       
       {/* Medium match opportunities */}
-      {mediumMatchOpportunities.length > 0 && (
+      {mediumMatches.length > 0 && (
         <div className="mb-12">
           <div className="flex items-center mb-6">
             <h2 className="text-xl font-semibold">Good Matches</h2>
             <span className="ml-3 px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-              {mediumMatchOpportunities.length} opportunities
+              {mediumMatches.length} opportunities
             </span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mediumMatchOpportunities.map(opportunity => (
+            {mediumMatches.map(opportunity => (
               <OpportunityCard key={opportunity.id} opportunity={opportunity} />
             ))}
           </div>
@@ -152,24 +120,24 @@ export default async function DiscoverPage({
       )}
       
       {/* Other opportunities */}
-      {otherOpportunities.length > 0 && (
+      {otherMatches.length > 0 && (
         <div>
           <div className="flex items-center mb-6">
             <h2 className="text-xl font-semibold">Other Opportunities</h2>
             <span className="ml-3 px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-              {otherOpportunities.length} opportunities
+              {otherMatches.length} opportunities
             </span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {otherOpportunities.map(opportunity => (
+            {otherMatches.map(opportunity => (
               <OpportunityCard key={opportunity.id} opportunity={opportunity} />
             ))}
           </div>
         </div>
       )}
       
-      {opportunities.length === 0 && (
+      {!hasMatches && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
           <h3 className="text-lg font-medium mb-2">No opportunities available</h3>
           <p className="text-gray-600 dark:text-gray-300 mb-4">

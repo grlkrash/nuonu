@@ -1,10 +1,11 @@
 import { getOpportunities } from './opportunities'
+import { evaluateOpportunityMatch } from './openai'
 import { Profile } from '@/types/profile'
 import { Opportunity } from '@/types/opportunity'
 
 /**
  * Calculates a match score between a profile and an opportunity
- * In a real application, this would use AI/ML for more sophisticated matching
+ * Falls back to this method if OpenAI is not available
  */
 export function calculateMatchScore(profile: Profile, opportunity: Opportunity): number {
   let score = 0
@@ -55,11 +56,12 @@ export function calculateMatchScore(profile: Profile, opportunity: Opportunity):
     score += 5
   }
   
-  return score
+  // Normalize score to 0-100 range
+  return Math.min(Math.round(score * 1.5), 100)
 }
 
 /**
- * Gets opportunities matched to a user profile
+ * Gets opportunities matched to a user profile using AI
  */
 export async function getMatchedOpportunities(profile: Profile, limit = 10) {
   // Get all open opportunities
@@ -68,29 +70,70 @@ export async function getMatchedOpportunities(profile: Profile, limit = 10) {
     limit: 50,
   }).catch(() => ({ opportunities: [], count: 0 }))
   
-  // Calculate match scores
-  const scoredOpportunities = opportunities.map(opportunity => ({
-    opportunity,
-    score: calculateMatchScore(profile, opportunity)
-  }))
+  // Use OpenAI for matching if available, otherwise fall back to basic matching
+  const useOpenAI = process.env.OPENAI_API_KEY && opportunities.length <= 10
+  
+  let scoredOpportunities = []
+  
+  if (useOpenAI) {
+    // Use OpenAI for more sophisticated matching
+    const matchPromises = opportunities.map(async (opportunity) => {
+      try {
+        const { score, reasoning } = await evaluateOpportunityMatch(profile, opportunity)
+        return {
+          opportunity,
+          score,
+          reasoning
+        }
+      } catch (error) {
+        // Fall back to basic matching if OpenAI fails
+        return {
+          opportunity,
+          score: calculateMatchScore(profile, opportunity),
+          reasoning: 'Matched based on keywords and location'
+        }
+      }
+    })
+    
+    scoredOpportunities = await Promise.all(matchPromises)
+  } else {
+    // Use basic matching for all opportunities
+    scoredOpportunities = opportunities.map(opportunity => ({
+      opportunity,
+      score: calculateMatchScore(profile, opportunity),
+      reasoning: 'Matched based on keywords and location'
+    }))
+  }
   
   // Sort by score (descending)
   scoredOpportunities.sort((a, b) => b.score - a.score)
   
   // Group opportunities by match level
   const highMatches = scoredOpportunities
-    .filter(item => item.score >= 30)
-    .map(item => item.opportunity)
+    .filter(item => item.score >= 70)
+    .map(item => ({
+      ...item.opportunity,
+      matchScore: item.score,
+      matchReason: item.reasoning
+    }))
     .slice(0, limit)
     
   const mediumMatches = scoredOpportunities
-    .filter(item => item.score >= 15 && item.score < 30)
-    .map(item => item.opportunity)
+    .filter(item => item.score >= 40 && item.score < 70)
+    .map(item => ({
+      ...item.opportunity,
+      matchScore: item.score,
+      matchReason: item.reasoning
+    }))
     .slice(0, limit)
     
   const otherMatches = scoredOpportunities
-    .filter(item => item.score < 15)
-    .map(item => item.opportunity)
+    .filter(item => item.score < 40)
+    .map(item => ({
+      ...item.opportunity,
+      matchScore: item.score,
+      matchReason: item.reasoning
+    }))
     .slice(0, limit)
   
   return {

@@ -18,6 +18,7 @@ const authenticatedNavigation = [
   { name: 'Discover', href: '/discover' },
   { name: 'My Applications', href: '/dashboard/applications' },
   { name: 'Profile', href: '/profile' },
+  { name: 'Wallet', href: '/wallet' },
 ]
 
 export function Header() {

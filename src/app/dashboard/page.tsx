@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getApplicationsByUserId } from '@/lib/services/applications'
-import { getOpportunities } from '@/lib/services/opportunities'
 import { getCurrentUser } from '@/lib/auth'
 import { getProfileById } from '@/lib/services/profiles'
+import { getMatchedOpportunities } from '@/lib/services/ai-matching'
 import { OpportunityCard } from '@/components/opportunities/opportunity-card'
 
 export const metadata = {
@@ -24,19 +24,13 @@ export default async function DashboardPage() {
   // Get user applications
   const applications = await getApplicationsByUserId(user.id).catch(() => [])
   
-  // Get recommended opportunities (in a real app, this would use AI matching)
-  const { opportunities: recommendedOpportunities } = await getOpportunities({
-    limit: 3,
-    status: 'open',
-  }).catch(() => ({ opportunities: [], count: 0 }))
+  // Get AI-matched opportunities if profile exists
+  const { highMatches = [], mediumMatches = [] } = profile 
+    ? await getMatchedOpportunities(profile, 3).catch(() => ({ highMatches: [], mediumMatches: [], otherMatches: [] }))
+    : { highMatches: [], mediumMatches: [] }
   
-  // Get recent opportunities
-  const { opportunities: recentOpportunities } = await getOpportunities({
-    limit: 3,
-    status: 'open',
-    sortBy: 'created_at',
-    sortOrder: 'desc',
-  }).catch(() => ({ opportunities: [], count: 0 }))
+  // Combine high and medium matches for recommendations
+  const recommendedOpportunities = [...highMatches, ...mediumMatches].slice(0, 3)
   
   // Calculate profile completion percentage
   const profileCompletion = profile ? calculateProfileCompletion(profile) : 0
@@ -169,7 +163,7 @@ export default async function DashboardPage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Recommended For You</h2>
               <Link
-                href="/opportunities"
+                href="/discover"
                 className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
               >
                 View all
@@ -184,8 +178,18 @@ export default async function DashboardPage() {
               {recommendedOpportunities.length === 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
                   <p className="text-gray-600 dark:text-gray-300">
-                    No recommended opportunities available at this time. Check back later or browse all opportunities.
+                    {profile ? 
+                      'No recommended opportunities available at this time. Check back later or browse all opportunities.' :
+                      'Complete your profile to get personalized opportunity recommendations.'}
                   </p>
+                  {!profile && (
+                    <Link
+                      href="/profile"
+                      className="inline-block mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+                    >
+                      Complete Your Profile
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -205,6 +209,12 @@ export default async function DashboardPage() {
                 Browse Opportunities
               </Link>
               <Link
+                href="/discover"
+                className="block w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors text-center"
+              >
+                Discover Matches
+              </Link>
+              <Link
                 href="/profile"
                 className="block w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-medium rounded-md transition-colors text-center"
               >
@@ -219,55 +229,77 @@ export default async function DashboardPage() {
             </div>
           </div>
           
-          {/* Recent opportunities */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Recent Opportunities</h2>
-            
-            {recentOpportunities.length > 0 ? (
+          {/* Profile summary */}
+          {profile && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-4">Your Profile</h2>
+              
               <div className="space-y-4">
-                {recentOpportunities.map((opportunity) => (
-                  <div key={opportunity.id} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
-                    <h3 className="font-medium">
-                      <Link
-                        href={`/opportunities/${opportunity.id}`}
-                        className="hover:text-blue-600 dark:hover:text-blue-400"
-                      >
-                        {opportunity.title}
-                      </Link>
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
-                      {opportunity.description}
-                    </p>
-                    <div className="flex items-center mt-2">
-                      {opportunity.category && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 mr-2">
-                          {opportunity.category}
+                {profile.avatar_url && (
+                  <div className="flex justify-center">
+                    <img 
+                      src={profile.avatar_url} 
+                      alt={profile.full_name || 'Profile'} 
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  </div>
+                )}
+                
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Name</p>
+                  <p className="font-medium">{profile.full_name || 'Not provided'}</p>
+                </div>
+                
+                {profile.location && (
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Location</p>
+                    <p className="font-medium">{profile.location}</p>
+                  </div>
+                )}
+                
+                {profile.interests && (
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Interests</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {profile.interests.split(',').map((interest, index) => (
+                        <span 
+                          key={index}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                        >
+                          {interest.trim()}
                         </span>
-                      )}
-                      {opportunity.budget && (
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          ${opportunity.budget.toLocaleString()}
-                        </span>
-                      )}
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+                
+                {profile.skills && (
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Skills</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {profile.skills.split(',').map((skill, index) => (
+                        <span 
+                          key={index}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        >
+                          {skill.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Link
+                    href="/profile"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Edit profile →
+                  </Link>
+                </div>
               </div>
-            ) : (
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
-                No recent opportunities available.
-              </p>
-            )}
-            
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Link
-                href="/opportunities"
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                View all opportunities →
-              </Link>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -277,7 +309,7 @@ export default async function DashboardPage() {
 function calculateProfileCompletion(profile: any): number {
   if (!profile) return 0
   
-  const requiredFields = ['full_name', 'bio', 'website', 'avatar_url']
+  const requiredFields = ['full_name', 'bio', 'website', 'avatar_url', 'interests', 'skills', 'location']
   const completedFields = requiredFields.filter(field => !!profile[field])
   
   return Math.round((completedFields.length / requiredFields.length) * 100)

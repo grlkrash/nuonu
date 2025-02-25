@@ -3,7 +3,9 @@ import Link from 'next/link'
 import { formatDistanceToNow, format } from 'date-fns'
 import { getOpportunityById } from '@/lib/services/opportunities'
 import { getCurrentUser } from '@/lib/auth'
-import { ApplicationForm } from '@/components/applications/application-form'
+import { AIApplicationForm } from '@/components/applications/ai-application-form'
+import { generateProfileInsights } from '@/lib/services/openai'
+import { getProfileById } from '@/lib/services/profiles'
 
 interface OpportunityPageProps {
   params: {
@@ -45,6 +47,15 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
     : null
   
   const isOpen = opportunity.status === 'open'
+  
+  // Get AI insights for the user if they're logged in
+  let profileInsights = null
+  if (user) {
+    const profile = await getProfileById(user.id).catch(() => null)
+    if (profile && process.env.OPENAI_API_KEY) {
+      profileInsights = await generateProfileInsights(profile).catch(() => null)
+    }
+  }
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -106,10 +117,33 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
                 )}
               </div>
               
-              {user && isOpen && (
+              {profileInsights && (
                 <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-semibold mb-4">AI Match Insights</h2>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M13 10V3L4 14h7v7l9-11h-7z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-purple-800 dark:text-purple-300">
+                          AI-Generated Profile Match
+                        </h3>
+                        <div className="mt-2 text-sm text-purple-700 dark:text-purple-400">
+                          <p className="whitespace-pre-line">{profileInsights}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {user && isOpen && (
+                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700" id="apply">
                   <h2 className="text-xl font-semibold mb-6">Apply for this Opportunity</h2>
-                  <ApplicationForm opportunityId={opportunity.id} />
+                  <AIApplicationForm opportunityId={opportunity.id} userId={user.id} />
                 </div>
               )}
             </div>
