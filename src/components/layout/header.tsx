@@ -15,7 +15,8 @@ const navigation = [
 
 const authenticatedNavigation = [
   { name: 'Dashboard', href: '/dashboard' },
-  { name: 'My Applications', href: '/applications' },
+  { name: 'Discover', href: '/discover' },
+  { name: 'My Applications', href: '/dashboard/applications' },
   { name: 'Profile', href: '/profile' },
 ]
 
