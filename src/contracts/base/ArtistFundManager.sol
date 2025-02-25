@@ -36,7 +36,10 @@ contract ArtistFundManager is Ownable, ReentrancyGuard {
 
     Counters.Counter private _grantIds;
 
-    constructor() Ownable(msg.sender) {}
+    // In OpenZeppelin v4.9.3, Ownable doesn't take constructor arguments
+    constructor() {
+        // The Ownable constructor in v4.9.3 automatically sets msg.sender as owner
+    }
 
     // Register an artist
     function registerArtist(string memory artistId, address wallet) external onlyOwner {

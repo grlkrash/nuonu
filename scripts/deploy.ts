@@ -1,20 +1,20 @@
-import { ethers } from "hardhat"
+const { ethers } = require("hardhat");
 
 async function main() {
-  console.log("Deploying ArtistFundManager contract...")
+  console.log("Deploying ArtistFundManager contract...");
 
-  const ArtistFundManager = await ethers.getContractFactory("ArtistFundManager")
-  const artistFundManager = await ArtistFundManager.deploy()
+  const ArtistFundManager = await ethers.getContractFactory("ArtistFundManager");
+  const artistFundManager = await ArtistFundManager.deploy();
 
-  await artistFundManager.waitForDeployment()
+  await artistFundManager.waitForDeployment();
 
-  const address = await artistFundManager.getAddress()
-  console.log(`ArtistFundManager deployed to: ${address}`)
+  const address = await artistFundManager.getAddress();
+  console.log(`ArtistFundManager deployed to: ${address}`);
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error)
-    process.exit(1)
-  }) 
+    console.error(error);
+    process.exit(1);
+  }); 
