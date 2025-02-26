@@ -8,9 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "migrate": "node scripts/migrate-db.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "dotenv": "^16.4.7",
     "next": "14.1.0",
     "react": "^18",
     "react-dom": "^18"

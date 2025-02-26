@@ -1,115 +1,129 @@
-# Nuonu
+# Artist Grant AI Agent
 
-Nuonu is a platform connecting artists with opportunities, built with Next.js, Supabase, and Ethereum smart contracts.
+An AI-powered platform that helps artists discover and apply for opportunities, including web3 opportunities, DAO proposals, grants, and bounties.
 
 ## Features
 
-- User authentication and profile management
-- Opportunity creation and browsing
-- Application submission and tracking
-- Smart contract integration for secure transactions
-- Responsive UI with dark mode support
+- **AI-Powered Application Generation**: Generate compelling application content tailored to specific opportunities
+- **Multi-Chain Blockchain Integration**: Support for Base (Coinbase L2), zkSync Era, and Flow blockchains
+- **Cross-Chain Functionality**: Register artists and distribute funds across multiple blockchains using Chainlink CCIP
+- **Opportunity Discovery**: Find relevant opportunities based on artist profiles and preferences
+- **Blockchain Wallet Management**: Connect and register blockchain wallets for receiving funds
+- **Fund Distribution**: Receive and distribute funds to artists through smart contracts
 
 ## Tech Stack
 
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Auth, Storage)
-- **Blockchain**: Ethereum/Base, Hardhat, Solidity
-- **Authentication**: Supabase Auth
-- **Styling**: Tailwind CSS
+- **Backend**: Next.js API Routes, Supabase
+- **AI**: OpenAI API
+- **Blockchain**: Ethers.js, zkSync Web3, Flow Client Library (FCL), Chainlink CCIP
+- **Smart Contracts**: Solidity (Base, zkSync), Cadence (Flow)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 18+
+- Yarn or npm
 - Supabase account
-- Metamask or another Ethereum wallet
+- OpenAI API key
+- Blockchain wallet (MetaMask for Base/zkSync, Flow wallet for Flow)
 
-### Environment Setup
+### Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/nuonu.git
-   cd nuonu
+   git clone https://github.com/yourusername/artist-grant-ai-agent.git
+   cd artist-grant-ai-agent
    ```
 
 2. Install dependencies:
    ```bash
-   npm install
+   yarn install
    ```
 
-3. Create a `.env.local` file in the root directory with the following variables:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   SUPABASE_SERVICE_KEY=your-supabase-service-key
-   
-   NEXT_PUBLIC_NETWORK_ID=31337
-   NEXT_PUBLIC_RPC_URL=http://localhost:8545
-   
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   
-   # For contract verification
-   ETHERSCAN_API_KEY=your-etherscan-api-key
-   PRIVATE_KEY=your-private-key
-   ```
-
-### Supabase Setup
-
-1. Create a new Supabase project
-2. Run the SQL migration script in `supabase/migrations/20230701000000_initial_schema.sql` in the Supabase SQL editor
-3. Configure authentication providers in the Supabase dashboard
-
-### Smart Contract Development
-
-1. Compile the smart contracts:
+3. Set up environment variables:
    ```bash
-   npx hardhat compile
+   cp .env.example .env.local
    ```
+   Edit `.env.local` with your API keys and configuration.
 
-2. Run tests:
+4. Run the development server:
    ```bash
-   npx hardhat test
+   yarn dev
    ```
 
-3. Deploy to local network:
-   ```bash
-   npx hardhat node
-   npx hardhat run scripts/deploy.ts --network localhost
-   ```
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Running the Application
+### Environment Variables
 
-1. Start the development server:
-   ```bash
-   npm run dev
-   ```
+Create a `.env.local` file with the following variables:
 
-2. Open [http://localhost:3000](http://localhost:3000) in your browser
+```
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# OpenAI
+OPENAI_API_KEY=your-openai-api-key
+
+# Base Blockchain
+NEXT_PUBLIC_BASE_RPC_URL=your-base-rpc-url
+NEXT_PUBLIC_ARTIST_FUND_MANAGER_ADDRESS=your-base-contract-address
+
+# zkSync Era
+NEXT_PUBLIC_ZKSYNC_RPC_URL=your-zksync-rpc-url
+NEXT_PUBLIC_ZKSYNC_ARTIST_MANAGER_ADDRESS=your-zksync-contract-address
+
+# Flow Blockchain
+NEXT_PUBLIC_FLOW_ACCESS_NODE=your-flow-access-node
+NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=your-flow-contract-address
+
+# Private Key (server-side only)
+PRIVATE_KEY=your-private-key
+```
 
 ## Project Structure
 
 ```
-nuonu/
-├── public/              # Static assets
+├── docs/                  # Documentation
+├── public/                # Static assets
 ├── src/
-│   ├── app/             # Next.js app router pages
-│   ├── components/      # React components
-│   │   ├── auth/        # Authentication components
-│   │   ├── layout/      # Layout components
-│   │   └── ui/          # UI components
-│   ├── contracts/       # Smart contract source files
-│   ├── lib/             # Utility functions and shared code
-│   │   ├── auth/        # Authentication utilities
-│   │   └── supabase/    # Supabase client and types
-│   └── middleware.ts    # Next.js middleware for auth protection
-├── supabase/            # Supabase configuration and migrations
-├── test/                # Smart contract tests
-├── scripts/             # Deployment and utility scripts
-├── hardhat.config.ts    # Hardhat configuration
-└── next.config.js       # Next.js configuration
+│   ├── app/               # Next.js App Router
+│   ├── components/        # React components
+│   │   ├── applications/  # Application-related components
+│   │   ├── auth/          # Authentication components
+│   │   ├── blockchain/    # Blockchain-related components
+│   │   ├── layout/        # Layout components
+│   │   ├── opportunities/ # Opportunity-related components
+│   │   ├── profile/       # Profile-related components
+│   │   └── ui/            # UI components
+│   ├── lib/               # Utility functions and services
+│   │   ├── services/      # Service functions
+│   │   └── supabase/      # Supabase client and types
+│   └── types/             # TypeScript type definitions
+├── .env.example           # Example environment variables
+├── .gitignore             # Git ignore file
+├── next.config.js         # Next.js configuration
+├── package.json           # Package configuration
+├── README.md              # Project documentation
+├── tailwind.config.js     # Tailwind CSS configuration
+└── tsconfig.json          # TypeScript configuration
 ```
+
+## Documentation
+
+For more detailed documentation, see:
+
+- [AI Agent Documentation](docs/ai-agent.md)
+- [Blockchain Integration Documentation](docs/blockchain-integration.md)
+
+## Future Enhancements
+
+1. **Bountycaster Integration**: Integration with Bountycaster for bounty applications
+2. **DAO Proposal Automation**: Automated DAO proposal applications
+3. **Enhanced AI Autonomy**: Improved AI agent autonomy for applying to opportunities
+4. **Fund Distribution Dashboard**: Dashboard for monitoring fund distribution
 
 ## Contributing
 
@@ -123,9 +137,12 @@ nuonu/
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## Acknowledgements
 
-- [Next.js](https://nextjs.org/)
-- [Supabase](https://supabase.io/)
-- [Hardhat](https://hardhat.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
+- [OpenAI](https://openai.com/) for the AI capabilities
+- [Supabase](https://supabase.io/) for the backend infrastructure
+- [Next.js](https://nextjs.org/) for the frontend framework
+- [Base](https://base.org/) for the L2 blockchain infrastructure
+- [zkSync](https://zksync.io/) for the zkSync Era blockchain
+- [Flow](https://flow.com/) for the Flow blockchain
+- [Chainlink](https://chain.link/) for the CCIP cross-chain functionality

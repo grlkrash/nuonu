@@ -15,6 +15,7 @@ export interface Opportunity {
   created_at: string
   updated_at: string
   profiles?: Profile
+  tags?: string[]
 }
 
 export interface OpportunityUpdate {
@@ -27,4 +28,5 @@ export interface OpportunityUpdate {
   budget?: number
   deadline?: string
   status?: 'open' | 'closed' | 'draft'
+  tags?: string[]
 } 

@@ -53,6 +53,7 @@ export interface Database {
           category: string | null
           location: string | null
           is_remote: boolean
+          tags: string[] | null
         }
         Insert: {
           id?: string
@@ -68,6 +69,7 @@ export interface Database {
           category?: string | null
           location?: string | null
           is_remote?: boolean
+          tags?: string[] | null
         }
         Update: {
           id?: string
@@ -83,6 +85,7 @@ export interface Database {
           category?: string | null
           location?: string | null
           is_remote?: boolean
+          tags?: string[] | null
         }
       }
       applications: {

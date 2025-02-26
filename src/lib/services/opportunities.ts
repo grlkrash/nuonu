@@ -13,6 +13,7 @@ export async function getOpportunities({
   isRemote = null,
   creatorId = null,
   searchQuery = null,
+  tags = null,
 }: {
   limit?: number
   offset?: number
@@ -21,6 +22,7 @@ export async function getOpportunities({
   isRemote?: boolean | null
   creatorId?: string | null
   searchQuery?: string | null
+  tags?: string[] | null
 }) {
   const supabase = createServerSupabaseClient()
   
@@ -47,6 +49,12 @@ export async function getOpportunities({
   
   if (searchQuery) {
     query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
+  }
+  
+  // Filter by tags if provided
+  if (tags && tags.length > 0) {
+    // Use the overlap operator to find opportunities with any of the provided tags
+    query = query.overlaps('tags', tags)
   }
   
   // Apply pagination
@@ -155,4 +163,56 @@ export async function getOpportunityCategories() {
   const categories = [...new Set(data.map(item => item.category))]
   
   return categories
+}
+
+export async function getOpportunityTags() {
+  const supabase = createServerSupabaseClient()
+  
+  const { data, error } = await supabase
+    .from('opportunities')
+    .select('tags')
+    .not('tags', 'is', null)
+  
+  if (error) {
+    console.error('Error fetching tags:', error)
+    throw new Error(`Failed to fetch tags: ${error.message}`)
+  }
+  
+  // Extract unique tags from all opportunities
+  const allTags = data.flatMap(item => item.tags || [])
+  const uniqueTags = [...new Set(allTags)]
+  
+  return uniqueTags.sort()
+}
+
+export async function getOpportunitiesByTag(tag: string, limit = 10, offset = 0) {
+  const supabase = createServerSupabaseClient()
+  
+  const { data, error, count } = await supabase
+    .from('opportunities')
+    .select('*, profiles!creator_id(full_name, avatar_url)', { count: 'exact' })
+    .contains('tags', [tag])
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+  
+  if (error) {
+    console.error('Error fetching opportunities by tag:', error)
+    throw new Error(`Failed to fetch opportunities by tag: ${error.message}`)
+  }
+  
+  return { 
+    opportunities: data || [], 
+    count: count || 0 
+  }
+}
+
+export async function getBlockchainOpportunities(limit = 10, offset = 0) {
+  const blockchainTags = ['blockchain', 'crypto', 'web3', 'nft', 'dao']
+  
+  return getOpportunities({
+    limit,
+    offset,
+    tags: blockchainTags,
+    status: 'open'
+  })
 } 
