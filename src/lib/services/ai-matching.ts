@@ -2,6 +2,12 @@ import { getOpportunities } from './opportunities'
 import { evaluateOpportunityMatch } from './openai'
 import { Profile } from '@/types/profile'
 import { Opportunity } from '@/types/opportunity'
+import { supabase } from '@/lib/supabase/client'
+import { OpenAI } from 'openai'
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 /**
  * Calculates a match score between a profile and an opportunity
@@ -60,86 +66,141 @@ export function calculateMatchScore(profile: Profile, opportunity: Opportunity):
   return Math.min(Math.round(score * 1.5), 100)
 }
 
-/**
- * Gets opportunities matched to a user profile using AI
- */
-export async function getMatchedOpportunities(profile: Profile, limit = 10) {
-  // Get all open opportunities
-  const { opportunities } = await getOpportunities({
-    status: 'open',
-    limit: 50,
-  }).catch(() => ({ opportunities: [], count: 0 }))
+interface MatchResult {
+  highMatches: Opportunity[]
+  mediumMatches: Opportunity[]
+  otherMatches: Opportunity[]
+}
+
+export async function getMatchedOpportunities(
+  profile: Profile,
+  limit: number = 5
+): Promise<MatchResult> {
+  try {
+    // Get all opportunities from the database
+    const { data: opportunities, error } = await supabase
+      .from('opportunities')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    if (!opportunities || opportunities.length === 0) {
+      return { highMatches: [], mediumMatches: [], otherMatches: [] }
+    }
+    
+    // If profile is incomplete, return random opportunities
+    if (!profile.artistic_discipline && !profile.bio && !profile.skills) {
+      const shuffled = [...opportunities].sort(() => 0.5 - Math.random())
+      return {
+        highMatches: shuffled.slice(0, Math.min(limit, shuffled.length)),
+        mediumMatches: [],
+        otherMatches: []
+      }
+    }
+    
+    // Create a prompt for the AI to match opportunities
+    const prompt = `
+      I have an artist with the following profile:
+      - Name: ${profile.full_name || 'Not specified'}
+      - Artistic Discipline: ${profile.artistic_discipline || 'Not specified'}
+      - Experience Level: ${profile.experience_level || 'Not specified'}
+      - Location: ${profile.location || 'Not specified'}
+      - Bio: ${profile.bio || 'Not specified'}
+      - Skills: ${profile.skills?.join(', ') || 'Not specified'}
+      
+      I have the following opportunities. For each opportunity, assign a match score from 0-100 based on how well it matches the artist's profile. Return the results as a JSON array with opportunity IDs and scores.
+      
+      ${opportunities.slice(0, 20).map((opp, index) => `
+      Opportunity ${index + 1}:
+      - ID: ${opp.id}
+      - Title: ${opp.title}
+      - Type: ${opp.opportunity_type}
+      - Description: ${opp.description}
+      - Organization: ${opp.organization}
+      - Eligibility: ${opp.eligibility}
+      - Amount: ${opp.amount}
+      - Deadline: ${opp.deadline}
+      `).join('\n')}
+    `
+    
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system", 
+          content: "You are an expert in matching artists with relevant opportunities. Analyze the artist profile and available opportunities to determine the best matches. Return your response as a JSON array with opportunity IDs and match scores from 0-100."
+        },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+    })
+    
+    // Parse the response
+    const responseText = completion.choices[0].message.content
+    const matchScores = JSON.parse(responseText)
+    
+    // Sort opportunities by match score
+    const scoredOpportunities = opportunities.map(opp => {
+      const matchInfo = matchScores.matches.find((m: any) => m.id === opp.id)
+      return {
+        ...opp,
+        matchScore: matchInfo ? matchInfo.score : 0
+      }
+    }).sort((a, b) => b.matchScore - a.matchScore)
+    
+    // Categorize matches
+    const highMatches = scoredOpportunities
+      .filter(opp => opp.matchScore >= 80)
+      .slice(0, limit)
+    
+    const mediumMatches = scoredOpportunities
+      .filter(opp => opp.matchScore >= 60 && opp.matchScore < 80)
+      .slice(0, limit)
+    
+    const otherMatches = scoredOpportunities
+      .filter(opp => opp.matchScore < 60)
+      .slice(0, limit)
+    
+    return { highMatches, mediumMatches, otherMatches }
+  } catch (error) {
+    console.error('Error in AI matching:', error)
+    
+    // Fallback to basic matching if AI fails
+    return fallbackMatching(profile, opportunities, limit)
+  }
+}
+
+// Fallback matching function when AI is unavailable
+function fallbackMatching(
+  profile: Profile,
+  opportunities: Opportunity[],
+  limit: number
+): MatchResult {
+  // Simple keyword matching
+  const keywords = [
+    profile.artistic_discipline,
+    ...(profile.skills || []),
+  ].filter(Boolean).map(k => k?.toLowerCase())
   
-  // Use OpenAI for matching if available, otherwise fall back to basic matching
-  const useOpenAI = process.env.OPENAI_API_KEY && opportunities.length <= 10
-  
-  let scoredOpportunities = []
-  
-  if (useOpenAI) {
-    // Use OpenAI for more sophisticated matching
-    const matchPromises = opportunities.map(async (opportunity) => {
-      try {
-        const { score, reasoning } = await evaluateOpportunityMatch(profile, opportunity)
-        return {
-          opportunity,
-          score,
-          reasoning
-        }
-      } catch (error) {
-        // Fall back to basic matching if OpenAI fails
-        return {
-          opportunity,
-          score: calculateMatchScore(profile, opportunity),
-          reasoning: 'Matched based on keywords and location'
-        }
+  const scoredOpportunities = opportunities.map(opp => {
+    const text = `${opp.title} ${opp.description} ${opp.eligibility}`.toLowerCase()
+    
+    // Calculate a simple match score based on keyword presence
+    let score = 0
+    keywords.forEach(keyword => {
+      if (keyword && text.includes(keyword)) {
+        score += 20 // Add 20 points per keyword match
       }
     })
     
-    scoredOpportunities = await Promise.all(matchPromises)
-  } else {
-    // Use basic matching for all opportunities
-    scoredOpportunities = opportunities.map(opportunity => ({
-      opportunity,
-      score: calculateMatchScore(profile, opportunity),
-      reasoning: 'Matched based on keywords and location'
-    }))
-  }
-  
-  // Sort by score (descending)
-  scoredOpportunities.sort((a, b) => b.score - a.score)
-  
-  // Group opportunities by match level
-  const highMatches = scoredOpportunities
-    .filter(item => item.score >= 70)
-    .map(item => ({
-      ...item.opportunity,
-      matchScore: item.score,
-      matchReason: item.reasoning
-    }))
-    .slice(0, limit)
-    
-  const mediumMatches = scoredOpportunities
-    .filter(item => item.score >= 40 && item.score < 70)
-    .map(item => ({
-      ...item.opportunity,
-      matchScore: item.score,
-      matchReason: item.reasoning
-    }))
-    .slice(0, limit)
-    
-  const otherMatches = scoredOpportunities
-    .filter(item => item.score < 40)
-    .map(item => ({
-      ...item.opportunity,
-      matchScore: item.score,
-      matchReason: item.reasoning
-    }))
-    .slice(0, limit)
+    return { ...opp, matchScore: score }
+  }).sort((a, b) => b.matchScore - a.matchScore)
   
   return {
-    highMatches,
-    mediumMatches,
-    otherMatches,
-    allMatches: [...highMatches, ...mediumMatches, ...otherMatches]
+    highMatches: scoredOpportunities.filter(opp => opp.matchScore >= 60).slice(0, limit),
+    mediumMatches: scoredOpportunities.filter(opp => opp.matchScore >= 30 && opp.matchScore < 60).slice(0, limit),
+    otherMatches: scoredOpportunities.filter(opp => opp.matchScore < 30).slice(0, limit)
   }
 } 

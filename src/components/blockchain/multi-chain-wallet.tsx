@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 import * as fcl from '@onflow/fcl'
-import { WalletConnect } from './wallet-connect'
+import { useWalletAbstraction } from '@/lib/blockchain/wallet-abstraction'
 import { registerArtist as registerArtistOnBase } from '@/lib/services/blockchain'
 import { registerArtist as registerArtistOnZkSync, createSessionKey } from '@/lib/services/zksync-blockchain'
 import { registerArtist as registerArtistOnFlow } from '@/lib/services/flow-blockchain'
@@ -52,35 +52,62 @@ export function MultiChainWallet({ userId, className = '' }: MultiChainWalletPro
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   
-  // Connect to Base/Ethereum wallet
-  const connectBaseWallet = async () => {
-    if (typeof window === 'undefined' || !window.ethereum) {
-      setError('No Ethereum wallet found. Please install MetaMask or another wallet.')
-      return
-    }
-    
-    try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum)
-      await provider.send('eth_requestAccounts', [])
-      
-      const signer = provider.getSigner()
-      const address = await signer.getAddress()
-      const balance = ethers.utils.formatEther(await provider.getBalance(address))
-      
+  const {
+    baseWallet,
+    zkSyncWallet,
+    flowWallet,
+    isConnecting,
+    connectBaseWallet,
+    connectZkSyncWallet,
+    connectFlowWallet,
+    disconnectAll
+  } = useWalletAbstraction()
+  
+  // Update wallet state when wallet connections change
+  useEffect(() => {
+    if (baseWallet) {
       setWalletState(prev => ({
         ...prev,
         base: {
           connected: true,
-          address,
-          balance
+          address: baseWallet.address,
+          balance: '0' // We would fetch the balance here
         }
       }))
-      
-      setActiveNetwork('base')
+    }
+    
+    if (zkSyncWallet) {
+      setWalletState(prev => ({
+        ...prev,
+        zksync: {
+          connected: true,
+          address: zkSyncWallet.address,
+          balance: '0', // We would fetch the balance here
+          sessionKey: zkSyncWallet.sessionKey
+        }
+      }))
+    }
+    
+    if (flowWallet) {
+      setWalletState(prev => ({
+        ...prev,
+        flow: {
+          connected: true,
+          address: flowWallet.address,
+          balance: '0' // We would fetch the balance here
+        }
+      }))
+    }
+  }, [baseWallet, zkSyncWallet, flowWallet])
+  
+  // Connect to Base/Ethereum wallet
+  const handleConnectBaseWallet = async () => {
+    try {
       setError(null)
+      await connectBaseWallet()
     } catch (err) {
-      console.error('Error connecting Base wallet:', err)
-      setError('Failed to connect Base wallet. Please try again.')
+      setError('Failed to connect to Base wallet. Please try again.')
+      console.error(err)
     }
   }
   
@@ -359,7 +386,7 @@ export function MultiChainWallet({ userId, className = '' }: MultiChainWalletPro
               <h3 className="font-medium mb-2">Base Wallet</h3>
               {!walletState.base.connected ? (
                 <button
-                  onClick={connectBaseWallet}
+                  onClick={handleConnectBaseWallet}
                   className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
                 >
                   Connect Base Wallet
