@@ -108,7 +108,7 @@ export async function receiveFunds(opportunityId: string, artistId: string, amou
   try {
     const contract = await getZkSyncContract()
     const tx = await contract.receiveFunds(opportunityId, artistId, {
-      value: ethers.utils.parseEther(amount)
+      value: ethers.parseEther(amount)
     })
     await tx.wait()
     return { success: true, txHash: tx.hash }

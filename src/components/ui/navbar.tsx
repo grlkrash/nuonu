@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { getCurrentUser, signOut } from '@/lib/supabase/auth'
 import { User } from '@supabase/supabase-js'
+import { Menu, X } from 'lucide-react'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -31,173 +32,161 @@ export function Navbar() {
   }
   
   return (
-    <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                Artist Grant AI
-              </Link>
-            </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link 
-                href="/opportunities"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathname === '/opportunities' 
-                    ? 'border-purple-500 text-gray-900 dark:text-white' 
-                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200'
-                }`}
-              >
-                Opportunities
-              </Link>
-              {user && (
-                <>
-                  <Link 
-                    href="/dashboard"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      pathname === '/dashboard' 
-                        ? 'border-purple-500 text-gray-900 dark:text-white' 
-                        : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link 
-                    href="/profile"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      pathname === '/profile' 
-                        ? 'border-purple-500 text-gray-900 dark:text-white' 
-                        : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    Profile
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            {user ? (
-              <button
-                onClick={handleSignOut}
-                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-              >
-                Sign Out
-              </button>
-            ) : (
-              <div className="flex space-x-4">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+    <nav className="border-b">
+      <div className="container flex h-16 items-center justify-between">
+        <div className="flex items-center gap-6 md:gap-10">
+          <Link href="/" className="flex items-center space-x-2">
+            <span className="text-xl font-bold">Artist Grant AI</span>
+          </Link>
+          <div className="hidden md:flex gap-6">
+            <Link 
+              href="/opportunities"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === '/opportunities' 
+                  ? 'text-foreground' 
+                  : 'text-muted-foreground'
+              }`}
+            >
+              Opportunities
+            </Link>
+            {user && (
+              <>
+                <Link 
+                  href="/dashboard"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    pathname === '/dashboard' 
+                      ? 'text-foreground' 
+                      : 'text-muted-foreground'
+                  }`}
                 >
-                  Sign In
+                  Dashboard
                 </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 text-sm bg-purple-600 text-white hover:bg-purple-700 rounded-md"
+                <Link 
+                  href="/profile"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    pathname === '/profile' 
+                      ? 'text-foreground' 
+                      : 'text-muted-foreground'
+                  }`}
                 >
-                  Sign Up
+                  Profile
                 </Link>
-              </div>
+              </>
             )}
           </div>
-          <div className="-mr-2 flex items-center sm:hidden">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-            >
-              <span className="sr-only">Open main menu</span>
-              {/* Icon for menu */}
-              <svg
-                className={`${isMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              <svg
-                className={`${isMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
         </div>
-      </div>
-      
-      {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden`}>
-        <div className="pt-2 pb-3 space-y-1">
-          <Link
-            href="/opportunities"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              pathname === '/opportunities'
-                ? 'border-purple-500 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20'
-                : 'border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            Opportunities
-          </Link>
-          {user && (
-            <>
-              <Link
-                href="/dashboard"
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  pathname === '/dashboard'
-                    ? 'border-purple-500 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20'
-                    : 'border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/profile"
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  pathname === '/profile'
-                    ? 'border-purple-500 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20'
-                    : 'border-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                Profile
-              </Link>
-            </>
-          )}
-        </div>
-        <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="hidden md:flex items-center gap-4">
           {user ? (
-            <div className="mt-3 space-y-1">
-              <button
-                onClick={handleSignOut}
-                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                Sign Out
-              </button>
-            </div>
+            <button
+              onClick={handleSignOut}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Sign Out
+            </button>
           ) : (
-            <div className="mt-3 space-y-1">
+            <div className="flex items-center gap-4">
               <Link
                 href="/login"
-                className="block px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 Sign In
               </Link>
               <Link
                 href="/register"
-                className="block px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
               >
                 Sign Up
               </Link>
             </div>
           )}
         </div>
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground md:hidden"
+        >
+          <span className="sr-only">Toggle menu</span>
+          {isMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
       </div>
+      
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="container md:hidden py-4 pb-6">
+          <div className="flex flex-col space-y-3">
+            <Link
+              href="/opportunities"
+              className={`text-sm font-medium ${
+                pathname === '/opportunities'
+                  ? 'text-foreground' 
+                  : 'text-muted-foreground'
+              }`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Opportunities
+            </Link>
+            {user && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className={`text-sm font-medium ${
+                    pathname === '/dashboard'
+                      ? 'text-foreground' 
+                      : 'text-muted-foreground'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/profile"
+                  className={`text-sm font-medium ${
+                    pathname === '/profile'
+                      ? 'text-foreground' 
+                      : 'text-muted-foreground'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+              </>
+            )}
+          </div>
+          <div className="mt-6 pt-6 border-t">
+            {user ? (
+              <button
+                onClick={() => {
+                  handleSignOut()
+                  setIsMenuOpen(false)
+                }}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <div className="flex flex-col space-y-3">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   )
 } 

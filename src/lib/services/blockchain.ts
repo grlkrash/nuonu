@@ -22,7 +22,7 @@ const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || ''
  */
 export async function getProvider() {
   // Use Base testnet for development
-  const provider = new ethers.providers.JsonRpcProvider(
+  const provider = new ethers.JsonRpcProvider(
     process.env.NEXT_PUBLIC_RPC_URL || 'https://goerli.base.org'
   )
   return provider
@@ -74,7 +74,7 @@ export async function receiveGrant(grantId: string, artistId: string, amount: st
   try {
     const contract = await getContract()
     const tx = await contract.receiveGrant(grantId, artistId, {
-      value: ethers.utils.parseEther(amount)
+      value: ethers.parseEther(amount)
     })
     await tx.wait()
     return { success: true, txHash: tx.hash }

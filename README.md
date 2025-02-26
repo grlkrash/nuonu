@@ -1,25 +1,31 @@
 # Artist Grant AI Agent
 
-A comprehensive platform that helps artists discover, apply for, and manage grants, jobs, and gigs using AI assistance.
+A comprehensive platform that helps artists discover grant opportunities, jobs, gigs, and other creative opportunities. It automates the application process for web3 grants, DAO proposals, and bounties via Bountycaster, and manages fund distribution using blockchain technology.
 
-## Overview
+## Project Overview
 
 The Artist Grant AI Agent is designed to simplify the process of finding and applying for funding opportunities for artists. It leverages AI to match artists with relevant opportunities based on their profile, portfolio, and career stage, and facilitates fund distribution through blockchain technology.
 
 ## Features
 
 - **AI-Powered Opportunity Discovery**: Find grants, jobs, and gigs tailored to your artistic profile
+- **AI Application Generation**: Automatically generate grant applications based on artist profiles and opportunity details
 - **Portfolio Management**: Upload and showcase your artistic work
 - **Multi-Chain Wallet Integration**: Connect wallets across Base, zkSync, and Flow blockchains
 - **Fund Distribution**: Receive grant funds directly through secure blockchain transactions
 - **Application Automation**: Streamline the application process with AI assistance
 
-## Tech Stack
+## Technology Stack
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Supabase
-- **Blockchain**: Base, zkSync Era, Flow
-- **AI Integration**: OpenAI, AgentKit
+- **Frontend**: NextJS, Tailwind CSS, React
+- **Backend**: Node.js, Express
+- **Database**: Supabase
+- **AI**: OpenAI API (GPT-3.5 Turbo)
+- **Blockchain**: 
+  - Base (Coinbase L2)
+  - zkSync Era (transaction layer and SSO SDK)
+  - Flow blockchain with Eliza OS
+  - Chainlink CCIP (if time permits)
 
 ## Smart Contracts
 
@@ -29,104 +35,113 @@ The platform includes several smart contracts for blockchain functionality:
 - **ZkSyncArtistManager.sol**: Handles artist management and fund distribution on zkSync Era
 - **FlowArtistManager.cdc**: Manages artist profiles and fund distribution on Flow blockchain
 
-## Getting Started
+## Setup Instructions
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js (v18 or higher)
+- npm (v9 or higher)
 - Supabase account
 - OpenAI API key
-- Wallet (MetaMask, Coinbase Wallet, etc.)
+- Hardhat for local blockchain development
 
-### Installation
+### Environment Setup
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/artist-grant-ai-agent.git
+   git clone <repository-url>
    cd artist-grant-ai-agent
    ```
 
 2. Install dependencies:
    ```bash
    npm install
-   # or
-   yarn install
    ```
 
-3. Set up environment variables:
+3. Create a `.env.local` file with the following variables:
    ```
-   cp .env.example .env.local
+   # API Keys
+   OPENAI_API_KEY=your_openai_api_key
+   
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_KEY=your_supabase_service_key
+   
+   # Blockchain Configuration
+   PRIVATE_KEY=your_private_key
+   
+   # Feature Flags
+   NEXT_PUBLIC_ENABLE_FUND_DISTRIBUTION=true
+   NEXT_PUBLIC_ENABLE_AUTO_APPLICATIONS=false
    ```
-   Then edit `.env.local` with your API keys and configuration.
 
-4. Set up the database:
-   ```bash
-   npm run setup-db
-   ```
+### Database Setup
 
-5. Run the development server:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+1. Set up the Supabase database by executing the SQL migration files in the Supabase SQL Editor in this order:
+   - `supabase/migrations/20230701000002_add_exec_sql_function.sql`
+   - `supabase/migrations/20230701000000_initial_schema.sql`
+   - `supabase/migrations/20230701000001_add_tags_to_opportunities.sql`
 
 ### Smart Contract Deployment
 
-To deploy the smart contracts to testnets:
+#### Local Development
 
-1. Set up your wallet and funding:
+1. Start a local Hardhat node:
    ```bash
-   # Ensure your .env.local has the necessary private keys and RPC URLs
+   npx hardhat node
    ```
 
-2. Compile the contracts:
+2. Deploy the FundDistribution contract:
    ```bash
-   npm run compile
+   npx hardhat run scripts/deploy-local.js --network localhost
    ```
 
-3. Deploy to Base Goerli testnet:
+3. Deploy the ZkSyncArtistManager contract:
    ```bash
-   npm run deploy:base
+   npx hardhat run scripts/deploy-zksync-local.js --network localhost
    ```
 
-4. Deploy to zkSync Era testnet:
-   ```bash
-   npm run deploy:zksync
+4. Update the `.env.local` file with the deployed contract addresses:
+   ```
+   NEXT_PUBLIC_ARTIST_FUND_MANAGER_BASE=<fund_distribution_address>
+   NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=<zksync_artist_manager_address>
    ```
 
-## Project Structure
+#### Testnet Deployment
 
-```
-├── src/
-│   ├── app/                  # Next.js app router pages
-│   │   ├── dashboard/        # User dashboard
-│   │   ├── opportunities/    # Opportunity discovery
-│   │   ├── profile/          # User profile management
-│   │   ├── onboarding/       # Artist onboarding wizard
-│   │   └── wallet/           # Wallet management
-│   ├── components/           # React components
-│   │   ├── blockchain/       # Blockchain-related components
-│   │   ├── opportunities/    # Opportunity-related components
-│   │   ├── profile/          # User profile components
-│   │   └── ui/               # UI components
-│   ├── contracts/            # Smart contracts
-│   │   ├── base/             # Base blockchain contracts
-│   │   ├── FundDistribution.sol  # Main fund distribution contract
-│   │   ├── ZkSyncArtistManager.sol # zkSync Era contract
-│   │   └── FlowArtistManager.cdc # Flow blockchain contract
-│   ├── lib/                  # Utility functions and libraries
-│   │   ├── blockchain/       # Blockchain utilities
-│   │   ├── services/         # Service functions
-│   │   └── supabase/         # Supabase client and utilities
-│   └── types/                # TypeScript type definitions
-├── scripts/                  # Deployment and utility scripts
-├── supabase/                 # Supabase migrations
-└── test/                     # Tests for smart contracts
-```
+1. Deploy to Base Sepolia:
+   ```bash
+   npx hardhat run scripts/deploy-base.js --network baseSepolia
+   ```
+
+2. Deploy to zkSync Era Testnet:
+   ```bash
+   npx hardhat run scripts/deploy-zksync.js --network zkSyncTestnet
+   ```
+
+3. Update the `.env.local` file with the deployed contract addresses.
+
+### Testing
+
+1. Test the blockchain integration:
+   ```bash
+   npx hardhat run scripts/test-blockchain-integration.js --network localhost
+   ```
+
+2. Test the fund distribution:
+   ```bash
+   npx hardhat run scripts/test-fund-distribution.js --network localhost
+   ```
+
+### Running the Application
+
+1. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+2. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Key Components
 
@@ -149,6 +164,30 @@ The wallet integration components provide a seamless experience for connecting t
 
 The Fund Distribution System enables secure and transparent grant allocation and distribution across multiple blockchains, with transaction tracking and verification.
 
+## Project Structure
+
+- `src/app`: Next.js app router pages
+  - `dashboard/`: User dashboard
+  - `opportunities/`: Opportunity discovery
+  - `profile/`: User profile management
+  - `onboarding/`: Artist onboarding wizard
+  - `wallet/`: Wallet management
+- `src/components`: React components
+  - `blockchain/`: Blockchain-related components
+  - `opportunities/`: Opportunity-related components
+  - `profile/`: User profile components
+  - `ui/`: UI components
+- `src/lib`: Utility functions and services
+  - `blockchain/`: Blockchain utilities
+  - `services/`: Service functions
+  - `supabase/`: Supabase client and utilities
+- `src/contracts`: Smart contracts
+  - `base/`: Base blockchain contracts
+  - `FundDistribution.sol`: Main fund distribution contract
+  - `ZkSyncArtistManager.sol`: zkSync Era contract
+- `scripts`: Deployment and testing scripts
+- `supabase`: Database migrations and schema
+
 ## Bounty Submissions
 
 This project is targeting several hackathon bounties:
@@ -160,20 +199,9 @@ This project is targeting several hackathon bounties:
 5. **Flow: Best AI Agents** - Integrating with Flow blockchain for artist management
 6. **Chainlink CCIP: Best use of Chainlink CCIP** - Enabling cross-chain fund distribution
 
-To prepare bounty submissions:
-```bash
-npm run prepare-bounty
-# or for a specific bounty
-npm run prepare-bounty base
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+[MIT](LICENSE)
 
 ## Acknowledgements
 
