@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -22,8 +23,10 @@ const questions = [
 ]
 
 export function Questionnaire() {
+  const router = useRouter()
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string | File>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [textareaHeight, setTextareaHeight] = useState("24px")
@@ -89,10 +92,30 @@ export function Questionnaire() {
 
   const isLastQuestion = currentQuestion === questions.length - 1
 
-  const handleFinish = () => {
-    // Here you would typically submit the answers or perform any final actions
-    console.log("Questionnaire completed", answers)
-    // You can add further logic here, such as sending data to a server or navigating to a completion page
+  const handleFinish = async () => {
+    try {
+      setIsSubmitting(true)
+      console.log("Questionnaire completed", answers)
+      
+      // Here you would typically submit the answers to your backend
+      // For example:
+      // const response = await fetch('/api/onboarding', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(answers)
+      // });
+      
+      // For now, we'll just simulate a delay and redirect
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Navigate to the dashboard or another appropriate page
+      router.push('/dashboard')
+    } catch (error) {
+      console.error("Error submitting questionnaire:", error)
+      alert("There was an error submitting your information. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -151,10 +174,12 @@ export function Questionnaire() {
         </Button>
         <Button
           onClick={isLastQuestion ? handleFinish : goToNextQuestion}
-          disabled={!isLastQuestion && !answers[currentQuestion + 1] && !currentQuestionData.optional}
+          disabled={(isLastQuestion && isSubmitting) || (!isLastQuestion && !answers[currentQuestion + 1] && !currentQuestionData.optional)}
           className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-4 py-2"
         >
-          {isLastQuestion ? "Finish" : "Next"}
+          {isLastQuestion 
+            ? (isSubmitting ? "Submitting..." : "Finish") 
+            : "Next"}
         </Button>
       </div>
     </div>
