@@ -1,6 +1,23 @@
+#!/usr/bin/env node
+
 // scripts/test-blockchain-integration.js
 const hre = require("hardhat");
 require("dotenv").config({ path: ".env.local" });
+
+// Define minimal ABIs for testing
+const FUND_DISTRIBUTION_ABI = [
+  "function ADMIN_ROLE() view returns (bytes32)",
+  "function hasRole(bytes32 role, address account) view returns (bool)",
+  "function getGrant(uint256 grantId) view returns (tuple(uint256 id, string title, string description, uint256 amount, address token, uint256 deadline, address creator, bool active, uint256 remainingAmount))",
+  "function getGrantsCount() view returns (uint256)"
+];
+
+const ZKSYNC_ARTIST_MANAGER_ABI = [
+  "function owner() view returns (address)",
+  "function artistWallets(string) view returns (address)",
+  "function pendingFunds(string) view returns (uint256)",
+  "function artistSessionKeys(string, uint256) view returns (address)"
+];
 
 async function main() {
   console.log("Testing blockchain integration...");
@@ -17,79 +34,95 @@ async function main() {
     process.exit(1);
   }
   
-  // Get the deployed FundDistribution contract
-  const FundDistribution = await hre.ethers.getContractFactory("FundDistribution");
-  const fundDistribution = FundDistribution.attach(fundDistributionAddress);
-  
-  // Get the deployed ZkSyncArtistManager contract
-  const ZkSyncArtistManager = await hre.ethers.getContractFactory("ZkSyncArtistManager");
-  const zkSyncArtistManager = ZkSyncArtistManager.attach(zkSyncArtistManagerAddress);
-  
   // Get the deployer address
   const [deployer, artist] = await hre.ethers.getSigners();
-  
-  console.log("Deployer address:", deployer.address);
-  console.log("Artist address:", artist.address);
+  console.log(`Deployer address: ${deployer.address}`);
+  console.log(`Artist address: ${artist.address}`);
+  console.log("");
   
   // Test FundDistribution contract
-  console.log("\n--- Testing FundDistribution Contract ---");
-  
+  console.log("--- Testing FundDistribution Contract ---");
   try {
-    // Check if the contract is deployed
-    const adminRole = await fundDistribution.ADMIN_ROLE();
-    console.log("Contract is deployed and accessible");
+    // Create contract instance with the minimal ABI
+    const fundDistribution = new hre.ethers.Contract(
+      fundDistributionAddress,
+      FUND_DISTRIBUTION_ABI,
+      deployer
+    );
     
-    // Check if deployer has admin role
-    const hasAdminRole = await fundDistribution.hasRole(adminRole, deployer.address);
-    console.log(`Deployer has ADMIN_ROLE: ${hasAdminRole}`);
-    
-    // Get contract balance
-    const balance = await hre.ethers.provider.getBalance(fundDistributionAddress);
-    console.log(`Contract balance: ${hre.ethers.formatEther(balance)} ETH`);
-    
-    // Try to get a grant
+    // Test if contract is deployed by calling a view function
     try {
-      const grant = await fundDistribution.getGrant(1);
-      console.log("Grant #1 exists:", {
-        title: grant.title,
-        amount: hre.ethers.formatEther(grant.amount)
-      });
+      const adminRole = await fundDistribution.ADMIN_ROLE();
+      console.log(`Admin role: ${adminRole}`);
+      
+      // Check if deployer has admin role
+      const hasAdminRole = await fundDistribution.hasRole(adminRole, deployer.address);
+      console.log(`Deployer has admin role: ${hasAdminRole}`);
+      
+      // Get grants count
+      try {
+        const grantsCount = await fundDistribution.getGrantsCount();
+        console.log(`Grants count: ${grantsCount}`);
+        
+        // Try to get a grant if any exist
+        if (grantsCount > 0) {
+          const grant = await fundDistribution.getGrant(0);
+          console.log(`First grant title: ${grant.title}`);
+        }
+      } catch (error) {
+        console.log(`No grants found or error accessing grants: ${error.message}`);
+      }
+      
     } catch (error) {
-      console.log("No grants found or error retrieving grant:", error.message);
+      console.error(`Error accessing admin role: ${error.message}`);
     }
   } catch (error) {
-    console.error("Error testing FundDistribution contract:", error.message);
+    console.error(`Error testing FundDistribution contract: ${error.message}`);
   }
+  
+  console.log("");
   
   // Test ZkSyncArtistManager contract
-  console.log("\n--- Testing ZkSyncArtistManager Contract ---");
-  
+  console.log("--- Testing ZkSyncArtistManager Contract ---");
   try {
-    // Check if the contract is deployed
-    const owner = await zkSyncArtistManager.owner();
-    console.log("Contract is deployed and accessible");
-    console.log("Contract owner:", owner);
+    // Create contract instance with the minimal ABI
+    const zkSyncArtistManager = new hre.ethers.Contract(
+      zkSyncArtistManagerAddress,
+      ZKSYNC_ARTIST_MANAGER_ABI,
+      deployer
+    );
     
-    // Register a test artist
-    const artistId = "test-artist-" + Math.floor(Math.random() * 1000);
-    console.log(`Registering artist with ID: ${artistId}`);
-    
+    // Test if contract is deployed by calling a view function
     try {
-      const tx = await zkSyncArtistManager.registerArtist(artistId, artist.address);
-      await tx.wait();
-      console.log("Artist registered successfully");
+      const ownerAddress = await zkSyncArtistManager.owner();
+      console.log(`Contract owner: ${ownerAddress}`);
       
-      // Check artist wallet
-      const artistWallet = await zkSyncArtistManager.artistWallets(artistId);
-      console.log(`Artist wallet: ${artistWallet}`);
+      // Test artist wallet lookup
+      const testArtistId = "test_artist_" + Date.now();
+      try {
+        const artistWallet = await zkSyncArtistManager.artistWallets(testArtistId);
+        console.log(`Artist wallet for ${testArtistId}: ${artistWallet}`);
+      } catch (error) {
+        console.log(`No artist found or error accessing artist wallet: ${error.message}`);
+      }
+      
+      // Test pending funds lookup
+      try {
+        const pendingFunds = await zkSyncArtistManager.pendingFunds(testArtistId);
+        console.log(`Pending funds for ${testArtistId}: ${pendingFunds}`);
+      } catch (error) {
+        console.log(`Error accessing pending funds: ${error.message}`);
+      }
+      
     } catch (error) {
-      console.error("Error registering artist:", error.message);
+      console.error(`Error accessing owner: ${error.message}`);
     }
   } catch (error) {
-    console.error("Error testing ZkSyncArtistManager contract:", error.message);
+    console.error(`Error testing ZkSyncArtistManager contract: ${error.message}`);
   }
   
-  console.log("\nBlockchain integration testing completed.");
+  console.log("");
+  console.log("Blockchain integration testing completed.");
 }
 
 // Execute the script

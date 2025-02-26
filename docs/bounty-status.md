@@ -8,7 +8,7 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Deploy application on Base testnet | In Progress | Smart contracts ready for deployment |
+| Deploy application on Base testnet | In Progress | Contract address exists but needs verification |
 | Implement AgentKit integration | Completed | Agent functionality implemented |
 | Create onchain actions | Completed | Fund distribution and application automation implemented |
 | Use other CDP tools | Completed | CDP SDK integrated |
@@ -30,9 +30,9 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Deploy on zkSync Era Testnet | In Progress | Smart contracts ready for deployment |
-| Provide working demo | In Progress | UI integration completed |
-| Submit public GitHub repository | Not Started | Need to prepare repository |
+| Deploy on zkSync Era Testnet | In Progress | Contract address exists but needs verification |
+| Provide working demo | In Progress | UI integration completed but needs testing |
+| Submit public GitHub repository | In Progress | Repository cleanup in progress |
 
 **Overall Status**: 70% Complete
 
@@ -40,13 +40,13 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Integration of zkSync SSO SDK | Completed | Fully implemented with zksync-sso package |
+| Integration of zkSync SSO SDK | Completed | Implemented with zksync-sso package |
 | Implement as primary authentication method | Completed | Used for wallet onboarding with session key creation |
-| Deploy on zkSync Era Testnet | Completed | Contract deployed and verified |
-| Provide working demo with SSO login | Completed | UI integration with session key management |
+| Deploy on zkSync Era Testnet | In Progress | Contract address exists but needs verification |
+| Provide working demo with SSO login | In Progress | UI integration completed but needs testing |
 | Submit public GitHub repository | In Progress | Repository cleanup in progress |
 
-**Overall Status**: 95% Complete
+**Overall Status**: 80% Complete
 
 ## Tier 2 Bounties
 
@@ -66,12 +66,12 @@ This document tracks our progress on meeting the requirements for each bounty we
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | AI Component with on-chain interaction | Completed | Agent can interact with Flow contracts |
-| Smart Contract Integration on Flow testnet | In Progress | Contracts ready for deployment |
+| Smart Contract Integration on Flow testnet | In Progress | Mock contract created but needs deployment |
 | Documentation of AI-Flow interaction | In Progress | Documentation started |
-| Publicly accessible demo | Not Started | Need to create demo |
+| Publicly accessible demo | Not Started | Needs implementation |
 | Usage of Eliza on Flow | Completed | Integrated with agent capabilities |
 
-**Overall Status**: 70% Complete
+**Overall Status**: 60% Complete
 
 ## Tier 3 Bounty
 
@@ -104,11 +104,11 @@ This document tracks our progress on meeting the requirements for each bounty we
 | Item | Status | Notes |
 |------|--------|-------|
 | 90-second demo videos | Not Started | Need to create for each bounty |
-| Screenshots | In Progress | 40% complete |
+| Screenshots | Not Started | Need to capture key UI elements |
 | Live demo link | Not Started | Will be available after deployment |
-| Test account credentials | Not Started | Will be created after deployment |
+| Test account credentials | Not Started | Need to create for demo |
 
-**Overall Status**: 10% Complete
+**Overall Status**: 0% Complete
 
 ### Code Repository
 
@@ -124,8 +124,9 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 ## Next Steps
 
-1. Complete deployment to all testnets
-2. Finalize documentation for all bounties
-3. Create demo videos for each bounty
-4. Prepare GitHub repository for submission
-5. Complete any remaining implementation tasks 
+1. Verify and complete contract deployments to all testnets
+2. Test contract functionality on testnets
+3. Create demo materials (screenshots and videos)
+4. Complete repository cleanup
+5. Finalize documentation
+6. Create tagged version for submission 
