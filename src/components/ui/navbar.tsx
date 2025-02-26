@@ -32,19 +32,19 @@ export function Navbar() {
   }
   
   return (
-    <nav className="border-b">
+    <nav className="border-b border-gray-800">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6 md:gap-10">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold">Artist Grant AI</span>
+            <span className="text-xl font-bold text-white">Nuonu</span>
           </Link>
           <div className="hidden md:flex gap-6">
             <Link 
               href="/opportunities"
-              className={`text-sm font-medium transition-colors hover:text-primary ${
+              className={`text-sm font-medium transition-colors hover:text-white ${
                 pathname === '/opportunities' 
-                  ? 'text-foreground' 
-                  : 'text-muted-foreground'
+                  ? 'text-white' 
+                  : 'text-gray-400'
               }`}
             >
               Opportunities

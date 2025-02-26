@@ -7,7 +7,7 @@ import { Footer } from '@/components/ui/footer'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Artist Grant AI Agent',
+  title: 'Nuonu',
   description: 'AI-powered platform for artists to discover and apply for grants, jobs, and creative opportunities',
 }
 
@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen flex flex-col`}>
+      <body className={`${inter.className} min-h-screen flex flex-col bg-black text-white`}>
         <Navbar />
         <main className="flex-grow">
           {children}
