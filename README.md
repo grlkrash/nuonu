@@ -48,12 +48,18 @@ An AI-powered platform that helps artists discover and apply for opportunities, 
    ```
    Edit `.env.local` with your API keys and configuration.
 
-4. Run the development server:
+4. Run the database migration:
+   ```bash
+   yarn migrate
+   ```
+   See the [Migration Guide](docs/migration-guide.md) for more details.
+
+5. Run the development server:
    ```bash
    yarn dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Environment Variables
 
@@ -63,6 +69,7 @@ Create a `.env.local` file with the following variables:
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_KEY=your-service-key
 
 # OpenAI
 OPENAI_API_KEY=your-openai-api-key
@@ -88,6 +95,7 @@ PRIVATE_KEY=your-private-key
 ```
 ├── docs/                  # Documentation
 ├── public/                # Static assets
+├── scripts/               # Utility scripts
 ├── src/
 │   ├── app/               # Next.js App Router
 │   ├── components/        # React components
@@ -102,6 +110,7 @@ PRIVATE_KEY=your-private-key
 │   │   ├── services/      # Service functions
 │   │   └── supabase/      # Supabase client and types
 │   └── types/             # TypeScript type definitions
+├── supabase/              # Supabase migrations and seed data
 ├── .env.example           # Example environment variables
 ├── .gitignore             # Git ignore file
 ├── next.config.js         # Next.js configuration
@@ -115,8 +124,21 @@ PRIVATE_KEY=your-private-key
 
 For more detailed documentation, see:
 
-- [AI Agent Documentation](docs/ai-agent.md)
-- [Blockchain Integration Documentation](docs/blockchain-integration.md)
+- [Project Status](docs/project-status.md) - Current status and next steps
+- [AI Agent Documentation](docs/ai-agent.md) - Overview of AI agent functionality
+- [Blockchain Integration Documentation](docs/blockchain-integration.md) - Details of blockchain integration
+- [Migration Guide](docs/migration-guide.md) - Guide for running database migrations
+- [Refactoring Plan](docs/refactoring-plan.md) - Plan for future code improvements
+- [Implementation Summary](docs/implementation-summary.md) - Summary of implemented changes
+
+## Scripts
+
+The project includes several utility scripts:
+
+- `yarn migrate` - Run the database migration to add tags to opportunities
+- `node scripts/test-migration.js` - Test if the migration is needed
+
+See the [Scripts README](scripts/README.md) for more details.
 
 ## Future Enhancements
 
