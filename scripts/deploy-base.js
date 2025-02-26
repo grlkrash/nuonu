@@ -2,7 +2,7 @@
 const hre = require("hardhat");
 
 async function main() {
-  console.log("Deploying FundDistribution contract to Base Goerli...");
+  console.log("Deploying FundDistribution contract to Base Sepolia...");
 
   // Get the contract factory
   const FundDistribution = await hre.ethers.getContractFactory("FundDistribution");
@@ -22,7 +22,7 @@ async function main() {
   console.log(`NEXT_PUBLIC_ARTIST_FUND_MANAGER_BASE=${contractAddress}`);
   console.log("");
   console.log("To verify the contract:");
-  console.log(`npx hardhat verify --network baseGoerli ${contractAddress}`);
+  console.log(`npx hardhat verify --network baseSepolia ${contractAddress}`);
   
   // Set up initial roles
   console.log("Setting up initial roles...");

@@ -18,6 +18,7 @@
     "prepare-bounty": "node scripts/prepare-bounty.js"
   },
   "dependencies": {
+    "@coinbase/coinbase-sdk": "^0.20.0",
     "@supabase/supabase-js": "^2.49.1",
     "dotenv": "^16.4.7",
     "next": "14.1.0",
