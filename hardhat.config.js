@@ -1,5 +1,8 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config({ path: ".env.local" });
+require("@matterlabs/hardhat-zksync-deploy");
+require("@matterlabs/hardhat-zksync-solc");
+require("@matterlabs/hardhat-zksync-verify");
 
 // Load environment variables
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -75,6 +78,8 @@ module.exports = {
       accounts: [NORMALIZED_PRIVATE_KEY],
       chainId: 280,
       saveDeployments: true,
+      zksync: true,
+      ethNetwork: "sepolia"
     },
   },
   etherscan: {

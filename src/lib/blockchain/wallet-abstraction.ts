@@ -1,6 +1,8 @@
 import { ethers } from 'ethers'
 import { Provider, Wallet } from 'zksync-web3'
 import * as fcl from '@onflow/fcl'
+import { zksyncSsoConnector, callPolicy } from 'zksync-sso/connector'
+import { zksyncSepoliaTestnet } from 'viem/chains'
 
 // Define interfaces for different blockchain wallets
 export interface BaseWallet {
@@ -130,18 +132,34 @@ export class WalletAbstraction {
         throw new Error('zkSync wallet not connected')
       }
       
-      // This is a simplified version - in a real implementation, 
-      // you would use the zkSync Smart Sign-On SDK
-      const sessionKey = ethers.Wallet.createRandom().privateKey
+      // Use the actual zkSync SSO SDK to create a session key
+      // This is a simplified implementation - in a real app, you would configure
+      // more detailed session parameters as shown in the SDK documentation
+      const ssoConnector = zksyncSsoConnector({
+        session: {
+          expiry: '1 day',
+          feeLimit: ethers.utils.parseEther('0.1'),
+          transfers: [
+            {
+              to: this.state.zkSyncWallet.address,
+              valueLimit: ethers.utils.parseEther('0.1'),
+            },
+          ],
+        },
+      })
+      
+      // For demo purposes, we'll create a session key and store it
+      // In a real implementation, this would involve more complex interaction with the SDK
+      const sessionKey = await ssoConnector.createSession(this.state.zkSyncWallet.signer)
       
       this.setState({
         zkSyncWallet: {
           ...this.state.zkSyncWallet,
-          sessionKey
+          sessionKey: sessionKey.id
         }
       })
       
-      return sessionKey
+      return sessionKey.id
     } catch (error) {
       console.error('Error creating zkSync session key:', error)
       this.setState({ 

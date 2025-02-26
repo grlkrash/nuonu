@@ -7,7 +7,7 @@ async function main() {
   console.log("Deploying ZkSyncArtistManager contract to zkSync Era Testnet...");
 
   // Initialize the wallet
-  const provider = new Provider(process.env.ZKSYNC_TESTNET_RPC || "https://testnet.era.zksync.dev");
+  const provider = new Provider(process.env.ZKSYNC_TESTNET_RPC_URL || "https://testnet.era.zksync.dev");
   const wallet = new Wallet(process.env.PRIVATE_KEY, provider);
   
   // Initialize the deployer

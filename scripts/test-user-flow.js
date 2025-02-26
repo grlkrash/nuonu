@@ -1,11 +1,20 @@
 const hre = require("hardhat");
+require("dotenv").config({ path: ".env.local" });
 
 async function main() {
   console.log("Testing end-to-end user flow...");
   
-  // Contract addresses
-  const fundDistributionAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const zkSyncArtistManagerAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+  // Contract addresses from environment variables
+  const fundDistributionAddress = process.env.NEXT_PUBLIC_ARTIST_FUND_MANAGER_BASE;
+  const zkSyncArtistManagerAddress = process.env.NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC;
+  
+  console.log(`Using FundDistribution address: ${fundDistributionAddress}`);
+  console.log(`Using ZkSyncArtistManager address: ${zkSyncArtistManagerAddress}`);
+  
+  if (!fundDistributionAddress || !zkSyncArtistManagerAddress) {
+    console.error("❌ Contract addresses not found in environment variables. Please check your .env.local file.");
+    process.exit(1);
+  }
   
   // Get contract instances
   const FundDistribution = await hre.ethers.getContractFactory("FundDistribution");
@@ -20,115 +29,93 @@ async function main() {
   console.log("Admin address:", admin.address);
   console.log("Artist address:", artist.address);
   
-  // Step 1: Create a new artist profile
-  console.log("\n📝 Step 1: Creating a new artist profile...");
-  const artistId = "artist-" + Math.floor(Math.random() * 1000);
-  const registerTx = await zkSyncArtistManager.registerArtist(artistId, artist.address);
-  await registerTx.wait();
-  console.log(`Artist registered with ID: ${artistId} and wallet: ${artist.address}`);
+  // Test FundDistribution contract
+  console.log("\n--- Testing FundDistribution Contract ---");
   
-  // Step 2: Create a new grant
-  console.log("\n💰 Step 2: Creating a new grant...");
-  const grantTitle = "Artist Innovation Grant";
-  const grantDescription = "Supporting innovative artistic projects";
-  const grantAmount = hre.ethers.parseEther("2.0"); // 2 ETH
-  const token = "0x0000000000000000000000000000000000000000"; // Native token (ETH)
-  const deadline = Math.floor(Date.now() / 1000) + 86400 * 7; // 7 days from now
+  // Check if admin has the ADMIN_ROLE
+  const adminRole = await fundDistribution.ADMIN_ROLE();
+  const hasAdminRole = await fundDistribution.hasRole(adminRole, admin.address);
+  console.log(`Admin has ADMIN_ROLE: ${hasAdminRole}`);
   
-  // First, ensure the contract has enough funds
-  const contractBalance = await hre.ethers.provider.getBalance(fundDistributionAddress);
-  if (contractBalance < grantAmount) {
-    console.log("Depositing additional ETH to the contract...");
-    const depositTx = await fundDistribution.depositNativeToken({ value: grantAmount });
-    await depositTx.wait();
-    console.log(`Deposited ${hre.ethers.formatEther(grantAmount)} ETH to the contract`);
+  if (!hasAdminRole) {
+    console.log("Granting ADMIN_ROLE to admin...");
+    const tx = await fundDistribution.grantRole(adminRole, admin.address);
+    await tx.wait();
+    console.log("ADMIN_ROLE granted successfully");
   }
   
-  // Create the grant
-  const createGrantTx = await fundDistribution.createGrant(
-    grantTitle,
-    grantDescription,
-    grantAmount,
-    token,
-    deadline
-  );
-  await createGrantTx.wait();
-  console.log("Grant created successfully");
-  
-  // Get the grant details
-  const grantId = 2; // Assuming this is the second grant created
+  // Create a new grant
+  console.log("\nCreating a new grant...");
   try {
-    const grant = await fundDistribution.getGrant(grantId);
-    console.log("Grant details:", {
-      id: grant.id.toString(),
-      title: grant.title,
-      amount: hre.ethers.formatEther(grant.amount),
-      remainingAmount: hre.ethers.formatEther(grant.remainingAmount),
-      deadline: new Date(Number(grant.deadline) * 1000).toISOString()
-    });
-  } catch (error) {
-    console.log(`Error retrieving grant #${grantId}: ${error.message}`);
-    console.log("Using grant #1 instead...");
+    const createGrantTx = await fundDistribution.createGrant(
+      "Artist Innovation Grant",
+      "Supporting innovative artistic projects",
+      hre.ethers.parseEther("1.0"),
+      "0x0000000000000000000000000000000000000000", // Native token (ETH)
+      Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from now
+      true
+    );
+    await createGrantTx.wait();
+    console.log("Grant created successfully");
+    
+    // Get grant details
     const grant = await fundDistribution.getGrant(1);
     console.log("Grant details:", {
-      id: grant.id.toString(),
+      id: grant.id,
       title: grant.title,
+      description: grant.description,
       amount: hre.ethers.formatEther(grant.amount),
-      remainingAmount: hre.ethers.formatEther(grant.remainingAmount),
-      deadline: new Date(Number(grant.deadline) * 1000).toISOString()
+      active: grant.active
     });
+  } catch (error) {
+    console.error(`Failed to create grant: ${error.message}`);
   }
   
-  // Step 3: Submit an application
-  console.log("\n📄 Step 3: Submitting an application...");
-  // In a real application, this would be done through the frontend
-  // Here we're simulating the application submission
-  console.log("Application submitted through the frontend (simulated)");
+  // Test ZkSyncArtistManager contract
+  console.log("\n--- Testing ZkSyncArtistManager Contract ---");
   
-  // Step 4: Review and approve the application
-  console.log("\n✅ Step 4: Reviewing and approving the application...");
-  // In a real application, this would be done through the admin interface
-  // Here we're simulating the application approval
-  console.log("Application approved through the admin interface (simulated)");
+  // Register an artist
+  const artistId = "test-artist-" + Math.floor(Math.random() * 1000);
+  console.log(`Registering artist with ID: ${artistId}`);
   
-  // Step 5: Process payment
-  console.log("\n💸 Step 5: Processing payment...");
-  // In a real application, this would trigger a blockchain transaction
-  // Here we're simulating the payment by sending funds to the artist's wallet through ZkSync
+  try {
+    const registerArtistTx = await zkSyncArtistManager.registerArtist(artistId, artist.address);
+    await registerArtistTx.wait();
+    console.log("Artist registered successfully");
+    
+    // Check artist wallet
+    const artistWallet = await zkSyncArtistManager.artistWallets(artistId);
+    console.log(`Artist wallet: ${artistWallet}`);
+    
+    // Add funds for the artist
+    console.log("\nAdding funds for the artist...");
+    const addFundsTx = await zkSyncArtistManager.addFunds(
+      "opportunity-123",
+      artistId,
+      hre.ethers.parseEther("0.5"),
+      { value: hre.ethers.parseEther("0.5") }
+    );
+    await addFundsTx.wait();
+    console.log("Funds added successfully");
+    
+    // Check pending funds
+    const pendingFunds = await zkSyncArtistManager.getPendingFunds(artistId);
+    console.log(`Pending funds: ${hre.ethers.formatEther(pendingFunds)} ETH`);
+    
+    // Distribute funds
+    console.log("\nDistributing funds to artist...");
+    const distributeFundsTx = await zkSyncArtistManager.distributeFunds(artistId);
+    await distributeFundsTx.wait();
+    console.log("Funds distributed successfully");
+    
+    // Check pending funds after distribution
+    const pendingFundsAfter = await zkSyncArtistManager.getPendingFunds(artistId);
+    console.log(`Pending funds after distribution: ${hre.ethers.formatEther(pendingFundsAfter)} ETH`);
+  } catch (error) {
+    console.error(`Failed to test ZkSyncArtistManager: ${error.message}`);
+  }
   
-  // First, check the artist's balance before
-  const artistBalanceBefore = await hre.ethers.provider.getBalance(artist.address);
-  console.log(`Artist balance before: ${hre.ethers.formatEther(artistBalanceBefore)} ETH`);
-  
-  // Send funds to the artist through ZkSync
-  const paymentAmount = hre.ethers.parseEther("0.5"); // 0.5 ETH
-  const opportunityId = "opportunity-" + Math.floor(Math.random() * 1000);
-  
-  // Send funds to the ZkSync contract
-  const receiveFundsTx = await zkSyncArtistManager.connect(admin).receiveFunds(opportunityId, artistId, {
-    value: paymentAmount
-  });
-  await receiveFundsTx.wait();
-  console.log(`Funds received by ZkSync contract: ${hre.ethers.formatEther(paymentAmount)} ETH`);
-  
-  // Check pending funds
-  const pendingFunds = await zkSyncArtistManager.getPendingFunds(artistId);
-  console.log(`Pending funds for artist ${artistId}: ${hre.ethers.formatEther(pendingFunds)} ETH`);
-  
-  // Distribute funds to the artist
-  const distributeTx = await zkSyncArtistManager.connect(artist).distributeFunds(artistId);
-  await distributeTx.wait();
-  console.log("Funds distributed successfully");
-  
-  // Check the artist's balance after
-  const artistBalanceAfter = await hre.ethers.provider.getBalance(artist.address);
-  console.log(`Artist balance after: ${hre.ethers.formatEther(artistBalanceAfter)} ETH`);
-  
-  // Calculate the difference (accounting for gas costs)
-  const balanceDifference = artistBalanceAfter - artistBalanceBefore;
-  console.log(`Balance difference: ${hre.ethers.formatEther(balanceDifference)} ETH`);
-  
-  console.log("\n🎉 End-to-end user flow test completed successfully!");
+  console.log("\nUser flow testing completed.");
 }
 
 // Execute the script

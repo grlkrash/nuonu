@@ -27,6 +27,28 @@ The Artist Grant AI Agent is designed to simplify the process of finding and app
   - Flow blockchain with Eliza OS
   - Chainlink CCIP (if time permits)
 
+## Current Status
+
+The project is currently in MVP stage with the following components implemented:
+
+- ✅ User authentication and profile management
+- ✅ Artist onboarding questionnaire
+- ✅ Dashboard with opportunity recommendations
+- ✅ Multi-chain wallet integration
+- ✅ AI-powered opportunity matching
+- ✅ Application submission system
+- 🔄 Smart contract deployment (in progress)
+- 🔄 Fund distribution system (in progress)
+- 🔄 Documentation and demo materials (in progress)
+
+## Next Steps
+
+1. Complete smart contract deployment to all testnets
+2. Finalize documentation for all bounties
+3. Create demo videos for each bounty
+4. Prepare GitHub repository for submission
+5. Implement any remaining features for bounty qualification
+
 ## Smart Contracts
 
 The platform includes several smart contracts for blockchain functionality:
@@ -143,6 +165,16 @@ The platform includes several smart contracts for blockchain functionality:
 
 2. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Documentation
+
+For more detailed information, please refer to the following documentation:
+
+- [Deployment Guide](docs/deployment-guide.md): Instructions for deploying the application
+- [Test Plan](docs/test-plan.md): Comprehensive test plan for the application
+- [Bounty Status](docs/bounty-status.md): Current status of bounty qualification
+- [Blockchain Integration](docs/blockchain-integration.md): Details on blockchain integration
+- [AI Agent](docs/ai-agent.md): Information about the AI agent implementation
+
 ## Key Components
 
 ### AI Opportunity Finder
@@ -187,6 +219,7 @@ The Fund Distribution System enables secure and transparent grant allocation and
   - `ZkSyncArtistManager.sol`: zkSync Era contract
 - `scripts`: Deployment and testing scripts
 - `supabase`: Database migrations and schema
+- `docs`: Project documentation
 
 ## Bounty Submissions
 

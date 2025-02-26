@@ -1,12 +1,21 @@
 // scripts/verify-contracts.js
 const hre = require("hardhat");
+require("dotenv").config({ path: ".env.local" });
 
 async function main() {
   console.log("Verifying deployed contracts...");
   
-  // Contract addresses
-  const fundDistributionAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const zkSyncArtistManagerAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+  // Contract addresses from environment variables
+  const fundDistributionAddress = process.env.NEXT_PUBLIC_ARTIST_FUND_MANAGER_BASE;
+  const zkSyncArtistManagerAddress = process.env.NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC;
+  
+  console.log(`Using FundDistribution address: ${fundDistributionAddress}`);
+  console.log(`Using ZkSyncArtistManager address: ${zkSyncArtistManagerAddress}`);
+  
+  if (!fundDistributionAddress || !zkSyncArtistManagerAddress) {
+    console.error("❌ Contract addresses not found in environment variables. Please check your .env.local file.");
+    process.exit(1);
+  }
   
   // Get contract instances
   const FundDistribution = await hre.ethers.getContractFactory("FundDistribution");
