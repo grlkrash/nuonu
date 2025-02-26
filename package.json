@@ -9,7 +9,13 @@
     "lint": "next lint",
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "migrate": "node scripts/migrate-db.js"
+    "migrate": "node scripts/migrate-db.js",
+    "setup-db": "node scripts/setup-db.js",
+    "deploy:base": "hardhat run scripts/deploy-base.js --network baseGoerli",
+    "deploy:zksync": "hardhat run scripts/deploy-zksync.js --network zkSyncTestnet",
+    "verify:base": "hardhat verify --network baseGoerli",
+    "verify:zksync": "hardhat verify --network zkSyncTestnet",
+    "prepare-bounty": "node scripts/prepare-bounty.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

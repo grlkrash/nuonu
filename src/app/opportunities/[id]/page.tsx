@@ -3,10 +3,12 @@ import Link from 'next/link'
 import { formatDistanceToNow, format } from 'date-fns'
 import { getOpportunityById } from '@/lib/services/opportunities'
 import { getCurrentUser } from '@/lib/auth'
-import { AIApplicationForm } from '@/components/applications/ai-application-form'
+import { ApplicationGenerator } from '@/components/opportunities/application-generator'
 import { BlockchainApplicationForm } from '@/components/blockchain/blockchain-application-form'
 import { generateProfileInsights } from '@/lib/services/openai'
 import { getProfileById } from '@/lib/services/profiles'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Sparkles } from 'lucide-react'
 
 interface OpportunityPageProps {
   params: {
@@ -49,287 +51,203 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
   
   const isOpen = opportunity.status === 'open'
   
-  // Check if this is a blockchain-related opportunity
-  const tags = opportunity.tags || []
-  const isBlockchainOpportunity = tags.some(tag => 
-    ['blockchain', 'crypto', 'web3', 'nft', 'dao'].includes(tag.toLowerCase())
-  )
+  // Format the amount as currency
+  const formattedAmount = opportunity.amount 
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(opportunity.amount)
+    : 'Amount not specified'
   
-  // Get AI insights for the user if they're logged in
+  // Get user profile insights if user is logged in
   let profileInsights = null
   if (user) {
-    const profile = await getProfileById(user.id).catch(() => null)
-    if (profile && process.env.OPENAI_API_KEY) {
-      profileInsights = await generateProfileInsights(profile).catch(() => null)
+    try {
+      const profile = await getProfileById(user.id)
+      if (profile) {
+        profileInsights = await generateProfileInsights(profile)
+      }
+    } catch (error) {
+      console.error('Error fetching profile insights:', error)
     }
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container max-w-4xl py-8">
       <div className="mb-6">
         <Link 
-          href="/opportunities" 
-          className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
+          href="/opportunities"
+          className="text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block"
         >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className="h-4 w-4 mr-1" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Opportunities
+          ← Back to Opportunities
         </Link>
-      </div>
-      
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <div className="p-6 md:p-8">
-          <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
-            <div>
-              <div className="flex items-center mb-2">
-                <h1 className="text-2xl md:text-3xl font-bold mr-3">{opportunity.title}</h1>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  opportunity.status === 'open'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                    : opportunity.status === 'closed'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                }`}>
-                  {opportunity.status.charAt(0).toUpperCase() + opportunity.status.slice(1)}
-                </span>
-                
-                {isBlockchainOpportunity && (
-                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                    Blockchain
-                  </span>
-                )}
-              </div>
-              
-              <p className="text-gray-600 dark:text-gray-300">
-                Posted {timeAgo}
-                {opportunity.profiles?.full_name && (
-                  <span> by <span className="font-medium">{opportunity.profiles.full_name}</span></span>
-                )}
-              </p>
-            </div>
+        
+        <h1 className="text-3xl font-bold mb-2">{opportunity.title}</h1>
+        
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+            {opportunity.opportunity_type === 'grant' ? 'Grant' : 
+             opportunity.opportunity_type === 'job' ? 'Job' : 'Gig'}
+          </span>
+          
+          {opportunity.category && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+              {opportunity.category}
+            </span>
+          )}
+          
+          {opportunity.is_remote && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400">
+              Remote
+            </span>
+          )}
+          
+          {opportunity.location && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+              {opportunity.location}
+            </span>
+          )}
+          
+          {isOpen ? (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              Open
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              Closed
+            </span>
+          )}
+        </div>
+        
+        <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+          <div>
+            Posted {timeAgo} by {opportunity.organization}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              <div className="prose dark:prose-invert max-w-none">
-                <h2 className="text-xl font-semibold mb-4">Description</h2>
-                <div className="whitespace-pre-line">{opportunity.description}</div>
-                
-                {opportunity.requirements && (
-                  <>
-                    <h2 className="text-xl font-semibold mt-8 mb-4">Requirements</h2>
-                    <div className="whitespace-pre-line">{opportunity.requirements}</div>
-                  </>
-                )}
-              </div>
-              
-              {profileInsights && (
-                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-                  <h2 className="text-xl font-semibold mb-4">AI Match Insights</h2>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 mt-0.5">
-                        <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M13 10V3L4 14h7v7l9-11h-7z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-purple-800 dark:text-purple-300">
-                          AI-Generated Profile Match
-                        </h3>
-                        <div className="mt-2 text-sm text-purple-700 dark:text-purple-400">
-                          <p className="whitespace-pre-line">{profileInsights}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {user && isOpen && (
-                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700" id="apply">
-                  <h2 className="text-xl font-semibold mb-6">Apply for this Opportunity</h2>
-                  
-                  {isBlockchainOpportunity ? (
-                    <div className="space-y-8">
-                      <BlockchainApplicationForm 
-                        opportunityId={opportunity.id} 
-                        userId={user.id}
-                        opportunityTitle={opportunity.title}
-                      />
-                      
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                            Or apply with AI assistance
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <AIApplicationForm opportunityId={opportunity.id} userId={user.id} />
-                    </div>
-                  ) : (
-                    <AIApplicationForm opportunityId={opportunity.id} userId={user.id} />
-                  )}
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-4">
+            {opportunity.amount > 0 && (
+              <span className="font-medium text-gray-900 dark:text-white">
+                {formattedAmount}
+              </span>
+            )}
             
-            <div>
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Opportunity Details</h2>
-                
-                <div className="space-y-4">
-                  {opportunity.category && (
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Category</p>
-                      <p className="font-medium">{opportunity.category}</p>
-                    </div>
-                  )}
-                  
-                  {opportunity.budget && (
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Budget</p>
-                      <p className="font-medium">${opportunity.budget.toLocaleString()}</p>
-                    </div>
-                  )}
-                  
-                  {deadline && (
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Deadline</p>
-                      <p className="font-medium">
-                        {format(deadline, 'MMMM d, yyyy')}
-                        <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                          ({formatDistanceToNow(deadline, { addSuffix: true })})
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Location</p>
-                    <p className="font-medium">
-                      {opportunity.location || 'Not specified'}
-                      {opportunity.is_remote && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                          Remote
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  
-                  {tags && tags.length > 0 && (
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Tags</p>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {tags.map((tag, index) => (
-                          <span 
-                            key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {opportunity.profiles && (
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <h3 className="text-md font-semibold mb-3">About the Creator</h3>
-                    
-                    <div className="flex items-center mb-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 mr-3">
-                        {opportunity.profiles.avatar_url ? (
-                          <img 
-                            src={opportunity.profiles.avatar_url} 
-                            alt={opportunity.profiles.full_name || 'Profile'} 
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            className="h-6 w-6" 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
-                          >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
-                            />
-                          </svg>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <p className="font-medium">{opportunity.profiles.full_name || 'Anonymous'}</p>
-                        {opportunity.profiles.website && (
-                          <a 
-                            href={opportunity.profiles.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            {opportunity.profiles.website.replace(/^https?:\/\//, '')}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {opportunity.profiles.bio && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {opportunity.profiles.bio}
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                {user && isOpen && (
-                  <div className="mt-6">
-                    <a 
-                      href="#apply" 
-                      className="block w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-center"
-                    >
-                      Apply Now
-                    </a>
-                  </div>
-                )}
-                
-                {!user && isOpen && (
-                  <div className="mt-6">
-                    <Link 
-                      href={`/signin?redirect=/opportunities/${opportunity.id}`}
-                      className="block w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-center"
-                    >
-                      Sign in to Apply
-                    </Link>
-                  </div>
-                )}
-                
-                {!isOpen && (
-                  <div className="mt-6 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-center">
-                    This opportunity is no longer accepting applications
-                  </div>
-                )}
-              </div>
-            </div>
+            {deadline && (
+              <span>
+                Deadline: {format(deadline, 'PPP')}
+              </span>
+            )}
           </div>
         </div>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Description</h2>
+            <div className="prose dark:prose-invert max-w-none">
+              <p>{opportunity.description}</p>
+            </div>
+          </div>
+          
+          {opportunity.requirements && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Requirements</h2>
+              <div className="prose dark:prose-invert max-w-none">
+                <p>{opportunity.requirements}</p>
+              </div>
+            </div>
+          )}
+          
+          {opportunity.eligibility && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Eligibility</h2>
+              <div className="prose dark:prose-invert max-w-none">
+                <p>{opportunity.eligibility}</p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Organization</h2>
+            <p className="mb-4">{opportunity.organization}</p>
+            
+            {opportunity.application_url && (
+              <div className="mt-4">
+                <a 
+                  href={opportunity.application_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full"
+                >
+                  Apply on Website
+                </a>
+              </div>
+            )}
+          </div>
+          
+          {profileInsights && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="flex items-center mb-4">
+                <Sparkles className="h-5 w-5 text-blue-500 mr-2" />
+                <h2 className="text-xl font-semibold">AI Insights</h2>
+              </div>
+              <div className="prose dark:prose-invert max-w-none text-sm">
+                <p>{profileInsights}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {isOpen && user && (
+        <div className="mt-8">
+          <Tabs defaultValue="ai" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="ai" className="flex items-center">
+                <Sparkles className="mr-2 h-4 w-4" />
+                AI Application Generator
+              </TabsTrigger>
+              <TabsTrigger value="blockchain">Blockchain Application</TabsTrigger>
+            </TabsList>
+            <TabsContent value="ai" className="mt-4">
+              <ApplicationGenerator 
+                opportunityId={params.id} 
+                opportunityTitle={opportunity.title} 
+              />
+            </TabsContent>
+            <TabsContent value="blockchain" className="mt-4">
+              <BlockchainApplicationForm 
+                opportunityId={params.id} 
+                opportunityTitle={opportunity.title}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
+      
+      {!user && (
+        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
+          <h3 className="text-lg font-medium text-blue-800 dark:text-blue-300 mb-2">
+            Sign in to apply
+          </h3>
+          <p className="text-blue-600 dark:text-blue-400 mb-4">
+            Create an account or sign in to apply for this opportunity and access AI-powered application tools.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link 
+              href="/signin"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            >
+              Sign In
+            </Link>
+            <Link 
+              href="/signup"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+            >
+              Sign Up
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

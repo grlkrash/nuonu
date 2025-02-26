@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sparkles, Search, Filter, Loader2, ArrowRight, Lightbulb, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,92 +24,111 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { OpportunityCard } from "./opportunity-card"
-
-// Mock data for AI-suggested opportunities
-const mockOpportunities = [
-  {
-    id: "ai-1",
-    title: "Emerging Artist Grant Program",
-    description: "A grant program specifically designed for emerging artists working in digital media. Provides funding for new projects and professional development.",
-    opportunity_type: "grant",
-    organization: "Digital Arts Foundation",
-    amount: 5000,
-    deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-    eligibility: "Artists with less than 5 years professional experience",
-    application_url: "https://example.com/apply",
-    source: "AI Recommendation",
-    source_id: "ai-rec-1",
-    created_at: new Date().toISOString(),
-    status: "open",
-    category: "Digital Media",
-    is_remote: true,
-    location: null,
-    profiles: null
-  },
-  {
-    id: "ai-2",
-    title: "Music Production Residency",
-    description: "A 3-month residency program for music producers looking to collaborate with other artists and develop new work.",
-    opportunity_type: "grant",
-    organization: "Sound Collective",
-    amount: 7500,
-    deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(), // 45 days from now
-    eligibility: "Music producers with portfolio of work",
-    application_url: "https://example.com/apply",
-    source: "AI Recommendation",
-    source_id: "ai-rec-2",
-    created_at: new Date().toISOString(),
-    status: "open",
-    category: "Music",
-    is_remote: false,
-    location: "New York, NY",
-    profiles: null
-  },
-  {
-    id: "ai-3",
-    title: "Album Artwork Designer",
-    description: "Freelance opportunity to design album artwork for an upcoming indie rock release. Looking for bold, distinctive visual style.",
-    opportunity_type: "gig",
-    organization: "Indie Label XYZ",
-    amount: 1200,
-    deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
-    eligibility: "Graphic designers with portfolio",
-    application_url: "https://example.com/apply",
-    source: "AI Recommendation",
-    source_id: "ai-rec-3",
-    created_at: new Date().toISOString(),
-    status: "open",
-    category: "Design",
-    is_remote: true,
-    location: null,
-    profiles: null
-  }
-]
+import { useToast } from "@/components/ui/use-toast"
+import { useUser } from "@/lib/auth"
+import { supabase } from "@/lib/supabase/client"
 
 interface ArtistProfile {
-  medium: string
-  experience: string
-  interests: string[]
-  skills: string[]
-  location: string
+  id?: string
+  user_id?: string
+  full_name?: string
+  bio?: string
+  location?: string
+  artistic_discipline?: string
+  experience_level?: string
+  skills?: string
+  interests?: string
+  portfolio_url?: string
+  social_links?: string
+  created_at?: string
+  updated_at?: string
+}
+
+interface Opportunity {
+  id: string
+  title: string
+  description: string
+  opportunity_type: 'grant' | 'job' | 'gig'
+  organization: string
+  amount: number
+  deadline: string
+  eligibility: string
+  application_url: string
+  source: string
+  source_id: string
+  created_at: string
+  status?: 'open' | 'closed'
+  category?: string
+  is_remote?: boolean
+  location?: string | null
+  profiles?: any[] | null
+  matchScore?: number
 }
 
 export function AIOpportunityFinder() {
+  const { toast } = useToast()
+  const { user } = useUser()
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<Opportunity[]>([])
   const [activeTab, setActiveTab] = useState("search")
   const [artistProfile, setArtistProfile] = useState<ArtistProfile>({
-    medium: "",
-    experience: "",
-    interests: [],
-    skills: [],
+    artistic_discipline: "",
+    experience_level: "",
+    skills: "",
+    interests: "",
     location: ""
   })
   const [newInterest, setNewInterest] = useState("")
   const [newSkill, setNewSkill] = useState("")
-  const [aiSuggestions, setAiSuggestions] = useState<any[]>([])
+  const [aiSuggestions, setAiSuggestions] = useState<Opportunity[]>([])
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [profileRecommendations, setProfileRecommendations] = useState<{
+    strengths: string[];
+    improvements: string[];
+    opportunityTypes: string[];
+  } | null>(null)
+  const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false)
+
+  // Fetch user profile on component mount
+  useEffect(() => {
+    async function fetchUserProfile() {
+      if (!user) {
+        setIsLoadingProfile(false)
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+
+        if (error) throw error
+
+        if (data) {
+          setArtistProfile({
+            ...data,
+            skills: data.skills || '',
+            interests: data.interests || ''
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load your profile. Please try again later.",
+          variant: "destructive"
+        })
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    fetchUserProfile()
+  }, [user, toast])
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,57 +139,72 @@ export function AIOpportunityFinder() {
     setSearchResults([])
     
     try {
-      // In a real implementation, this would call an AI-powered search API
-      // For now, we'll simulate a response with mock data
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      const response = await fetch('/api/agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'search_opportunities',
+          query: searchQuery
+        }),
+      })
       
-      // Filter mock opportunities based on search query
-      const results = mockOpportunities.filter(opp => 
-        opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        opp.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        opp.organization.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        opp.category?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      if (!response.ok) {
+        throw new Error('Failed to search opportunities')
+      }
       
-      setSearchResults(results)
+      const data = await response.json()
+      setSearchResults(data.results || [])
     } catch (error) {
       console.error("Error searching opportunities:", error)
+      toast({
+        title: "Search Failed",
+        description: "We couldn't complete your search. Please try again later.",
+        variant: "destructive"
+      })
     } finally {
       setIsSearching(false)
     }
   }
 
   const handleAddInterest = () => {
-    if (newInterest && !artistProfile.interests.includes(newInterest)) {
+    if (newInterest && !artistProfile.interests?.includes(newInterest)) {
       setArtistProfile({
         ...artistProfile,
-        interests: [...artistProfile.interests, newInterest]
+        interests: artistProfile.interests 
+          ? `${artistProfile.interests},${newInterest}` 
+          : newInterest
       })
       setNewInterest("")
     }
   }
 
   const handleRemoveInterest = (interest: string) => {
+    const interests = artistProfile.interests?.split(',').filter(i => i.trim() !== interest).join(',')
     setArtistProfile({
       ...artistProfile,
-      interests: artistProfile.interests.filter(i => i !== interest)
+      interests
     })
   }
 
   const handleAddSkill = () => {
-    if (newSkill && !artistProfile.skills.includes(newSkill)) {
+    if (newSkill && !artistProfile.skills?.includes(newSkill)) {
       setArtistProfile({
         ...artistProfile,
-        skills: [...artistProfile.skills, newSkill]
+        skills: artistProfile.skills 
+          ? `${artistProfile.skills},${newSkill}` 
+          : newSkill
       })
       setNewSkill("")
     }
   }
 
   const handleRemoveSkill = (skill: string) => {
+    const skills = artistProfile.skills?.split(',').filter(s => s.trim() !== skill).join(',')
     setArtistProfile({
       ...artistProfile,
-      skills: artistProfile.skills.filter(s => s !== skill)
+      skills
     })
   }
 
@@ -179,35 +213,128 @@ export function AIOpportunityFinder() {
     setAiSuggestions([])
     
     try {
-      // In a real implementation, this would call an AI service
-      // For now, we'll simulate a response with mock data
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const response = await fetch('/api/agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'match_opportunities',
+          profile: artistProfile
+        }),
+      })
       
-      // Filter opportunities based on artist profile
-      let suggestions = [...mockOpportunities]
-      
-      if (artistProfile.medium) {
-        suggestions = suggestions.filter(opp => 
-          opp.category?.toLowerCase().includes(artistProfile.medium.toLowerCase())
-        )
+      if (!response.ok) {
+        throw new Error('Failed to generate AI suggestions')
       }
       
-      if (artistProfile.interests.length > 0) {
-        suggestions = suggestions.filter(opp => 
-          artistProfile.interests.some(interest => 
-            opp.title.toLowerCase().includes(interest.toLowerCase()) ||
-            opp.description.toLowerCase().includes(interest.toLowerCase()) ||
-            opp.category?.toLowerCase().includes(interest.toLowerCase())
-          )
-        )
-      }
+      const data = await response.json()
       
-      setAiSuggestions(suggestions)
+      if (data.results) {
+        const { highMatches, mediumMatches } = data.results
+        setAiSuggestions([...highMatches, ...mediumMatches])
+      }
     } catch (error) {
       console.error("Error generating AI suggestions:", error)
+      toast({
+        title: "AI Matching Failed",
+        description: "We couldn't generate personalized recommendations. Please try again later.",
+        variant: "destructive"
+      })
     } finally {
       setIsGeneratingSuggestions(false)
     }
+  }
+
+  const generateProfileRecommendations = async () => {
+    setIsGeneratingRecommendations(true)
+    
+    try {
+      const response = await fetch('/api/agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'generate_insights',
+          profile: artistProfile
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate profile insights')
+      }
+      
+      const data = await response.json()
+      
+      if (data.insights) {
+        setProfileRecommendations({
+          strengths: data.insights.strengths || [],
+          improvements: data.insights.improvements || [],
+          opportunityTypes: data.insights.opportunityTypes || []
+        })
+      }
+    } catch (error) {
+      console.error("Error generating profile recommendations:", error)
+      toast({
+        title: "AI Analysis Failed",
+        description: "We couldn't analyze your profile. Please try again later.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGeneratingRecommendations(false)
+    }
+  }
+
+  const saveProfile = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save your profile.",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          artistic_discipline: artistProfile.artistic_discipline,
+          experience_level: artistProfile.experience_level,
+          skills: artistProfile.skills,
+          interests: artistProfile.interests,
+          location: artistProfile.location
+        })
+        .eq('user_id', user.id)
+      
+      if (error) throw error
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been saved successfully.",
+        variant: "default"
+      })
+    } catch (error) {
+      console.error("Error saving profile:", error)
+      toast({
+        title: "Update Failed",
+        description: "We couldn't save your profile. Please try again later.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const getInterestsArray = () => {
+    return artistProfile.interests
+      ? artistProfile.interests.split(',').map(i => i.trim()).filter(Boolean)
+      : []
+  }
+  
+  const getSkillsArray = () => {
+    return artistProfile.skills
+      ? artistProfile.skills.split(',').map(s => s.trim()).filter(Boolean)
+      : []
   }
 
   return (
@@ -255,47 +382,23 @@ export function AIOpportunityFinder() {
                     )}
                   </Button>
                 </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="cursor-pointer hover:bg-gray-100" onClick={() => setSearchQuery("music grant")}>
-                    Music Grant
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-gray-100" onClick={() => setSearchQuery("digital art")}>
-                    Digital Art
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-gray-100" onClick={() => setSearchQuery("residency")}>
-                    Residency
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-gray-100" onClick={() => setSearchQuery("remote")}>
-                    Remote
-                  </Badge>
-                </div>
               </form>
             </CardContent>
           </Card>
           
-          {isSearching ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
-          ) : searchResults.length > 0 ? (
+          {searchResults.length > 0 ? (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Search Results</h3>
-              <div className="space-y-4">
-                {searchResults.map((opportunity) => (
-                  <OpportunityCard
-                    key={opportunity.id}
-                    opportunity={opportunity}
-                  />
-                ))}
-              </div>
+              {searchResults.map((opportunity) => (
+                <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+              ))}
             </div>
-          ) : searchQuery ? (
+          ) : searchQuery && !isSearching ? (
             <Alert>
               <Lightbulb className="h-4 w-4" />
               <AlertTitle>No results found</AlertTitle>
               <AlertDescription>
-                Try different keywords or use the AI Recommendations tab to get personalized suggestions.
+                Try different keywords or check out our AI recommendations.
               </AlertDescription>
             </Alert>
           ) : null}
@@ -306,167 +409,227 @@ export function AIOpportunityFinder() {
             <CardHeader>
               <CardTitle>Your Artist Profile</CardTitle>
               <CardDescription>
-                Tell us about your art to get personalized opportunity recommendations
+                Update your profile to get better AI recommendations
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Primary Medium/Discipline</label>
-                <Select
-                  value={artistProfile.medium}
-                  onValueChange={(value) => setArtistProfile({ ...artistProfile, medium: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your primary medium" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="music">Music</SelectItem>
-                    <SelectItem value="visual art">Visual Art</SelectItem>
-                    <SelectItem value="digital media">Digital Media</SelectItem>
-                    <SelectItem value="performance">Performance</SelectItem>
-                    <SelectItem value="writing">Writing</SelectItem>
-                    <SelectItem value="film">Film</SelectItem>
-                    <SelectItem value="photography">Photography</SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Experience Level</label>
-                <Select
-                  value={artistProfile.experience}
-                  onValueChange={(value) => setArtistProfile({ ...artistProfile, experience: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your experience level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="emerging">Emerging (0-3 years)</SelectItem>
-                    <SelectItem value="mid-career">Mid-Career (3-10 years)</SelectItem>
-                    <SelectItem value="established">Established (10+ years)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Interests</label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add an interest..."
-                    value={newInterest}
-                    onChange={(e) => setNewInterest(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" onClick={handleAddInterest}>
-                    Add
-                  </Button>
+              {isLoadingProfile ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-                {artistProfile.interests.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {artistProfile.interests.map((interest) => (
-                      <Badge key={interest} variant="secondary" className="flex items-center gap-1">
-                        {interest}
-                        <X
-                          className="h-3 w-3 cursor-pointer"
-                          onClick={() => handleRemoveInterest(interest)}
-                        />
-                      </Badge>
-                    ))}
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Artistic Discipline</label>
+                      <Select 
+                        value={artistProfile.artistic_discipline || ""} 
+                        onValueChange={(value) => setArtistProfile({...artistProfile, artistic_discipline: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select discipline" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="visual_arts">Visual Arts</SelectItem>
+                          <SelectItem value="music">Music</SelectItem>
+                          <SelectItem value="performing_arts">Performing Arts</SelectItem>
+                          <SelectItem value="literature">Literature</SelectItem>
+                          <SelectItem value="film">Film & Video</SelectItem>
+                          <SelectItem value="digital_media">Digital Media</SelectItem>
+                          <SelectItem value="mixed_media">Mixed Media</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Experience Level</label>
+                      <Select 
+                        value={artistProfile.experience_level || ""} 
+                        onValueChange={(value) => setArtistProfile({...artistProfile, experience_level: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select experience" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="emerging">Emerging (0-3 years)</SelectItem>
+                          <SelectItem value="mid_career">Mid-Career (3-10 years)</SelectItem>
+                          <SelectItem value="established">Established (10+ years)</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Location</label>
+                      <Input 
+                        placeholder="City, State/Province, Country" 
+                        value={artistProfile.location || ""} 
+                        onChange={(e) => setArtistProfile({...artistProfile, location: e.target.value})}
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Skills</label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a skill..."
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" onClick={handleAddSkill}>
-                    Add
-                  </Button>
-                </div>
-                {artistProfile.skills.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {artistProfile.skills.map((skill) => (
-                      <Badge key={skill} variant="secondary" className="flex items-center gap-1">
-                        {skill}
-                        <X
-                          className="h-3 w-3 cursor-pointer"
-                          onClick={() => handleRemoveSkill(skill)}
-                        />
-                      </Badge>
-                    ))}
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Skills</label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {getSkillsArray().map((skill, index) => (
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                          {skill}
+                          <X 
+                            className="h-3 w-3 cursor-pointer" 
+                            onClick={() => handleRemoveSkill(skill)}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Add a skill" 
+                        value={newSkill} 
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddSkill()
+                          }
+                        }}
+                      />
+                      <Button type="button" size="sm" onClick={handleAddSkill}>Add</Button>
+                    </div>
                   </div>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Location</label>
-                <Input
-                  placeholder="City, State/Province, Country"
-                  value={artistProfile.location}
-                  onChange={(e) => setArtistProfile({ ...artistProfile, location: e.target.value })}
-                />
-              </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Interests</label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {getInterestsArray().map((interest, index) => (
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                          {interest}
+                          <X 
+                            className="h-3 w-3 cursor-pointer" 
+                            onClick={() => handleRemoveInterest(interest)}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Add an interest" 
+                        value={newInterest} 
+                        onChange={(e) => setNewInterest(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddInterest()
+                          }
+                        }}
+                      />
+                      <Button type="button" size="sm" onClick={handleAddInterest}>Add</Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={saveProfile}
+                    >
+                      Save Profile
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={generateAiSuggestions}
+                      disabled={isGeneratingSuggestions}
+                    >
+                      {isGeneratingSuggestions ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Finding Matches...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Find Matching Opportunities
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
-            <CardFooter>
+          </Card>
+          
+          {aiSuggestions.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">AI-Recommended Opportunities</h3>
+              {aiSuggestions.map((opportunity) => (
+                <OpportunityCard 
+                  key={opportunity.id} 
+                  opportunity={opportunity} 
+                  showMatchScore={true}
+                />
+              ))}
+            </div>
+          )}
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Profile Analysis</CardTitle>
+              <CardDescription>
+                Get personalized recommendations to improve your grant success
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <Button 
-                onClick={generateAiSuggestions} 
-                disabled={isGeneratingSuggestions || !artistProfile.medium}
+                onClick={generateProfileRecommendations}
+                disabled={isGeneratingRecommendations}
                 className="w-full"
               >
-                {isGeneratingSuggestions ? (
+                {isGeneratingRecommendations ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Recommendations...
+                    Analyzing Profile...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Get AI Recommendations
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Analyze My Profile
                   </>
                 )}
               </Button>
-            </CardFooter>
+              
+              {profileRecommendations && (
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Your Profile Strengths</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {profileRecommendations.strengths.map((strength, index) => (
+                        <li key={index}>{strength}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">Areas for Improvement</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {profileRecommendations.improvements.map((improvement, index) => (
+                        <li key={index}>{improvement}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">Recommended Opportunity Types</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {profileRecommendations.opportunityTypes.map((type, index) => (
+                        <li key={index}>{type}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </CardContent>
           </Card>
-          
-          {isGeneratingSuggestions ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
-          ) : aiSuggestions.length > 0 ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Personalized Recommendations</h3>
-                <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-200">
-                  AI-Powered
-                </Badge>
-              </div>
-              
-              <Alert className="bg-purple-50 border-purple-200">
-                <Lightbulb className="h-4 w-4 text-purple-500" />
-                <AlertTitle className="text-purple-800">Why these recommendations?</AlertTitle>
-                <AlertDescription className="text-purple-700">
-                  Based on your profile as a {artistProfile.experience} {artistProfile.medium} artist
-                  {artistProfile.interests.length > 0 && ` with interests in ${artistProfile.interests.join(', ')}`}.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="space-y-4">
-                {aiSuggestions.map((opportunity) => (
-                  <OpportunityCard
-                    key={opportunity.id}
-                    opportunity={opportunity}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
         </TabsContent>
       </Tabs>
     </div>

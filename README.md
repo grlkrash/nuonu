@@ -4,32 +4,30 @@ A comprehensive platform that helps artists discover, apply for, and manage gran
 
 ## Overview
 
-The Artist Grant AI Agent is designed to simplify the process of finding and applying for funding opportunities for artists. It leverages AI to match artists with relevant opportunities based on their profile, portfolio, and career stage.
+The Artist Grant AI Agent is designed to simplify the process of finding and applying for funding opportunities for artists. It leverages AI to match artists with relevant opportunities based on their profile, portfolio, and career stage, and facilitates fund distribution through blockchain technology.
 
 ## Features
 
 - **AI-Powered Opportunity Discovery**: Find grants, jobs, and gigs tailored to your artistic profile
 - **Portfolio Management**: Upload and showcase your artistic work
-- **Simplified Wallet Connection**: Easily connect your blockchain wallet for receiving payments
-- **DAO Proposal System**: Create and vote on community proposals
-- **Fund Distribution Dashboard**: Track and manage grant distributions
+- **Multi-Chain Wallet Integration**: Connect wallets across Base, zkSync, and Flow blockchains
+- **Fund Distribution**: Receive grant funds directly through secure blockchain transactions
 - **Application Automation**: Streamline the application process with AI assistance
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, Shadcn UI
-- **Backend**: Supabase, GraphQL, Genql
-- **Blockchain**: Ethereum, Base, zkSync, Flow
-- **AI Integration**: AgentKit, OpenAI, Anthropic
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
+- **Backend**: Supabase
+- **Blockchain**: Base, zkSync Era, Flow
+- **AI Integration**: OpenAI, AgentKit
 
 ## Smart Contracts
 
 The platform includes several smart contracts for blockchain functionality:
 
-- **FundDistribution.sol**: Manages grant distribution on the blockchain
-- **ArtistNFT.sol**: Allows artists to mint and manage their NFTs
-- **ArtistDAO.sol**: Enables community governance through proposals and voting
-- **ArtistToken.sol**: Governance token for the DAO
+- **FundDistribution.sol**: Manages grant distribution on Base blockchain
+- **ZkSyncArtistManager.sol**: Handles artist management and fund distribution on zkSync Era
+- **FlowArtistManager.cdc**: Manages artist profiles and fund distribution on Flow blockchain
 
 ## Getting Started
 
@@ -38,6 +36,7 @@ The platform includes several smart contracts for blockchain functionality:
 - Node.js 18+
 - npm or yarn
 - Supabase account
+- OpenAI API key
 - Wallet (MetaMask, Coinbase Wallet, etc.)
 
 ### Installation
@@ -61,33 +60,42 @@ The platform includes several smart contracts for blockchain functionality:
    ```
    Then edit `.env.local` with your API keys and configuration.
 
-4. Run the development server:
+4. Set up the database:
+   ```bash
+   npm run setup-db
+   ```
+
+5. Run the development server:
    ```bash
    npm run dev
    # or
    yarn dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Smart Contract Deployment
 
-To deploy the smart contracts to a testnet or mainnet:
+To deploy the smart contracts to testnets:
 
 1. Set up your wallet and funding:
    ```bash
-   cp .env.contracts.example .env.contracts
+   # Ensure your .env.local has the necessary private keys and RPC URLs
    ```
-   Edit `.env.contracts` with your wallet private key and RPC URLs.
 
 2. Compile the contracts:
    ```bash
-   npx hardhat compile
+   npm run compile
    ```
 
-3. Deploy to testnet:
+3. Deploy to Base Goerli testnet:
    ```bash
-   npx hardhat run scripts/deploy.js --network baseGoerli
+   npm run deploy:base
+   ```
+
+4. Deploy to zkSync Era testnet:
+   ```bash
+   npm run deploy:zksync
    ```
 
 ## Project Structure
@@ -95,41 +103,69 @@ To deploy the smart contracts to a testnet or mainnet:
 ```
 ├── src/
 │   ├── app/                  # Next.js app router pages
+│   │   ├── dashboard/        # User dashboard
+│   │   ├── opportunities/    # Opportunity discovery
+│   │   ├── profile/          # User profile management
+│   │   ├── onboarding/       # Artist onboarding wizard
+│   │   └── wallet/           # Wallet management
 │   ├── components/           # React components
 │   │   ├── blockchain/       # Blockchain-related components
-│   │   ├── dao/              # DAO-related components
 │   │   ├── opportunities/    # Opportunity-related components
 │   │   ├── profile/          # User profile components
-│   │   └── ui/               # UI components (Shadcn)
+│   │   └── ui/               # UI components
 │   ├── contracts/            # Smart contracts
+│   │   ├── base/             # Base blockchain contracts
+│   │   ├── FundDistribution.sol  # Main fund distribution contract
+│   │   ├── ZkSyncArtistManager.sol # zkSync Era contract
+│   │   └── FlowArtistManager.cdc # Flow blockchain contract
 │   ├── lib/                  # Utility functions and libraries
-│   └── styles/               # Global styles
-├── public/                   # Static assets
+│   │   ├── blockchain/       # Blockchain utilities
+│   │   ├── services/         # Service functions
+│   │   └── supabase/         # Supabase client and utilities
+│   └── types/                # TypeScript type definitions
 ├── scripts/                  # Deployment and utility scripts
-└── test/                     # Tests for smart contracts and components
+├── supabase/                 # Supabase migrations
+└── test/                     # Tests for smart contracts
 ```
 
 ## Key Components
 
 ### AI Opportunity Finder
 
-The AI Opportunity Finder component helps artists discover relevant opportunities based on their profile, interests, and career stage. It provides personalized recommendations and allows for advanced searching.
+The AI Opportunity Finder component helps artists discover relevant opportunities based on their profile, interests, and career stage. It uses OpenAI to analyze opportunities and match them with artist profiles.
 
-### Portfolio Upload
+### Artist Onboarding Wizard
 
-The Portfolio Upload component allows artists to showcase their work through a drag-and-drop interface. It supports various file types and provides visual feedback during the upload process.
+The Artist Onboarding Wizard guides users through the process of creating a comprehensive profile, including personal information, artistic discipline, portfolio, and wallet connection.
 
-### Wallet Connection
+### Multi-Chain Wallet Integration
 
-The Wallet Connection component simplifies the process of connecting blockchain wallets. It prioritizes user experience while maintaining compatibility with multiple blockchain networks.
+The wallet integration components provide a seamless experience for connecting to multiple blockchains:
+- Base (Coinbase L2)
+- zkSync Era (with session key support)
+- Flow blockchain
 
-### DAO Proposal System
+### Fund Distribution System
 
-The DAO Proposal System enables community governance through a proposal and voting mechanism. Artists can create proposals for funding, community initiatives, and platform changes.
+The Fund Distribution System enables secure and transparent grant allocation and distribution across multiple blockchains, with transaction tracking and verification.
 
-### Fund Distribution Dashboard
+## Bounty Submissions
 
-The Fund Distribution Dashboard provides transparency in grant allocation and distribution. It tracks funds, approvals, and payments on the blockchain.
+This project is targeting several hackathon bounties:
+
+1. **Base: AI-powered app on Base** - Leveraging Base blockchain for fund distribution
+2. **Coinbase Developer Platform: Most Innovative Use of AgentKit** - Using AgentKit for AI-powered opportunity matching
+3. **zkSync Era: Build an AI Agent on zkSync Era** - Implementing artist management on zkSync
+4. **zkSync: Best Web3 Onboarding UX using zkSync Smart Sign-On (SSO) SDK** - Enhancing onboarding with zkSync SSO
+5. **Flow: Best AI Agents** - Integrating with Flow blockchain for artist management
+6. **Chainlink CCIP: Best use of Chainlink CCIP** - Enabling cross-chain fund distribution
+
+To prepare bounty submissions:
+```bash
+npm run prepare-bounty
+# or for a specific bounty
+npm run prepare-bounty base
+```
 
 ## Contributing
 
@@ -144,6 +180,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Next.js](https://nextjs.org/)
 - [Supabase](https://supabase.io/)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [Shadcn UI](https://ui.shadcn.com/)
 - [OpenZeppelin](https://openzeppelin.com/)
-- [AgentKit](https://agentkit.ai/)
+- [Base](https://base.org/)
+- [zkSync Era](https://zksync.io/)
+- [Flow](https://flow.com/)
+- [Chainlink](https://chain.link/)

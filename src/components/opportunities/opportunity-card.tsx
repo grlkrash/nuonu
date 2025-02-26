@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
+import { Sparkles } from 'lucide-react'
 import type { Opportunity } from '@/lib/services/opportunities'
 import { cn } from '@/lib/utils'
 
@@ -14,9 +15,14 @@ interface OpportunityCardProps {
     } | null
   }
   className?: string
+  showMatchScore?: boolean
 }
 
-export function OpportunityCard({ opportunity, className }: OpportunityCardProps) {
+export function OpportunityCard({ 
+  opportunity, 
+  className,
+  showMatchScore = false
+}: OpportunityCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   
   const toggleExpand = () => setIsExpanded(!isExpanded)
@@ -31,6 +37,13 @@ export function OpportunityCard({ opportunity, className }: OpportunityCardProps
   const formattedAmount = opportunity.amount 
     ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(opportunity.amount)
     : 'Amount not specified'
+  
+  // Function to get match score color based on score value
+  const getMatchScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+    if (score >= 60) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+  }
   
   return (
     <div 
@@ -47,7 +60,19 @@ export function OpportunityCard({ opportunity, className }: OpportunityCardProps
             </Link>
           </h3>
           
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            {showMatchScore && opportunity.matchScore !== undefined && (
+              <span 
+                className={cn(
+                  "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                  getMatchScoreColor(opportunity.matchScore)
+                )}
+              >
+                <Sparkles className="mr-1 h-3 w-3" />
+                {opportunity.matchScore}% Match
+              </span>
+            )}
+            
             {opportunity.status === 'open' && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                 Open
@@ -71,14 +96,26 @@ export function OpportunityCard({ opportunity, className }: OpportunityCardProps
         </p>
         
         <div className="flex flex-wrap gap-2 mb-4">
+          <span className={cn(
+            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+            opportunity.opportunity_type === 'grant' 
+              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+              : opportunity.opportunity_type === 'job'
+                ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+          )}>
+            {opportunity.opportunity_type === 'grant' ? 'Grant' : 
+             opportunity.opportunity_type === 'job' ? 'Job' : 'Gig'}
+          </span>
+          
           {opportunity.category && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
               {opportunity.category}
             </span>
           )}
           
           {opportunity.is_remote && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400">
               Remote
             </span>
           )}
@@ -101,9 +138,9 @@ export function OpportunityCard({ opportunity, className }: OpportunityCardProps
           </div>
           
           <div className="flex items-center">
-            {opportunity.budget && (
+            {opportunity.amount > 0 && (
               <span className="font-medium text-gray-900 dark:text-white">
-                ${opportunity.budget.toLocaleString()}
+                {formattedAmount}
               </span>
             )}
             

@@ -1,5 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config({ path: ".env.contracts" });
+require("dotenv").config({ path: ".env.local" });
 
 // Load environment variables
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -109,7 +109,7 @@ module.exports = {
     coinmarketcap: COINMARKETCAP_API_KEY,
   },
   paths: {
-    artifacts: "./artifacts",
+    artifacts: "./src/artifacts",
     cache: "./cache",
     sources: "./src/contracts",
     tests: "./test",
