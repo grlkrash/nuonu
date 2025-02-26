@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, X, Upload, Image as ImageIcon, FileText, Film, Music } from 'lucide-react'
+import { Loader2, X, Upload, Image as ImageIcon, FileText, Film, Music, Plus } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
 
 interface PortfolioUploadProps {
   userId: string
@@ -33,6 +34,21 @@ export function PortfolioUpload({ userId, onUploadComplete }: PortfolioUploadPro
     const selectedFiles = Array.from(e.target.files)
     handleUpload(selectedFiles)
   }
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (e.dataTransfer.files?.length) {
+      const droppedFiles = Array.from(e.dataTransfer.files)
+      handleUpload(droppedFiles)
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
 
   const handleUpload = async (selectedFiles: File[]) => {
     if (!userId || !selectedFiles.length) return
@@ -151,9 +167,6 @@ export function PortfolioUpload({ userId, onUploadComplete }: PortfolioUploadPro
       const fileToRemove = files.find(f => f.id === fileId)
       if (!fileToRemove) return
       
-      // Remove from Supabase Storage if needed
-      // This would require extracting the path from the URL
-      
       // Remove from state
       setFiles(prev => prev.filter(f => f.id !== fileId))
       
@@ -209,24 +222,25 @@ export function PortfolioUpload({ userId, onUploadComplete }: PortfolioUploadPro
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Portfolio</h3>
+        <h3 className="text-xl font-medium">Portfolio</h3>
         <Button 
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           variant="outline"
           size="sm"
+          className="flex items-center gap-2"
         >
           {uploading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Uploading...
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Uploading...</span>
             </>
           ) : (
             <>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Files
+              <Upload className="h-4 w-4" />
+              <span>Upload Files</span>
             </>
           )}
         </Button>
@@ -242,25 +256,26 @@ export function PortfolioUpload({ userId, onUploadComplete }: PortfolioUploadPro
       
       {/* File progress indicators */}
       {Object.keys(uploadProgress).length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {Object.entries(uploadProgress).map(([fileId, progress]) => (
-            <div key={fileId} className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
-                style={{ width: `${progress}%` }}
-              ></div>
+            <div key={fileId} className="space-y-1">
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Uploading...</span>
+                <span>{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
             </div>
           ))}
         </div>
       )}
       
-      {/* File grid */}
+      {/* File grid or upload area */}
       {files.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {files.map(file => (
-            <Card key={file.id} className="relative overflow-hidden group">
+            <Card key={file.id} className="relative overflow-hidden group hover:shadow-md transition-shadow duration-200">
               <div className="p-4">
-                <div className="aspect-square flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-md mb-2">
+                <div className="aspect-square flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-md mb-3">
                   {file.thumbnailUrl ? (
                     <img 
                       src={file.thumbnailUrl} 
@@ -277,23 +292,46 @@ export function PortfolioUpload({ userId, onUploadComplete }: PortfolioUploadPro
               
               <button
                 onClick={() => handleRemoveFile(file.id)}
-                className="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                 aria-label="Remove file"
               >
                 <X className="h-4 w-4 text-gray-500 hover:text-red-500" />
               </button>
             </Card>
           ))}
+          
+          {/* Add more button */}
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="cursor-pointer border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 h-full min-h-[200px] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Plus className="h-8 w-8 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-500">Add more files</p>
+          </div>
         </div>
       ) : (
-        <div className="text-center py-8 border-2 border-dashed rounded-md">
-          <Upload className="mx-auto h-12 w-12 text-gray-400" />
-          <p className="mt-2 text-sm text-gray-500">
-            Upload your portfolio items
-          </p>
-          <p className="text-xs text-gray-400">
-            Supports images, videos, audio, and documents
-          </p>
+        <div 
+          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          onClick={() => fileInputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+        >
+          <div className="flex flex-col items-center justify-center py-4">
+            <Upload className="h-12 w-12 text-gray-400 mb-4" />
+            <h4 className="text-lg font-medium mb-2">Upload your work</h4>
+            <p className="text-sm text-gray-500 mb-4 max-w-md">
+              Drag and drop your files here or click to browse. Showcase your best work to increase your chances of receiving grants.
+            </p>
+            <p className="text-xs text-gray-400">
+              Supports images, videos, audio, and documents (up to 50MB)
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {files.length > 0 && (
+        <div className="text-sm text-gray-500 mt-4">
+          <p>These files will be visible to grant providers reviewing your applications.</p>
         </div>
       )}
     </div>

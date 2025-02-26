@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,7 @@ export default function OnboardingPage() {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({
     full_name: '',
@@ -58,6 +59,21 @@ export default function OnboardingPage() {
     resume_url: '',
     portfolio_files: [] as any[]
   })
+
+  // Fetch user ID on component mount
+  useEffect(() => {
+    async function fetchUserId() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      } else {
+        // Redirect to login if not authenticated
+        router.push('/signin')
+      }
+    }
+    
+    fetchUserId()
+  }, [router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -333,16 +349,18 @@ export default function OnboardingPage() {
                 Upload samples of your work to showcase your skills and experience. This will help you stand out when applying for opportunities.
               </p>
               
-              <div className="mt-4">
-                {async () => {
-                  const { data: { user } } = await supabase.auth.getUser()
-                  return user ? (
-                    <PortfolioUpload 
-                      userId={user.id} 
-                      onUploadComplete={handlePortfolioUpload} 
-                    />
-                  ) : null
-                }}
+              <div className="mt-6">
+                {userId ? (
+                  <PortfolioUpload 
+                    userId={userId} 
+                    onUploadComplete={handlePortfolioUpload} 
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-500">Loading...</p>
+                  </div>
+                )}
               </div>
             </div>
             
