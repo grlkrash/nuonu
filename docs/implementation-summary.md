@@ -17,9 +17,33 @@ This document summarizes the changes made to the Artist Grant AI Agent codebase 
   - Update RLS policies to include tags
   - Create a function to search opportunities by tag
 
+- Created a SQL migration script (`supabase/migrations/20230701000002_add_exec_sql_function.sql`) to:
+  - Add an `exec_sql` function for running SQL commands from the migration script
+  - Restrict access to the function to only authenticated users
+  - Add security comments explaining the implications
+
 - Updated the database schema types in `src/lib/supabase/database.types.ts` to include the `tags` field in the `opportunities` table.
 
-### 3. Opportunity Service
+### 3. Migration Scripts
+
+- Created a database migration script (`scripts/migrate-db.js`) to:
+  - Run the SQL migrations to add the `exec_sql` function and `tags` column
+  - Update existing opportunities with relevant tags based on their content
+  - Handle errors and provide detailed logging
+
+- Created a test script (`scripts/test-migration.js`) to:
+  - Check if the required environment variables are set
+  - Test the connection to Supabase
+  - Check if the opportunities table has a tags column
+
+- Added an npm script to package.json for running the migration:
+  ```json
+  "scripts": {
+    "migrate": "node scripts/migrate-db.js"
+  }
+  ```
+
+### 4. Opportunity Service
 
 - Updated the `getOpportunities` function in `src/lib/services/opportunities.ts` to accept a `tags` parameter for filtering opportunities by tags.
 - Added new functions:
@@ -27,12 +51,14 @@ This document summarizes the changes made to the Artist Grant AI Agent codebase 
   - `getOpportunitiesByTag`: Retrieves opportunities with a specific tag
   - `getBlockchainOpportunities`: Retrieves opportunities with blockchain-related tags
 
-### 4. Documentation
+### 5. Documentation
 
 - Created comprehensive documentation for the blockchain integration components in `docs/blockchain-integration.md`.
 - Created documentation for the AI agent functionality in `docs/ai-agent.md`.
 - Created a refactoring plan in `docs/refactoring-plan.md` to outline future improvements.
-- Updated the README file with project description, features, and installation instructions.
+- Created a migration guide in `docs/migration-guide.md` with step-by-step instructions.
+- Created a README for the scripts directory in `scripts/README.md`.
+- Updated the project README file with project description, features, and installation instructions.
 - Updated the `.env.example` file to include all necessary environment variables.
 
 ## Pending Changes
