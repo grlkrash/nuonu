@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Wallet, Check, AlertCircle, Shield, ChevronDown, ChevronUp, Settings } from 'lucide-react'
+import { Loader2, Wallet, Check, AlertCircle, Shield, ChevronDown, ChevronUp, Settings, Key } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 export function SimpleWalletConnect() {
@@ -28,6 +28,8 @@ export function SimpleWalletConnect() {
   const [sessionKeyCreated, setSessionKeyCreated] = useState(false)
   const [isCreatingSessionKey, setIsCreatingSessionKey] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [ssoStatus, setSsoStatus] = useState<'idle' | 'creating' | 'success' | 'error'>('idle')
+  const [ssoError, setSsoError] = useState<string | null>(null)
 
   // Auto-create session key when zkSync wallet is connected
   useEffect(() => {
@@ -35,10 +37,14 @@ export function SimpleWalletConnect() {
       if (zkSyncWallet && !zkSyncWallet.sessionKey && !sessionKeyCreated && !isCreatingSessionKey) {
         try {
           setIsCreatingSessionKey(true)
+          setSsoStatus('creating')
           await createZkSyncSessionKey()
           setSessionKeyCreated(true)
+          setSsoStatus('success')
         } catch (err) {
           console.error('Error creating session key:', err)
+          setSsoStatus('error')
+          setSsoError(err instanceof Error ? err.message : 'Failed to create session key')
         } finally {
           setIsCreatingSessionKey(false)
         }
@@ -50,8 +56,9 @@ export function SimpleWalletConnect() {
 
   const handleConnectWallet = async () => {
     try {
+      setSsoError(null)
       if (!showAdvanced) {
-        // Default to zkSync for best user experience
+        // Default to zkSync for best user experience with SSO
         await connectZkSyncWallet()
       } else {
         // In advanced mode, use the selected tab
@@ -65,6 +72,7 @@ export function SimpleWalletConnect() {
       }
     } catch (err) {
       console.error('Error connecting wallet:', err)
+      setSsoError(err instanceof Error ? err.message : 'Failed to connect wallet')
     }
   }
 
@@ -79,14 +87,14 @@ export function SimpleWalletConnect() {
   return (
     <div className="w-full">
       {!showAdvanced ? (
-        // Simple mode - user-friendly interface
+        // Simple mode - user-friendly interface with zkSync SSO
         <Card>
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle className="text-base">Connect Your Wallet</CardTitle>
                 <CardDescription>
-                  Securely connect your wallet to receive grant payments
+                  Securely connect with zkSync Smart Sign-On
                 </CardDescription>
               </div>
               <Button 
@@ -122,25 +130,64 @@ export function SimpleWalletConnect() {
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md flex items-start gap-2">
                     <Shield className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Enhanced Security Enabled</p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">zkSync Smart Sign-On Enabled</p>
                       <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-                        Your wallet is protected with Smart Sign On technology for seamless and secure transactions.
+                        Your wallet is protected with zkSync SSO technology for seamless and secure transactions.
                       </p>
+                      <div className="mt-2 flex items-center">
+                        <Key className="h-3 w-3 text-blue-500 mr-1" />
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          Session key: {zkSyncWallet.sessionKey.substring(0, 8)}...
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
                 
-                {zkSyncWallet && !zkSyncWallet.sessionKey && isCreatingSessionKey && (
+                {zkSyncWallet && !zkSyncWallet.sessionKey && ssoStatus === 'creating' && (
                   <div className="flex items-center justify-center py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-500">Setting up enhanced security...</span>
+                    <span className="text-sm text-gray-500">Setting up zkSync Smart Sign-On...</span>
+                  </div>
+                )}
+                
+                {ssoStatus === 'error' && ssoError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-md flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">SSO Setup Failed</p>
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{ssoError}</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2 text-xs h-7 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+                        onClick={async () => {
+                          try {
+                            setIsCreatingSessionKey(true);
+                            setSsoStatus('creating');
+                            setSsoError(null);
+                            await createZkSyncSessionKey();
+                            setSessionKeyCreated(true);
+                            setSsoStatus('success');
+                          } catch (err) {
+                            console.error('Error creating session key:', err);
+                            setSsoStatus('error');
+                            setSsoError(err instanceof Error ? err.message : 'Failed to create session key');
+                          } finally {
+                            setIsCreatingSessionKey(false);
+                          }
+                        }}
+                      >
+                        Retry
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Connect your wallet to receive grant payments directly. No blockchain experience required - we'll handle the technical details for you.
+                  Connect with zkSync Smart Sign-On for a seamless and secure experience. No seed phrases required!
                 </p>
                 
                 <Button 
@@ -156,14 +203,20 @@ export function SimpleWalletConnect() {
                   ) : (
                     <>
                       <Wallet className="mr-2 h-4 w-4" />
-                      Connect Wallet
+                      Connect with zkSync SSO
                     </>
                   )}
                 </Button>
                 
-                <p className="text-xs text-gray-500 text-center">
-                  Don't have a wallet? We'll help you create one when you receive your first grant.
-                </p>
+                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-md">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Benefits of zkSync Smart Sign-On:</p>
+                  <ul className="mt-1 text-xs text-gray-500 dark:text-gray-400 space-y-1 list-disc pl-4">
+                    <li>No seed phrases to remember</li>
+                    <li>Enhanced security with session keys</li>
+                    <li>Seamless transaction experience</li>
+                    <li>Control what apps can do with your wallet</li>
+                  </ul>
+                </div>
               </div>
             )}
           </CardContent>
