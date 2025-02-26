@@ -4,6 +4,7 @@ import { formatDistanceToNow, format } from 'date-fns'
 import { getOpportunityById } from '@/lib/services/opportunities'
 import { getCurrentUser } from '@/lib/auth'
 import { AIApplicationForm } from '@/components/applications/ai-application-form'
+import { BlockchainApplicationForm } from '@/components/blockchain/blockchain-application-form'
 import { generateProfileInsights } from '@/lib/services/openai'
 import { getProfileById } from '@/lib/services/profiles'
 
@@ -47,6 +48,12 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
     : null
   
   const isOpen = opportunity.status === 'open'
+  
+  // Check if this is a blockchain-related opportunity
+  const tags = opportunity.tags || []
+  const isBlockchainOpportunity = tags.some(tag => 
+    ['blockchain', 'crypto', 'web3', 'nft', 'dao'].includes(tag.toLowerCase())
+  )
   
   // Get AI insights for the user if they're logged in
   let profileInsights = null
@@ -92,6 +99,12 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
                 }`}>
                   {opportunity.status.charAt(0).toUpperCase() + opportunity.status.slice(1)}
                 </span>
+                
+                {isBlockchainOpportunity && (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+                    Blockchain
+                  </span>
+                )}
               </div>
               
               <p className="text-gray-600 dark:text-gray-300">
@@ -143,7 +156,31 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
               {user && isOpen && (
                 <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700" id="apply">
                   <h2 className="text-xl font-semibold mb-6">Apply for this Opportunity</h2>
-                  <AIApplicationForm opportunityId={opportunity.id} userId={user.id} />
+                  
+                  {isBlockchainOpportunity ? (
+                    <div className="space-y-8">
+                      <BlockchainApplicationForm 
+                        opportunityId={opportunity.id} 
+                        userId={user.id}
+                        opportunityTitle={opportunity.title}
+                      />
+                      
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                            Or apply with AI assistance
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <AIApplicationForm opportunityId={opportunity.id} userId={user.id} />
+                    </div>
+                  ) : (
+                    <AIApplicationForm opportunityId={opportunity.id} userId={user.id} />
+                  )}
                 </div>
               )}
             </div>
@@ -190,6 +227,22 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
                       )}
                     </p>
                   </div>
+                  
+                  {tags && tags.length > 0 && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Tags</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {tags.map((tag, index) => (
+                          <span 
+                            key={index}
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {opportunity.profiles && (

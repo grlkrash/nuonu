@@ -1,12 +1,11 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { getProfileById } from '@/lib/services/profiles'
-import { WalletConnect } from '@/components/blockchain/wallet-connect'
-import { WalletManager } from '@/components/blockchain/wallet-manager'
+import { MultiChainWallet } from '@/components/blockchain/multi-chain-wallet'
 
 export const metadata = {
-  title: 'Wallet | Nuonu',
-  description: 'Connect your crypto wallet to receive payments for opportunities',
+  title: 'Multi-Chain Wallet | Nuonu',
+  description: 'Connect your crypto wallets to receive payments for opportunities across multiple blockchains',
 }
 
 export default async function WalletPage() {
@@ -22,38 +21,22 @@ export default async function WalletPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold">Your Wallet</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Multi-Chain Wallet</h1>
           <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Connect your crypto wallet to receive payments for opportunities
+            Connect your crypto wallets to receive payments for opportunities across multiple blockchains
           </p>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <div className="p-6">
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Connect Wallet</h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Connect your Ethereum wallet to receive payments for opportunities. We support MetaMask and other Ethereum-compatible wallets.
-              </p>
-              
-              <WalletConnect />
-            </div>
-            
-            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold mb-4">Wallet Management</h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Manage your connected wallet and view your transaction history.
-              </p>
-              
-              <WalletManager userId={user.id} />
-            </div>
+            <MultiChainWallet userId={user.id} />
             
             <div className="pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold mb-4">About Blockchain Integration</h2>
               <div className="prose dark:prose-invert max-w-none">
                 <p>
                   Our platform uses blockchain technology to facilitate secure and transparent payments for artists. 
-                  We currently support the following networks:
+                  We support multiple blockchain networks to provide you with flexibility and options:
                 </p>
                 
                 <ul>
@@ -69,13 +52,14 @@ export default async function WalletPage() {
                 </ul>
                 
                 <p>
-                  By connecting your wallet, you'll be able to:
+                  By connecting your wallets, you'll be able to:
                 </p>
                 
                 <ul>
-                  <li>Receive payments directly to your wallet</li>
+                  <li>Receive payments directly to your wallet on your preferred blockchain</li>
                   <li>Track all transactions on the blockchain</li>
                   <li>Maintain full control of your funds</li>
+                  <li>Choose the most cost-effective network for your needs</li>
                 </ul>
                 
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md">
