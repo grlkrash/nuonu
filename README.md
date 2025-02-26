@@ -1,33 +1,44 @@
 # Artist Grant AI Agent
 
-An AI-powered platform that helps artists discover and apply for opportunities, including web3 opportunities, DAO proposals, grants, and bounties.
+A comprehensive platform that helps artists discover, apply for, and manage grants, jobs, and gigs using AI assistance.
+
+## Overview
+
+The Artist Grant AI Agent is designed to simplify the process of finding and applying for funding opportunities for artists. It leverages AI to match artists with relevant opportunities based on their profile, portfolio, and career stage.
 
 ## Features
 
-- **AI-Powered Application Generation**: Generate compelling application content tailored to specific opportunities
-- **Multi-Chain Blockchain Integration**: Support for Base (Coinbase L2), zkSync Era, and Flow blockchains
-- **Cross-Chain Functionality**: Register artists and distribute funds across multiple blockchains using Chainlink CCIP
-- **Opportunity Discovery**: Find relevant opportunities based on artist profiles and preferences
-- **Blockchain Wallet Management**: Connect and register blockchain wallets for receiving funds
-- **Fund Distribution**: Receive and distribute funds to artists through smart contracts
+- **AI-Powered Opportunity Discovery**: Find grants, jobs, and gigs tailored to your artistic profile
+- **Portfolio Management**: Upload and showcase your artistic work
+- **Simplified Wallet Connection**: Easily connect your blockchain wallet for receiving payments
+- **DAO Proposal System**: Create and vote on community proposals
+- **Fund Distribution Dashboard**: Track and manage grant distributions
+- **Application Automation**: Streamline the application process with AI assistance
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Supabase
-- **AI**: OpenAI API
-- **Blockchain**: Ethers.js, zkSync Web3, Flow Client Library (FCL), Chainlink CCIP
-- **Smart Contracts**: Solidity (Base, zkSync), Cadence (Flow)
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Supabase, GraphQL, Genql
+- **Blockchain**: Ethereum, Base, zkSync, Flow
+- **AI Integration**: AgentKit, OpenAI, Anthropic
+
+## Smart Contracts
+
+The platform includes several smart contracts for blockchain functionality:
+
+- **FundDistribution.sol**: Manages grant distribution on the blockchain
+- **ArtistNFT.sol**: Allows artists to mint and manage their NFTs
+- **ArtistDAO.sol**: Enables community governance through proposals and voting
+- **ArtistToken.sol**: Governance token for the DAO
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Yarn or npm
+- npm or yarn
 - Supabase account
-- OpenAI API key
-- Blockchain wallet (MetaMask for Base/zkSync, Flow wallet for Flow)
+- Wallet (MetaMask, Coinbase Wallet, etc.)
 
 ### Installation
 
@@ -39,121 +50,90 @@ An AI-powered platform that helps artists discover and apply for opportunities, 
 
 2. Install dependencies:
    ```bash
+   npm install
+   # or
    yarn install
    ```
 
 3. Set up environment variables:
-   ```bash
+   ```
    cp .env.example .env.local
    ```
-   Edit `.env.local` with your API keys and configuration.
+   Then edit `.env.local` with your API keys and configuration.
 
-4. Run the database migration:
+4. Run the development server:
    ```bash
-   yarn migrate
-   ```
-   See the [Migration Guide](docs/migration-guide.md) for more details.
-
-5. Run the development server:
-   ```bash
+   npm run dev
+   # or
    yarn dev
    ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Environment Variables
+### Smart Contract Deployment
 
-Create a `.env.local` file with the following variables:
+To deploy the smart contracts to a testnet or mainnet:
 
-```
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_KEY=your-service-key
+1. Set up your wallet and funding:
+   ```bash
+   cp .env.contracts.example .env.contracts
+   ```
+   Edit `.env.contracts` with your wallet private key and RPC URLs.
 
-# OpenAI
-OPENAI_API_KEY=your-openai-api-key
+2. Compile the contracts:
+   ```bash
+   npx hardhat compile
+   ```
 
-# Base Blockchain
-NEXT_PUBLIC_BASE_RPC_URL=your-base-rpc-url
-NEXT_PUBLIC_ARTIST_FUND_MANAGER_ADDRESS=your-base-contract-address
-
-# zkSync Era
-NEXT_PUBLIC_ZKSYNC_RPC_URL=your-zksync-rpc-url
-NEXT_PUBLIC_ZKSYNC_ARTIST_MANAGER_ADDRESS=your-zksync-contract-address
-
-# Flow Blockchain
-NEXT_PUBLIC_FLOW_ACCESS_NODE=your-flow-access-node
-NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=your-flow-contract-address
-
-# Private Key (server-side only)
-PRIVATE_KEY=your-private-key
-```
+3. Deploy to testnet:
+   ```bash
+   npx hardhat run scripts/deploy.js --network baseGoerli
+   ```
 
 ## Project Structure
 
 ```
-├── docs/                  # Documentation
-├── public/                # Static assets
-├── scripts/               # Utility scripts
 ├── src/
-│   ├── app/               # Next.js App Router
-│   ├── components/        # React components
-│   │   ├── applications/  # Application-related components
-│   │   ├── auth/          # Authentication components
-│   │   ├── blockchain/    # Blockchain-related components
-│   │   ├── layout/        # Layout components
-│   │   ├── opportunities/ # Opportunity-related components
-│   │   ├── profile/       # Profile-related components
-│   │   └── ui/            # UI components
-│   ├── lib/               # Utility functions and services
-│   │   ├── services/      # Service functions
-│   │   └── supabase/      # Supabase client and types
-│   └── types/             # TypeScript type definitions
-├── supabase/              # Supabase migrations and seed data
-├── .env.example           # Example environment variables
-├── .gitignore             # Git ignore file
-├── next.config.js         # Next.js configuration
-├── package.json           # Package configuration
-├── README.md              # Project documentation
-├── tailwind.config.js     # Tailwind CSS configuration
-└── tsconfig.json          # TypeScript configuration
+│   ├── app/                  # Next.js app router pages
+│   ├── components/           # React components
+│   │   ├── blockchain/       # Blockchain-related components
+│   │   ├── dao/              # DAO-related components
+│   │   ├── opportunities/    # Opportunity-related components
+│   │   ├── profile/          # User profile components
+│   │   └── ui/               # UI components (Shadcn)
+│   ├── contracts/            # Smart contracts
+│   ├── lib/                  # Utility functions and libraries
+│   └── styles/               # Global styles
+├── public/                   # Static assets
+├── scripts/                  # Deployment and utility scripts
+└── test/                     # Tests for smart contracts and components
 ```
 
-## Documentation
+## Key Components
 
-For more detailed documentation, see:
+### AI Opportunity Finder
 
-- [Project Status](docs/project-status.md) - Current status and next steps
-- [AI Agent Documentation](docs/ai-agent.md) - Overview of AI agent functionality
-- [Blockchain Integration Documentation](docs/blockchain-integration.md) - Details of blockchain integration
-- [Migration Guide](docs/migration-guide.md) - Guide for running database migrations
-- [Refactoring Plan](docs/refactoring-plan.md) - Plan for future code improvements
-- [Implementation Summary](docs/implementation-summary.md) - Summary of implemented changes
+The AI Opportunity Finder component helps artists discover relevant opportunities based on their profile, interests, and career stage. It provides personalized recommendations and allows for advanced searching.
 
-## Scripts
+### Portfolio Upload
 
-The project includes several utility scripts:
+The Portfolio Upload component allows artists to showcase their work through a drag-and-drop interface. It supports various file types and provides visual feedback during the upload process.
 
-- `yarn migrate` - Run the database migration to add tags to opportunities
-- `node scripts/test-migration.js` - Test if the migration is needed
+### Wallet Connection
 
-See the [Scripts README](scripts/README.md) for more details.
+The Wallet Connection component simplifies the process of connecting blockchain wallets. It prioritizes user experience while maintaining compatibility with multiple blockchain networks.
 
-## Future Enhancements
+### DAO Proposal System
 
-1. **Bountycaster Integration**: Integration with Bountycaster for bounty applications
-2. **DAO Proposal Automation**: Automated DAO proposal applications
-3. **Enhanced AI Autonomy**: Improved AI agent autonomy for applying to opportunities
-4. **Fund Distribution Dashboard**: Dashboard for monitoring fund distribution
+The DAO Proposal System enables community governance through a proposal and voting mechanism. Artists can create proposals for funding, community initiatives, and platform changes.
+
+### Fund Distribution Dashboard
+
+The Fund Distribution Dashboard provides transparency in grant allocation and distribution. It tracks funds, approvals, and payments on the blockchain.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
@@ -161,10 +141,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgements
 
-- [OpenAI](https://openai.com/) for the AI capabilities
-- [Supabase](https://supabase.io/) for the backend infrastructure
-- [Next.js](https://nextjs.org/) for the frontend framework
-- [Base](https://base.org/) for the L2 blockchain infrastructure
-- [zkSync](https://zksync.io/) for the zkSync Era blockchain
-- [Flow](https://flow.com/) for the Flow blockchain
-- [Chainlink](https://chain.link/) for the CCIP cross-chain functionality
+- [Next.js](https://nextjs.org/)
+- [Supabase](https://supabase.io/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Shadcn UI](https://ui.shadcn.com/)
+- [OpenZeppelin](https://openzeppelin.com/)
+- [AgentKit](https://agentkit.ai/)

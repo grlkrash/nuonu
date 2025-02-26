@@ -7,10 +7,16 @@ import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase/client'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { User } from '@supabase/supabase-js'
+import { Sparkles } from 'lucide-react'
 
 const navigation = [
   { name: 'Home', href: '/' },
   { name: 'Opportunities', href: '/opportunities' },
+  { 
+    name: 'AI Finder', 
+    href: '/opportunities?tab=ai', 
+    icon: <Sparkles className="h-4 w-4 mr-1" /> 
+  },
 ]
 
 const authenticatedNavigation = [
@@ -73,11 +79,12 @@ export function Header() {
                 href={item.href}
                 className={cn(
                   'inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors',
-                  pathname === item.href
+                  pathname === item.href || (item.href.startsWith('/opportunities') && pathname.startsWith('/opportunities'))
                     ? 'border-blue-500 text-gray-900 dark:text-white'
                     : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                 )}
               >
+                {item.icon && item.icon}
                 {item.name}
               </Link>
             ))}
@@ -169,12 +176,13 @@ export function Header() {
               key={item.name}
               href={item.href}
               className={cn(
-                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium',
-                pathname === item.href
+                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium flex items-center',
+                pathname === item.href || (item.href.startsWith('/opportunities') && pathname.startsWith('/opportunities'))
                   ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-400'
                   : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
               )}
             >
+              {item.icon && item.icon}
               {item.name}
             </Link>
           ))}
