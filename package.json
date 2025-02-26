@@ -13,9 +13,12 @@
     "setup-db": "node scripts/setup-db.js",
     "deploy:base": "hardhat run scripts/deploy-base.js --network baseSepolia",
     "deploy:zksync": "hardhat run scripts/deploy-zksync.js --network zkSyncTestnet",
+    "deploy:flow": "node scripts/deploy-flow.js",
     "verify:base": "hardhat verify --network baseSepolia",
     "verify:zksync": "hardhat verify --network zkSyncTestnet",
-    "prepare-bounty": "node scripts/prepare-bounty.js"
+    "prepare-bounty": "node scripts/prepare-bounty.js",
+    "test:zksync-sso": "node scripts/test-zksync-sso.js",
+    "cleanup": "node scripts/cleanup-repo.js"
   },
   "dependencies": {
     "@coinbase/coinbase-sdk": "^0.20.0",
@@ -32,6 +35,7 @@
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
+    "viem": "^2.23.5",
     "zksync-sso": "^0.0.0-beta.10",
     "zksync-web3": "^0.17.1",
     "zod": "^3.24.2"

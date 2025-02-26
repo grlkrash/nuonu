@@ -36,17 +36,17 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 **Overall Status**: 70% Complete
 
-### zkSync: Best Web3 Onboarding UX using zkSync SSO SDK ($9,000)
+### zkSync: Best Web3 Onboarding UX using zkSync Smart Sign-On (SSO) SDK ($9,000)
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Integration of zkSync SSO SDK | Completed | Implemented in authentication flow |
-| Implement as primary authentication method | Completed | Used for wallet onboarding |
-| Deploy on zkSync Era Testnet | In Progress | Ready for deployment |
-| Provide working demo with SSO login | In Progress | UI integration completed |
-| Submit public GitHub repository | Not Started | Need to prepare repository |
+| Integration of zkSync SSO SDK | Completed | Fully implemented with zksync-sso package |
+| Implement as primary authentication method | Completed | Used for wallet onboarding with session key creation |
+| Deploy on zkSync Era Testnet | Completed | Contract deployed and verified |
+| Provide working demo with SSO login | Completed | UI integration with session key management |
+| Submit public GitHub repository | In Progress | Repository cleanup in progress |
 
-**Overall Status**: 80% Complete
+**Overall Status**: 95% Complete
 
 ## Tier 2 Bounties
 

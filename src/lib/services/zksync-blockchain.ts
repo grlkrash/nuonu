@@ -1,5 +1,7 @@
 import { ethers } from 'ethers'
 import { Provider, Wallet } from 'zksync-web3'
+import { zksyncSsoConnector } from 'zksync-sso/connector'
+import { zksyncSepoliaTestnet } from 'viem/chains'
 
 // ABI for the ZkSyncArtistManager contract
 const ABI = [
@@ -134,22 +136,38 @@ export async function distributeFunds(artistId: string) {
 }
 
 /**
- * Creates a session key for an artist
+ * Creates a session key for an artist using zkSync SSO
  * This is a zkSync Era specific feature
  */
 export async function createSessionKey(artistId: string) {
   try {
-    // Generate a new random private key for the session
-    const sessionWallet = ethers.Wallet.createRandom()
-    const sessionKey = sessionWallet.address
+    // Create a zkSync SSO connector with session configuration
+    const ssoConnector = zksyncSsoConnector({
+      session: {
+        expiry: '1 day',
+        feeLimit: ethers.parseEther('0.1'),
+        transfers: [
+          {
+            to: '0x0000000000000000000000000000000000000000', // Will be replaced with actual recipient
+            valueLimit: ethers.parseEther('0.1'),
+          },
+        ],
+      },
+    })
+    
+    // Get the wallet to create the session
+    const wallet = await getZkSyncWallet()
+    
+    // Create a session using the zkSync SSO SDK
+    const session = await ssoConnector.createSession(wallet)
     
     // Add the session key to the contract
-    await addSessionKey(artistId, sessionKey)
+    await addSessionKey(artistId, session.id)
     
     return {
       success: true,
-      sessionKey,
-      privateKey: sessionWallet.privateKey
+      sessionKey: session.id,
+      expiry: session.expiry
     }
   } catch (error) {
     console.error('Error creating session key on zkSync:', error)

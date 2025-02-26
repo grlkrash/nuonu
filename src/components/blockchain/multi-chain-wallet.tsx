@@ -8,6 +8,9 @@ import { registerArtist as registerArtistOnBase } from '@/lib/services/blockchai
 import { registerArtist as registerArtistOnZkSync, createSessionKey } from '@/lib/services/zksync-blockchain'
 import { registerArtist as registerArtistOnFlow } from '@/lib/services/flow-blockchain'
 import { registerArtistCrossChain } from '@/lib/services/chainlink-ccip'
+import { Button } from '@/components/ui/button'
+import { TabsContent } from '@/components/ui/tabs'
+import { Check, Shield, Key, Loader2, Wallet } from 'lucide-react'
 
 interface MultiChainWalletProps {
   userId: string
@@ -246,10 +249,10 @@ export function MultiChainWallet({ userId, className = '' }: MultiChainWalletPro
         }
       }))
       
-      setSuccess(`Session key created successfully: ${result.sessionKey.substring(0, 8)}...`)
+      setSuccess(`zkSync Smart Sign-On enabled! Session key created: ${result.sessionKey.substring(0, 8)}...`)
     } catch (err) {
       console.error('Error creating session key:', err)
-      setError('Failed to create session key. Please try again.')
+      setError(`Failed to create zkSync SSO session key: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setIsRegistering(false)
     }
