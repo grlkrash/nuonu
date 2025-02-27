@@ -1,6 +1,6 @@
 {
-  "/not-found": "app/not-found.js",
-  "/api/agent/route": "app/api/agent/route.js",
-  "/opportunities/page": "app/opportunities/page.js",
-  "/onboarding/page": "app/onboarding/page.js"
+  "/auth/callback/route": "app/auth/callback/route.js",
+  "/page": "app/page.js",
+  "/signin/page": "app/signin/page.js",
+  "/signup/page": "app/signup/page.js"
 }

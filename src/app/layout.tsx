@@ -1,14 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Navbar } from '@/components/ui/navbar'
-import { Footer } from '@/components/ui/footer'
+import { Toaster } from '@/components/ui/toaster'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Nuonu',
-  description: 'AI-powered platform for artists to discover and apply for grants, jobs, and creative opportunities',
+  description: 'Nuonu - AI-powered content creation platform',
 }
 
 export default function RootLayout({
@@ -18,12 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen flex flex-col bg-black text-white`}>
-        <Navbar />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
+      <body className={inter.className}>
+        <div id="nprogress-container" />
+        <main>{children}</main>
+        <Toaster />
       </body>
     </html>
   )

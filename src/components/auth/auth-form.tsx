@@ -65,19 +65,19 @@ export function AuthForm({ mode }: AuthFormProps) {
     <div className="w-full max-w-md mx-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-3 rounded-md text-sm">
+          <div className="bg-red-900/20 text-red-400 p-3 rounded-md text-sm">
             {error}
           </div>
         )}
         
         {message && (
-          <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 p-3 rounded-md text-sm">
+          <div className="bg-green-900/20 text-green-400 p-3 rounded-md text-sm">
             {message}
           </div>
         )}
         
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-white mb-1">
             Email
           </label>
           <input
@@ -86,13 +86,13 @@ export function AuthForm({ mode }: AuthFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white bg-gray-800 text-white"
             placeholder="you@example.com"
           />
         </div>
         
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-white mb-1">
             Password
           </label>
           <input
@@ -101,7 +101,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-white focus:border-white bg-gray-800 text-white"
             placeholder="••••••••"
           />
         </div>
@@ -109,7 +109,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full"
+          className="w-full bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl"
         >
           {loading ? 'Loading...' : buttonText}
         </Button>
@@ -117,7 +117,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <div className="text-center text-sm">
           <a 
             href={toggleLink} 
-            className="text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-white hover:underline"
           >
             {toggleText}
           </a>

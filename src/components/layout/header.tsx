@@ -2,36 +2,44 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Menu } from 'lucide-react'
+import { SignInButton } from '@/components/auth/sign-in-button'
+import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { SignOutButton } from '@/components/auth/sign-out-button'
 import { User } from '@supabase/supabase-js'
-import { Sparkles } from 'lucide-react'
+import { SignOutButton } from '@/components/auth/sign-out-button'
 
-const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'Opportunities', href: '/opportunities' },
-  { 
-    name: 'AI Finder', 
-    href: '/opportunities?tab=ai', 
-    icon: <Sparkles className="h-4 w-4 mr-1" /> 
-  },
-]
+interface HeaderProps {
+  scrolled?: boolean;
+}
 
-const authenticatedNavigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Discover', href: '/discover' },
-  { name: 'My Applications', href: '/dashboard/applications' },
-  { name: 'Profile', href: '/profile' },
-  { name: 'Wallet', href: '/wallet' },
-]
-
-export function Header() {
+export function Header({ scrolled = true }: HeaderProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [internalScrolled, setInternalScrolled] = useState(scrolled)
+  const router = useRouter()
   const pathname = usePathname()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  
+  useEffect(() => {
+    // If scrolled is provided as a prop, use it
+    // Otherwise, detect scroll position internally
+    if (scrolled !== undefined) {
+      setInternalScrolled(scrolled)
+    } else {
+      const handleScroll = () => {
+        const scrollPosition = window.scrollY
+        setInternalScrolled(scrollPosition > 50)
+      }
+      
+      window.addEventListener('scroll', handleScroll)
+      handleScroll() // Check initial position
+      
+      return () => window.removeEventListener('scroll', handleScroll)
+    }
+  }, [scrolled])
   
   useEffect(() => {
     const getUser = async () => {
@@ -52,165 +60,72 @@ export function Header() {
       subscription.unsubscribe()
     }
   }, [])
-  
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
-  
-  // Combine navigation items based on authentication state
-  const navItems = [
-    ...navigation,
-    ...(user ? authenticatedNavigation : []),
-  ]
-  
+
+  const handleLinkClick = (href: string) => {
+    setIsMenuOpen(false)
+    router.push(href)
+  }
+
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Nuonu</span>
-            </Link>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${internalScrolled ? "bg-black" : "bg-transparent"}`}>
+      <div className="container mx-auto px-4 py-2 flex justify-between items-center relative">
+        <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
+          <Menu />
+        </Button>
+        <Link href="/" className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <div className={internalScrolled ? "animate-pulse" : ""}>
+            <Image
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/nuonu%20logomark-sYgJYMazAtVYSiirs625uXJ2QFnzqE.png"
+              alt="nuonu logo"
+              width={100}
+              height={40}
+              priority
+            />
           </div>
-          
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors',
-                  pathname === item.href || (item.href.startsWith('/opportunities') && pathname.startsWith('/opportunities'))
-                    ? 'border-blue-500 text-gray-900 dark:text-white'
-                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
-                )}
-              >
-                {item.icon && item.icon}
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-          
-          {/* Auth buttons */}
-          <div className="hidden md:flex items-center space-x-4">
-            {isLoading ? (
-              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            ) : user ? (
-              <SignOutButton variant="outline" />
-            ) : (
+        </Link>
+        {isLoading ? (
+          <div className="h-10 w-20 bg-gray-800 rounded animate-pulse"></div>
+        ) : user ? (
+          <SignOutButton variant="outline" />
+        ) : (
+          <SignInButton />
+        )}
+      </div>
+      {isMenuOpen && (
+        <nav className="container mx-auto px-4 py-2 bg-black border-t border-white">
+          <ul className="space-y-2">
+            <li>
+              <button onClick={() => handleLinkClick("/")} className="text-white hover:underline">
+                Home
+              </button>
+            </li>
+            <li>
+              <button onClick={() => handleLinkClick("/about")} className="text-white hover:underline">
+                About nuonu
+              </button>
+            </li>
+            {user && (
               <>
-                <Link
-                  href="/signin"
-                  className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/signup"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
-                >
-                  Sign up
-                </Link>
+                <li>
+                  <button onClick={() => handleLinkClick("/dashboard")} className="text-white hover:underline">
+                    Dashboard
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => handleLinkClick("/profile")} className="text-white hover:underline">
+                    My Profile
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => handleLinkClick("/funds")} className="text-white hover:underline">
+                    My Funds
+                  </button>
+                </li>
               </>
             )}
-          </div>
-          
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-              aria-controls="mobile-menu"
-              aria-expanded={isMobileMenuOpen}
-              onClick={toggleMobileMenu}
-            >
-              <span className="sr-only">Open main menu</span>
-              {isMobileMenuOpen ? (
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Mobile menu */}
-      <div
-        className={cn(
-          'md:hidden',
-          isMobileMenuOpen ? 'block' : 'hidden'
-        )}
-        id="mobile-menu"
-      >
-        <div className="pt-2 pb-3 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'block pl-3 pr-4 py-2 border-l-4 text-base font-medium flex items-center',
-                pathname === item.href || (item.href.startsWith('/opportunities') && pathname.startsWith('/opportunities'))
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-              )}
-            >
-              {item.icon && item.icon}
-              {item.name}
-            </Link>
-          ))}
-          
-          {!isLoading && !user && (
-            <>
-              <Link
-                href="/signin"
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
-              >
-                Sign up
-              </Link>
-            </>
-          )}
-          
-          {!isLoading && user && (
-            <div className="pl-3 pr-4 py-2">
-              <SignOutButton variant="outline" className="w-full justify-center" />
-            </div>
-          )}
-        </div>
-      </div>
+          </ul>
+        </nav>
+      )}
     </header>
   )
 } 
