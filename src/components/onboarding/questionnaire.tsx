@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ProgressBar } from './progress-bar'
+import Link from 'next/link'
 
 const questions = [
   { id: 1, text: "What is your name?", type: "input" },
@@ -27,6 +28,7 @@ export function Questionnaire() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string | File>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [textareaHeight, setTextareaHeight] = useState("24px")
@@ -105,17 +107,44 @@ export function Questionnaire() {
       //   body: JSON.stringify(answers)
       // });
       
-      // For now, we'll just simulate a delay and redirect
+      // For now, we'll just simulate a delay
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Navigate to the dashboard or another appropriate page
-      router.push('/dashboard')
+      // Show the account creation prompt instead of redirecting
+      setIsCompleted(true)
     } catch (error) {
       console.error("Error submitting questionnaire:", error)
       alert("There was an error submitting your information. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (isCompleted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black text-white">
+        <div className="max-w-md w-full bg-gray-900 p-8 rounded-lg shadow-lg border border-gray-800">
+          <h2 className="text-2xl font-bold mb-6 text-center">Create Your Account</h2>
+          <p className="mb-6 text-gray-300">
+            Thanks for completing the questionnaire! Create an account to see your personalized grant matches and start applying.
+          </p>
+          <div className="space-y-4">
+            <Link
+              href={`/signup?email=${encodeURIComponent(answers[2] as string || '')}`}
+              className="block w-full px-6 py-3 bg-white hover:bg-gray-200 text-black font-medium rounded-md transition-colors text-center"
+            >
+              Create Account
+            </Link>
+            <Link
+              href="/signin"
+              className="block w-full px-6 py-3 bg-transparent hover:bg-gray-800 text-white font-medium rounded-md transition-colors text-center border border-white"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -11,6 +11,8 @@
     "test": "hardhat test",
     "migrate": "node scripts/migrate-db.js",
     "setup-db": "node scripts/setup-db.js",
+    "setup-agent-db": "node scripts/setup-agent-activities.js",
+    "run-agent": "node scripts/run-autonomous-agent.js",
     "deploy:base": "hardhat run scripts/deploy-base.js --network baseSepolia",
     "deploy:zksync": "hardhat run scripts/deploy-zksync.js --network zkSyncTestnet",
     "deploy:flow": "node scripts/deploy-flow.js",
@@ -19,6 +21,10 @@
     "prepare-bounty": "node scripts/prepare-bounty.js",
     "test:zksync-sso": "node scripts/test-zksync-sso.js",
     "test:blockchain-integration": "node scripts/test-blockchain-integration.js",
+    "test:flow-integration": "node scripts/test-flow-integration.js",
+    "test:agentkit-integration": "node scripts/test-agentkit-integration.js",
+    "audit-dependencies": "node scripts/audit-dependencies.js",
+    "audit-dependencies:interactive": "node scripts/audit-dependencies.js --interactive",
     "cleanup": "node scripts/cleanup-repo.js"
   },
   "dependencies": {

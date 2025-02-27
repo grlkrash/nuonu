@@ -1,0 +1,475 @@
+#!/usr/bin/env node
+
+require('dotenv').config({ path: '.env.local' })
+const { createClient } = require('@supabase/supabase-js')
+const { v4: uuidv4 } = require('uuid')
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+)
+
+// Agent activity types and statuses
+const ACTIVITY_TYPES = {
+  DISCOVER: 'discover_opportunities',
+  MATCH: 'match_opportunities',
+  GENERATE_APPLICATION: 'generate_application',
+  SUBMIT_APPLICATION: 'submit_application',
+  MONITOR_APPLICATION: 'monitor_application'
+}
+
+const ACTIVITY_STATUS = {
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
+}
+
+/**
+ * Log an agent activity
+ */
+async function logAgentActivity(artistId, activityType, status, details = {}) {
+  try {
+    const activityId = uuidv4()
+    
+    // Check if the artist exists in the profiles table
+    const { data: artist, error: artistError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', artistId)
+      .single()
+    
+    if (artistError) {
+      console.log(`Artist with ID ${artistId} not found, using as string identifier`)
+      // If artist doesn't exist in profiles, we'll still log the activity
+    }
+    
+    const { error } = await supabase
+      .from('agent_activities')
+      .insert({
+        id: activityId,
+        artist_id: artistId,
+        activity_type: activityType,
+        status: status,
+        details: details,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+    
+    if (error) {
+      console.error('Error logging agent activity:', error)
+      return null
+    }
+    
+    return activityId
+  } catch (error) {
+    console.error('Error in logAgentActivity:', error)
+    return null
+  }
+}
+
+/**
+ * Update an agent activity status
+ */
+async function updateAgentActivityStatus(activityId, status, details = {}) {
+  try {
+    const { error } = await supabase
+      .from('agent_activities')
+      .update({
+        status: status,
+        details: details,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', activityId)
+    
+    if (error) {
+      console.error('Error updating agent activity status:', error)
+      return false
+    }
+    
+    return true
+  } catch (error) {
+    console.error('Error in updateAgentActivityStatus:', error)
+    return false
+  }
+}
+
+/**
+ * Discover opportunities for an artist
+ */
+async function discoverOpportunities(artistId) {
+  console.log(`Discovering opportunities for artist: ${artistId}`)
+  
+  // Log the activity
+  const activityId = await logAgentActivity(
+    artistId,
+    ACTIVITY_TYPES.DISCOVER,
+    ACTIVITY_STATUS.IN_PROGRESS,
+    { message: 'Starting opportunity discovery' }
+  )
+  
+  if (!activityId) {
+    console.error('Failed to log discovery activity')
+    return false
+  }
+  
+  try {
+    // Simulate discovering opportunities
+    console.log('Simulating opportunity discovery...')
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.COMPLETED,
+      { 
+        message: 'Discovered opportunities successfully',
+        count: 5,
+        sources: ['twitter', 'grants_database', 'web_search']
+      }
+    )
+    
+    console.log('Opportunities discovered successfully')
+    return true
+  } catch (error) {
+    console.error('Error discovering opportunities:', error)
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.FAILED,
+      { 
+        message: 'Failed to discover opportunities',
+        error: error.message
+      }
+    )
+    
+    return false
+  }
+}
+
+/**
+ * Match opportunities for an artist
+ */
+async function matchOpportunities(artistId) {
+  console.log(`Matching opportunities for artist: ${artistId}`)
+  
+  // Log the activity
+  const activityId = await logAgentActivity(
+    artistId,
+    ACTIVITY_TYPES.MATCH,
+    ACTIVITY_STATUS.IN_PROGRESS,
+    { message: 'Starting opportunity matching' }
+  )
+  
+  if (!activityId) {
+    console.error('Failed to log matching activity')
+    return false
+  }
+  
+  try {
+    // Simulate matching opportunities
+    console.log('Simulating opportunity matching...')
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.COMPLETED,
+      { 
+        message: 'Matched opportunities successfully',
+        matched_count: 3,
+        top_match_score: 0.92
+      }
+    )
+    
+    console.log('Opportunities matched successfully')
+    return true
+  } catch (error) {
+    console.error('Error matching opportunities:', error)
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.FAILED,
+      { 
+        message: 'Failed to match opportunities',
+        error: error.message
+      }
+    )
+    
+    return false
+  }
+}
+
+/**
+ * Generate applications for an artist
+ */
+async function generateApplications(artistId) {
+  console.log(`Generating applications for artist: ${artistId}`)
+  
+  // Log the activity
+  const activityId = await logAgentActivity(
+    artistId,
+    ACTIVITY_TYPES.GENERATE_APPLICATION,
+    ACTIVITY_STATUS.IN_PROGRESS,
+    { message: 'Starting application generation' }
+  )
+  
+  if (!activityId) {
+    console.error('Failed to log application generation activity')
+    return false
+  }
+  
+  try {
+    // Simulate generating applications
+    console.log('Simulating application generation...')
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.COMPLETED,
+      { 
+        message: 'Generated applications successfully',
+        generated_count: 2,
+        opportunity_ids: ['opp_123', 'opp_456']
+      }
+    )
+    
+    console.log('Applications generated successfully')
+    return true
+  } catch (error) {
+    console.error('Error generating applications:', error)
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.FAILED,
+      { 
+        message: 'Failed to generate applications',
+        error: error.message
+      }
+    )
+    
+    return false
+  }
+}
+
+/**
+ * Submit applications for an artist
+ */
+async function submitApplications(artistId) {
+  console.log(`Submitting applications for artist: ${artistId}`)
+  
+  // Log the activity
+  const activityId = await logAgentActivity(
+    artistId,
+    ACTIVITY_TYPES.SUBMIT_APPLICATION,
+    ACTIVITY_STATUS.IN_PROGRESS,
+    { message: 'Starting application submission' }
+  )
+  
+  if (!activityId) {
+    console.error('Failed to log application submission activity')
+    return false
+  }
+  
+  try {
+    // Simulate submitting applications
+    console.log('Simulating application submission...')
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.COMPLETED,
+      { 
+        message: 'Submitted applications successfully',
+        submitted_count: 1,
+        opportunity_ids: ['opp_123']
+      }
+    )
+    
+    console.log('Applications submitted successfully')
+    return true
+  } catch (error) {
+    console.error('Error submitting applications:', error)
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.FAILED,
+      { 
+        message: 'Failed to submit applications',
+        error: error.message
+      }
+    )
+    
+    return false
+  }
+}
+
+/**
+ * Monitor application status for an artist
+ */
+async function monitorApplicationStatus(artistId) {
+  console.log(`Monitoring application status for artist: ${artistId}`)
+  
+  // Log the activity
+  const activityId = await logAgentActivity(
+    artistId,
+    ACTIVITY_TYPES.MONITOR_APPLICATION,
+    ACTIVITY_STATUS.IN_PROGRESS,
+    { message: 'Starting application status monitoring' }
+  )
+  
+  if (!activityId) {
+    console.error('Failed to log application monitoring activity')
+    return false
+  }
+  
+  try {
+    // Simulate monitoring applications
+    console.log('Simulating application status monitoring...')
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.COMPLETED,
+      { 
+        message: 'Monitored application status successfully',
+        status_updates: {
+          'opp_123': 'under_review',
+          'opp_456': 'submitted'
+        }
+      }
+    )
+    
+    console.log('Application status monitored successfully')
+    return true
+  } catch (error) {
+    console.error('Error monitoring application status:', error)
+    
+    // Update the activity status
+    await updateAgentActivityStatus(
+      activityId,
+      ACTIVITY_STATUS.FAILED,
+      { 
+        message: 'Failed to monitor application status',
+        error: error.message
+      }
+    )
+    
+    return false
+  }
+}
+
+/**
+ * Run the autonomous agent for an artist
+ */
+async function runAutonomousAgent(artistId) {
+  console.log(`Running autonomous agent for artist: ${artistId}`)
+  
+  // Step 1: Discover opportunities
+  const discoverySuccess = await discoverOpportunities(artistId)
+  if (!discoverySuccess) {
+    console.error('Opportunity discovery failed, stopping autonomous agent')
+    return false
+  }
+  
+  // Step 2: Match opportunities
+  const matchingSuccess = await matchOpportunities(artistId)
+  if (!matchingSuccess) {
+    console.error('Opportunity matching failed, stopping autonomous agent')
+    return false
+  }
+  
+  // Step 3: Generate applications
+  const generationSuccess = await generateApplications(artistId)
+  if (!generationSuccess) {
+    console.error('Application generation failed, stopping autonomous agent')
+    return false
+  }
+  
+  // Step 4: Submit applications
+  const submissionSuccess = await submitApplications(artistId)
+  if (!submissionSuccess) {
+    console.error('Application submission failed, stopping autonomous agent')
+    return false
+  }
+  
+  // Step 5: Monitor application status
+  const monitoringSuccess = await monitorApplicationStatus(artistId)
+  if (!monitoringSuccess) {
+    console.error('Application monitoring failed, stopping autonomous agent')
+    return false
+  }
+  
+  console.log('Autonomous agent completed all tasks successfully')
+  return true
+}
+
+// Get the artist ID from command line arguments
+const artistId = process.argv[2]
+
+if (!artistId) {
+  console.error('Error: Artist ID is required')
+  console.log('Usage: npm run run-agent -- <artist_id>')
+  process.exit(1)
+}
+
+// Check if this is a test run
+const isTestRun = artistId.startsWith('test_')
+
+// Function to ensure we have a valid artist ID for testing
+async function ensureValidArtistId(inputId) {
+  if (!isTestRun) {
+    // For non-test runs, verify the artist exists
+    const { data: artist, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', inputId)
+      .single()
+    
+    if (error) {
+      console.error(`Error: Artist with ID ${inputId} not found in the database`)
+      console.error('Please provide a valid artist ID from the profiles table')
+      process.exit(1)
+    }
+    
+    return inputId
+  } else {
+    // For test runs, create a temporary test profile with a UUID
+    console.log(`Creating temporary test profile for ${inputId}...`)
+    const tempId = uuidv4()
+    
+    // We don't actually insert this into the database, just use the UUID
+    console.log(`Using temporary UUID: ${tempId} for test run`)
+    
+    return tempId
+  }
+}
+
+// Run the autonomous agent
+async function main() {
+  // Get a valid artist ID for the database
+  const validArtistId = await ensureValidArtistId(artistId)
+  
+  // Run the agent with the valid ID
+  const success = await runAutonomousAgent(validArtistId)
+  
+  if (success) {
+    console.log(`Autonomous agent completed successfully for artist: ${artistId}`)
+    process.exit(0)
+  } else {
+    console.error(`Autonomous agent failed for artist: ${artistId}`)
+    process.exit(1)
+  }
+}
+
+// Start the process
+main().catch(error => {
+  console.error('Error running autonomous agent:', error)
+  process.exit(1) 

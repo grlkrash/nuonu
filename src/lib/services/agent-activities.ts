@@ -35,10 +35,12 @@ export interface AgentActivity {
  * Log an agent activity in the database
  */
 export async function logAgentActivity(
-  artistId: string,
-  activityType: AgentActivityType,
-  status: AgentActivityStatus = 'pending',
-  details?: any
+  params: {
+    artist_id: string,
+    activity_type: AgentActivityType,
+    status?: AgentActivityStatus,
+    details?: any
+  }
 ): Promise<string> {
   const supabase = createClient()
   const activityId = uuidv4()
@@ -47,10 +49,10 @@ export async function logAgentActivity(
     .from('agent_activities')
     .insert({
       id: activityId,
-      artist_id: artistId,
-      activity_type: activityType,
-      status,
-      details
+      artist_id: params.artist_id,
+      activity_type: params.activity_type,
+      status: params.status || 'pending',
+      details: params.details
     })
   
   if (error) {
@@ -59,6 +61,21 @@ export async function logAgentActivity(
   }
   
   return activityId
+}
+
+// Legacy function for backward compatibility
+export async function logAgentActivityLegacy(
+  artistId: string,
+  activityType: AgentActivityType,
+  status: AgentActivityStatus = 'pending',
+  details?: any
+): Promise<string> {
+  return logAgentActivity({
+    artist_id: artistId,
+    activity_type: activityType,
+    status,
+    details
+  })
 }
 
 /**
@@ -92,11 +109,11 @@ export async function updateAgentActivityStatus(
  */
 export async function matchOpportunities(artistId: string): Promise<string> {
   // Log the activity
-  const activityId = await logAgentActivity(
-    artistId, 
-    'match_opportunities', 
-    'in_progress'
-  )
+  const activityId = await logAgentActivity({
+    artist_id: artistId,
+    activity_type: 'match_opportunities',
+    status: 'in_progress'
+  })
   
   try {
     // Get the artist's profile
@@ -150,12 +167,12 @@ export async function generateApplication(
   opportunityId: string
 ): Promise<string> {
   // Log the activity
-  const activityId = await logAgentActivity(
-    artistId, 
-    'generate_application', 
-    'in_progress',
-    { opportunity_id: opportunityId }
-  )
+  const activityId = await logAgentActivity({
+    artist_id: artistId,
+    activity_type: 'generate_application',
+    status: 'in_progress',
+    details: { opportunity_id: opportunityId }
+  })
   
   try {
     const supabase = createClient()
@@ -234,12 +251,12 @@ export async function submitApplication(
   applicationId: string
 ): Promise<string> {
   // Log the activity
-  const activityId = await logAgentActivity(
-    artistId, 
-    'submit_application', 
-    'in_progress',
-    { application_id: applicationId }
-  )
+  const activityId = await logAgentActivity({
+    artist_id: artistId,
+    activity_type: 'submit_application',
+    status: 'in_progress',
+    details: { application_id: applicationId }
+  })
   
   try {
     const supabase = createClient()
@@ -299,12 +316,12 @@ export async function monitorApplicationStatus(
   applicationId: string
 ): Promise<string> {
   // Log the activity
-  const activityId = await logAgentActivity(
-    artistId, 
-    'monitor_application', 
-    'in_progress',
-    { application_id: applicationId }
-  )
+  const activityId = await logAgentActivity({
+    artist_id: artistId,
+    activity_type: 'monitor_application',
+    status: 'in_progress',
+    details: { application_id: applicationId }
+  })
   
   try {
     const supabase = createClient()
@@ -372,12 +389,12 @@ export async function runAutonomousAgent(artistId: string): Promise<{
   error?: string;
 }> {
   // Log the autonomous agent run
-  const autonomousActivityId = await logAgentActivity(
-    artistId,
-    'discover_opportunities',
-    'in_progress',
-    { autonomous_mode: true }
-  )
+  const autonomousActivityId = await logAgentActivity({
+    artist_id: artistId,
+    activity_type: 'discover_opportunities',
+    status: 'in_progress',
+    details: { autonomous_mode: true }
+  })
   
   try {
     console.log(`Starting autonomous agent for artist ${artistId}`)

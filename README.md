@@ -14,6 +14,7 @@ The Artist Grant AI Agent is designed to simplify the process of finding and app
 - **Multi-Chain Wallet Integration**: Connect wallets across Base, zkSync, and Flow blockchains
 - **Fund Distribution**: Receive grant funds directly through secure blockchain transactions
 - **Application Automation**: Streamline the application process with AI assistance
+- **Autonomous Agent**: AI agent that can discover, match, apply for, and monitor opportunities without human intervention
 
 ## Technology Stack
 
@@ -37,6 +38,8 @@ The project is currently in MVP stage with the following components implemented:
 - ✅ Multi-chain wallet integration
 - ✅ AI-powered opportunity matching
 - ✅ Application submission system
+- ✅ Autonomous AI agent for opportunity discovery
+- ✅ Eliza OS integration for Twitter opportunity search
 - 🔄 Smart contract deployment (in progress)
 - 🔄 Fund distribution system (in progress)
 - 🔄 Documentation and demo materials (in progress)
@@ -84,6 +87,7 @@ The platform includes several smart contracts for blockchain functionality:
    ```
    # API Keys
    OPENAI_API_KEY=your_openai_api_key
+   ELIZA_API_KEY=your_eliza_api_key
    
    # Supabase
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -104,6 +108,11 @@ The platform includes several smart contracts for blockchain functionality:
    - `supabase/migrations/20230701000002_add_exec_sql_function.sql`
    - `supabase/migrations/20230701000000_initial_schema.sql`
    - `supabase/migrations/20230701000001_add_tags_to_opportunities.sql`
+
+2. Set up the agent activities table:
+   ```bash
+   npm run setup-agent-db
+   ```
 
 ### Smart Contract Deployment
 
@@ -142,18 +151,28 @@ The platform includes several smart contracts for blockchain functionality:
    npx hardhat run scripts/deploy-zksync.js --network zkSyncTestnet
    ```
 
-3. Update the `.env.local` file with the deployed contract addresses.
+3. Deploy to Flow Testnet:
+   ```bash
+   npm run deploy:flow
+   ```
+
+4. Update the `.env.local` file with the deployed contract addresses.
 
 ### Testing
 
 1. Test the blockchain integration:
    ```bash
-   npx hardhat run scripts/test-blockchain-integration.js --network localhost
+   npm run test:blockchain-integration
    ```
 
-2. Test the fund distribution:
+2. Test the zkSync SSO:
    ```bash
-   npx hardhat run scripts/test-fund-distribution.js --network localhost
+   npm run test:zksync-sso
+   ```
+
+3. Run the autonomous agent for a specific artist:
+   ```bash
+   npm run run-agent <artist_id>
    ```
 
 ### Running the Application
@@ -181,6 +200,18 @@ For more detailed information, please refer to the following documentation:
 
 The AI Opportunity Finder component helps artists discover relevant opportunities based on their profile, interests, and career stage. It uses OpenAI to analyze opportunities and match them with artist profiles.
 
+### Autonomous AI Agent
+
+The Autonomous AI Agent can perform the following tasks without human intervention:
+
+1. **Opportunity Discovery**: Automatically searches for new opportunities using Eliza OS Twitter integration
+2. **Opportunity Matching**: Matches opportunities with artist profiles based on skills, interests, and career stage
+3. **Application Generation**: Creates tailored applications for high-match opportunities
+4. **Application Submission**: Submits applications on behalf of the artist
+5. **Status Monitoring**: Tracks application status and provides updates
+
+The agent can be run manually or set to run automatically on a schedule.
+
 ### Artist Onboarding Wizard
 
 The Artist Onboarding Wizard guides users through the process of creating a comprehensive profile, including personal information, artistic discipline, portfolio, and wallet connection.
@@ -200,24 +231,32 @@ The Fund Distribution System enables secure and transparent grant allocation and
 
 - `src/app`: Next.js app router pages
   - `dashboard/`: User dashboard
+  - `dashboard/agent/`: AI agent dashboard
   - `opportunities/`: Opportunity discovery
   - `profile/`: User profile management
   - `onboarding/`: Artist onboarding wizard
   - `wallet/`: Wallet management
+  - `api/`: API routes
 - `src/components`: React components
   - `blockchain/`: Blockchain-related components
+  - `dashboard/`: Dashboard components
   - `opportunities/`: Opportunity-related components
   - `profile/`: User profile components
   - `ui/`: UI components
 - `src/lib`: Utility functions and services
   - `blockchain/`: Blockchain utilities
   - `services/`: Service functions
+    - `agent-activities.ts`: AI agent service
+    - `eliza-twitter.ts`: Eliza OS Twitter integration
+    - `ai-matching.ts`: AI opportunity matching
   - `supabase/`: Supabase client and utilities
 - `src/contracts`: Smart contracts
   - `base/`: Base blockchain contracts
   - `FundDistribution.sol`: Main fund distribution contract
   - `ZkSyncArtistManager.sol`: zkSync Era contract
 - `scripts`: Deployment and testing scripts
+  - `setup-agent-activities.js`: Script to set up agent activities table
+  - `run-autonomous-agent.js`: Script to run the autonomous agent
 - `supabase`: Database migrations and schema
 - `docs`: Project documentation
 
@@ -229,7 +268,7 @@ This project is targeting several hackathon bounties:
 2. **Coinbase Developer Platform: Most Innovative Use of AgentKit** - Using AgentKit for AI-powered opportunity matching
 3. **zkSync Era: Build an AI Agent on zkSync Era** - Implementing artist management on zkSync
 4. **zkSync: Best Web3 Onboarding UX using zkSync Smart Sign-On (SSO) SDK** - Enhancing onboarding with zkSync SSO
-5. **Flow: Best AI Agents** - Integrating with Flow blockchain for artist management
+5. **Flow: Best AI Agents** - Integrating with Flow blockchain and Eliza OS for artist management
 6. **Chainlink CCIP: Best use of Chainlink CCIP** - Enabling cross-chain fund distribution
 
 ## License
@@ -245,4 +284,5 @@ This project is targeting several hackathon bounties:
 - [Base](https://base.org/)
 - [zkSync Era](https://zksync.io/)
 - [Flow](https://flow.com/)
+- [Eliza OS](https://eliza.com/)
 - [Chainlink](https://chain.link/)
