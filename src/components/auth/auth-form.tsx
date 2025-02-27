@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 // Icons component for loading spinner
 const Icons = {
@@ -58,6 +59,7 @@ export function AuthForm({ type }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [authMethod, setAuthMethod] = useState<'password' | 'magic'>('password')
   
   // Check if there's an email in localStorage from the onboarding process
   useEffect(() => {
@@ -98,9 +100,9 @@ export function AuthForm({ type }: AuthFormProps) {
           displayMessage = errorMessage || 'An error occurred during authentication.'
       }
       
-      setError('email', { message: displayMessage })
+      setError(displayMessage)
     }
-  }, [searchParams, setError])
+  }, [searchParams])
   
   const isSignIn = type === 'signin'
   
@@ -111,8 +113,27 @@ export function AuthForm({ type }: AuthFormProps) {
     setIsLoading(true)
     
     try {
-      if (isSignIn) {
-        // Sign in
+      if (authMethod === 'magic') {
+        // Magic link sign in
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          }
+        })
+        
+        if (error) throw error
+        
+        setMessage(
+          'Check your email for a magic link. ' +
+          'If you don\'t see it, please check your spam folder. ' +
+          'The email will come from noreply@mail.app.supabase.io'
+        )
+        
+        // Log the email being used for debugging purposes
+        console.log('Auth form - Magic link sent to:', email)
+      } else if (isSignIn) {
+        // Password sign in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password
@@ -169,66 +190,111 @@ export function AuthForm({ type }: AuthFormProps) {
 
   return (
     <div className="grid gap-6">
-      <form onSubmit={handleSubmit}>
-        <div className="grid gap-4">
-          {error && (
-            <div className="bg-gray-900 border border-red-500 text-red-400 p-3 rounded-md">
-              <p className="text-sm">{error}</p>
+      <Tabs defaultValue="password" onValueChange={(value) => setAuthMethod(value as 'password' | 'magic')}>
+        <TabsList className="grid w-full grid-cols-2 bg-gray-800">
+          <TabsTrigger value="password">Password</TabsTrigger>
+          <TabsTrigger value="magic">Magic Link</TabsTrigger>
+        </TabsList>
+        <TabsContent value="password">
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4">
+              {error && (
+                <div className="bg-gray-900 border border-red-500 text-red-400 p-3 rounded-md">
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+              {message && (
+                <div className="bg-gray-900 border border-green-500 text-green-400 p-3 rounded-md">
+                  <p className="text-sm">{message}</p>
+                </div>
+              )}
+              <div className="grid gap-2">
+                <Label htmlFor="email" className="text-white">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  placeholder="name@example.com"
+                  type="email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-gray-800 text-white border-gray-700 focus:border-white"
+                />
+              </div>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-white">
+                    Password
+                  </Label>
+                  <Link
+                    href="/reset-password"
+                    className="text-sm text-white hover:text-gray-300 underline underline-offset-4"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  placeholder="••••••••"
+                  type="password"
+                  autoCapitalize="none"
+                  autoComplete="current-password"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-gray-800 text-white border-gray-700 focus:border-white"
+                />
+              </div>
+              <Button type="submit" disabled={isLoading} className="bg-transparent border border-white text-white hover:bg-white hover:text-black rounded-xl">
+                {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
+                {type === "signin" ? "Sign In" : "Sign Up"}
+              </Button>
             </div>
-          )}
-          {message && (
-            <div className="bg-gray-900 border border-green-500 text-green-400 p-3 rounded-md">
-              <p className="text-sm">{message}</p>
+          </form>
+        </TabsContent>
+        <TabsContent value="magic">
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4">
+              {error && (
+                <div className="bg-gray-900 border border-red-500 text-red-400 p-3 rounded-md">
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+              {message && (
+                <div className="bg-gray-900 border border-green-500 text-green-400 p-3 rounded-md">
+                  <p className="text-sm">{message}</p>
+                </div>
+              )}
+              <div className="grid gap-2">
+                <Label htmlFor="magic-email" className="text-white">
+                  Email
+                </Label>
+                <Input
+                  id="magic-email"
+                  placeholder="name@example.com"
+                  type="email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-gray-800 text-white border-gray-700 focus:border-white"
+                />
+              </div>
+              <Button type="submit" disabled={isLoading} className="bg-transparent border border-white text-white hover:bg-white hover:text-black rounded-xl">
+                {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
+                Send Magic Link
+              </Button>
             </div>
-          )}
-          <div className="grid gap-2">
-            <Label htmlFor="email" className="text-white">
-              Email
-            </Label>
-            <Input
-              id="email"
-              placeholder="name@example.com"
-              type="email"
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect="off"
-              disabled={isLoading}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-gray-800 text-white border-gray-700 focus:border-white"
-            />
-          </div>
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-white">
-                Password
-              </Label>
-              <Link
-                href="/reset-password"
-                className="text-sm text-white hover:text-gray-300 underline underline-offset-4"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              placeholder="••••••••"
-              type="password"
-              autoCapitalize="none"
-              autoComplete="current-password"
-              autoCorrect="off"
-              disabled={isLoading}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-gray-800 text-white border-gray-700 focus:border-white"
-            />
-          </div>
-          <Button type="submit" disabled={isLoading} className="bg-transparent border border-white text-white hover:bg-white hover:text-black rounded-xl">
-            {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
-            {type === "signin" ? "Sign In" : "Sign Up"}
-          </Button>
-        </div>
-      </form>
+          </form>
+        </TabsContent>
+      </Tabs>
       <div className="text-center text-sm text-white">
         {type === "signin" ? "Don't have an account? " : "Already have an account? "}
         <Link

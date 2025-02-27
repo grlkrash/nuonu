@@ -63,7 +63,15 @@ export async function GET(request: Request) {
         
         // Redirect to the intended destination
         console.log('Auth Callback - Redirecting to:', redirectTo)
-        return NextResponse.redirect(new URL(redirectTo, requestUrl.origin))
+        
+        // Use a relative URL to avoid cross-origin issues
+        const redirectUrl = redirectTo.startsWith('http') 
+          ? redirectTo 
+          : redirectTo.startsWith('/') 
+            ? redirectTo 
+            : `/${redirectTo}`
+            
+        return NextResponse.redirect(new URL(redirectUrl, requestUrl.origin))
       } else {
         console.error('Auth Callback - No session created after exchange')
         // Redirect to sign-in page with error message

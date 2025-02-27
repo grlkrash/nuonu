@@ -24,6 +24,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       maxAge: 60 * 60 * 24 * 7, // 7 days
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
+      path: '/',
     },
   },
   global: {
@@ -45,6 +46,12 @@ if (typeof window !== 'undefined') {
         console.log('Client init - User email:', data.session.user.email)
       }
     }
+  })
+  
+  // Listen for auth state changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state changed:', event)
+    console.log('Session exists:', !!session)
   })
 }
 
