@@ -122,6 +122,12 @@ Planned enhancements for the agent include:
 3. **Reputation System**: Building artist reputation scores based on successful applications
 4. **Collaborative Applications**: Supporting collaborative grant applications for artist groups
 5. **Predictive Analytics**: Predicting application success rates based on historical data
+6. **Grant Gopher Integration**: Automated scraping of grantgopher.com to discover additional artist opportunities and grants
+   - Periodic scraping of new opportunities
+   - Categorization and tagging of opportunities
+   - Matching with artist profiles
+   - Storing in the database for discovery
+7. **Additional Grant Database Integrations**: Expanding opportunity sources to include other specialized grant databases
 
 ## Troubleshooting
 
@@ -256,43 +262,3 @@ The AgentKit integration can be tested using the provided test script:
 ```bash
 npm run test:agentkit-integration
 ```
-
-This script simulates the following actions:
-1. Creating a wallet for an artist
-2. Checking the wallet balance
-3. Running the agent with specific instructions
-4. Distributing funds to the artist's wallet
-
-The test uses mock functions to simulate blockchain interactions, making it safe to run in any environment.
-
-### Configuration
-
-The AgentKit integration can be configured through environment variables:
-
-- `NEXT_PUBLIC_AGENTKIT_API_KEY`: API key for AgentKit services
-- `NEXT_PUBLIC_AGENTKIT_ENVIRONMENT`: Environment to use (development, staging, production)
-- `NEXT_PUBLIC_AGENTKIT_WALLET_PROVIDER`: Wallet provider to use (CDP, MetaMask, WalletConnect)
-- `NEXT_PUBLIC_AGENTKIT_DEFAULT_CHAIN`: Default blockchain network to use
-
-### Error Handling
-
-The AgentKit integration includes robust error handling for:
-
-- Network connectivity issues
-- Blockchain transaction failures
-- Wallet creation and management errors
-- API rate limiting and quotas
-
-All errors are logged in the `agent_activities` table with a `failed` status and detailed error information.
-
-### Security Considerations
-
-When using AgentKit, consider the following security best practices:
-
-- Store API keys securely in environment variables
-- Use session-based authentication for wallet interactions
-- Implement proper error handling for all blockchain transactions
-- Validate all user inputs before sending to the blockchain
-- Use secure connections (HTTPS) for all API requests
-- Implement rate limiting to prevent abuse
-- Regularly audit and update dependencies 

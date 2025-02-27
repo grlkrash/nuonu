@@ -126,7 +126,7 @@ export function Questionnaire() {
         <div className="max-w-md w-full bg-gray-900 p-8 rounded-lg shadow-lg border border-gray-800">
           <h2 className="text-2xl font-bold mb-6 text-center">Create Your Account</h2>
           <p className="mb-6 text-gray-300">
-            Thanks for completing the questionnaire! Create an account to see your personalized grant matches and start applying.
+            Thanks for completing the questionnaire! Create an account to save your profile and track your applications, or skip to view your personalized opportunity matches.
           </p>
           <div className="space-y-4">
             <Link
@@ -136,10 +136,10 @@ export function Questionnaire() {
               Create Account
             </Link>
             <Link
-              href="/signin"
+              href="/opportunities"
               className="block w-full px-6 py-3 bg-transparent hover:bg-gray-800 text-white font-medium rounded-md transition-colors text-center border border-white"
             >
-              Sign In
+              Skip and View Opportunities
             </Link>
           </div>
         </div>

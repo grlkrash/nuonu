@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   
   // Get AI-matched opportunities if profile exists
   const { highMatches = [], mediumMatches = [] } = profile 
-    ? await getMatchedOpportunities(profile, 3).catch(() => ({ highMatches: [], mediumMatches: [], otherMatches: [] }))
+    ? await getMatchedOpportunities(profile, 5).catch(() => ({ highMatches: [], mediumMatches: [], otherMatches: [] }))
     : { highMatches: [], mediumMatches: [] }
   
   // Calculate profile completion percentage
@@ -37,7 +37,69 @@ export default async function DashboardPage() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Artist Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">Your Grant Matches</h1>
+      
+      {/* AI-matched opportunities - Now at the top and full width */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 mb-8">
+        <h2 className="text-2xl font-semibold mb-6">Recommended Opportunities</h2>
+        
+        {highMatches.length === 0 && mediumMatches.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              No recommended opportunities yet. Complete your profile to get personalized recommendations.
+            </p>
+            <Link
+              href="/opportunities"
+              className="inline-block px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+            >
+              Browse All Opportunities
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {highMatches.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium mb-3 text-green-700 dark:text-green-400">
+                  High Matches
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {highMatches.map((opportunity) => (
+                    <OpportunityCard 
+                      key={opportunity.id} 
+                      opportunity={opportunity} 
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {mediumMatches.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium mb-3 text-yellow-700 dark:text-yellow-400">
+                  Good Matches
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {mediumMatches.map((opportunity) => (
+                    <OpportunityCard 
+                      key={opportunity.id} 
+                      opportunity={opportunity} 
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="text-center pt-4">
+              <Link
+                href="/opportunities"
+                className="inline-block px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+              >
+                View all opportunities
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main content */}
@@ -63,70 +125,6 @@ export default async function DashboardPage() {
               </Link>
             </div>
           )}
-          
-          {/* AI-matched opportunities */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold mb-4">Recommended Opportunities</h2>
-            
-            {highMatches.length === 0 && mediumMatches.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  No recommended opportunities yet. Complete your profile to get personalized recommendations.
-                </p>
-                <Link
-                  href="/opportunities"
-                  className="inline-block px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                >
-                  Browse All Opportunities
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {highMatches.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-3 text-green-700 dark:text-green-400">
-                      High Matches
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      {highMatches.map((opportunity) => (
-                        <OpportunityCard 
-                          key={opportunity.id} 
-                          opportunity={opportunity} 
-                          compact
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {mediumMatches.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-3 text-yellow-700 dark:text-yellow-400">
-                      Good Matches
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      {mediumMatches.map((opportunity) => (
-                        <OpportunityCard 
-                          key={opportunity.id} 
-                          opportunity={opportunity} 
-                          compact
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="text-center pt-4">
-                  <Link
-                    href="/opportunities"
-                    className="text-purple-600 dark:text-purple-400 hover:underline"
-                  >
-                    View all opportunities
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
           
           {/* Recent applications */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">

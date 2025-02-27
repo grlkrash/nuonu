@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Sparkles, Check, Copy, Download } from 'lucide-react'
+import { Loader2, Sparkles, Check, Copy, Download, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
@@ -32,6 +32,10 @@ export function ApplicationGenerator({ opportunityId, opportunityTitle }: Applic
   const { user } = useUser()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmittingExternal, setIsSubmittingExternal] = useState(false)
+  const [opportunityData, setOpportunityData] = useState<{
+    external_url?: string | null
+  } | null>(null)
   const [applicationContent, setApplicationContent] = useState<{
     artistStatement: string
     projectDescription: string
@@ -93,6 +97,9 @@ export function ApplicationGenerator({ opportunityId, opportunityTitle }: Applic
         .single()
 
       if (opportunityError) throw opportunityError
+      
+      // Store opportunity data for later use
+      setOpportunityData(opportunity)
 
       // Call AI agent to generate application
       const response = await fetch('/api/agent', {
@@ -252,6 +259,91 @@ ${editedContent.impactStatement}
       description: 'Your application has been downloaded as a text file.',
       variant: 'default'
     })
+  }
+
+  const handleSubmitExternalApplication = async () => {
+    if (!user || !applicationContent) {
+      toast({
+        title: 'Error',
+        description: 'Please generate an application first.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    if (!opportunityData?.external_url) {
+      toast({
+        title: 'Error',
+        description: 'This opportunity does not have an external URL.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    setIsSubmittingExternal(true)
+
+    try {
+      // Combine all sections into a single proposal
+      const proposal = `
+# Artist Statement
+${editedContent.artistStatement}
+
+# Project Description
+${editedContent.projectDescription}
+
+# Budget
+${editedContent.budget}
+
+# Timeline
+${editedContent.timeline}
+
+# Impact Statement
+${editedContent.impactStatement}
+      `.trim()
+
+      // Call the API to submit the external application using Browser Base
+      const response = await fetch('/api/agent/external-submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          artistId: user.id,
+          opportunityId,
+          applicationData: {
+            text: proposal,
+            formFields: {
+              artistStatement: editedContent.artistStatement,
+              projectDescription: editedContent.projectDescription,
+              budget: editedContent.budget,
+              timeline: editedContent.timeline,
+              impactStatement: editedContent.impactStatement
+            }
+          }
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to submit external application')
+      }
+
+      toast({
+        title: 'External Application Submitted',
+        description: 'Your application has been submitted to the external website.',
+        variant: 'default'
+      })
+    } catch (error) {
+      console.error('Error submitting external application:', error)
+      toast({
+        title: 'External Submission Failed',
+        description: error instanceof Error ? error.message : 'We couldn\'t submit your application to the external website. Please try again later.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsSubmittingExternal(false)
+    }
   }
 
   return (
@@ -447,27 +539,50 @@ ${editedContent.impactStatement}
       
       {applicationContent && (
         <CardFooter className="flex justify-between">
-          <Button 
-            variant="outline" 
-            onClick={handleDownload}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </Button>
-          
-          <Button 
-            onClick={handleSubmitApplication}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save as Draft'
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleDownload}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            {opportunityData?.external_url && (
+              <Button
+                onClick={handleSubmitExternalApplication}
+                disabled={isSubmittingExternal}
+                variant="outline"
+                className="flex items-center"
+              >
+                {isSubmittingExternal ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting to External Site...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="mr-2 h-4 w-4" />
+                    Submit to External Site
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+            <Button
+              onClick={handleSubmitApplication}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Application'
+              )}
+            </Button>
+          </div>
         </CardFooter>
       )}
     </Card>

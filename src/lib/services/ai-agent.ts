@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase/client'
 import { Profile } from '@/types/profile'
 import { Opportunity } from '@/types/opportunity'
 import { Application } from '@/types/application'
+import { submitExternalApplication, checkApplicationStatus } from './browser-base'
+import { logAgentActivity } from '@/lib/supabase/client'
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -330,6 +332,85 @@ export async function generateActionPlan(profile: Profile): Promise<{
       shortTerm: ['Unable to generate short-term actions at this time.'],
       mediumTerm: ['Unable to generate medium-term actions at this time.'],
       longTerm: ['Unable to generate long-term actions at this time.']
+    }
+  }
+}
+
+export async function submitExternalGrantApplication(artistId: string, opportunityId: string, applicationData: any) {
+  try {
+    await logAgentActivity({
+      artist_id: artistId,
+      activity_type: 'external_application',
+      status: 'in_progress',
+      details: {
+        message: 'Preparing to submit external grant application',
+        opportunity_id: opportunityId
+      }
+    })
+
+    // Get opportunity details
+    const { data: opportunity } = await supabase
+      .from('opportunities')
+      .select('*')
+      .eq('id', opportunityId)
+      .single()
+
+    if (!opportunity) {
+      throw new Error('Opportunity not found')
+    }
+
+    // Check if the opportunity has an external URL
+    if (!opportunity.external_url) {
+      throw new Error('This opportunity does not have an external application URL')
+    }
+
+    // Submit the application using Browser Base
+    const result = await submitExternalApplication({
+      artistId,
+      opportunityId,
+      applicationText: applicationData.text || '',
+      attachments: applicationData.attachments || [],
+      externalUrl: opportunity.external_url,
+      formFields: applicationData.formFields || {}
+    })
+
+    if (!result.success) {
+      throw new Error(result.message)
+    }
+
+    await logAgentActivity({
+      artist_id: artistId,
+      activity_type: 'external_application',
+      status: 'completed',
+      details: {
+        message: 'Successfully submitted external grant application',
+        opportunity_id: opportunityId,
+        submission_id: result.submissionId
+      }
+    })
+
+    return {
+      success: true,
+      message: 'External grant application submitted successfully',
+      submissionId: result.submissionId
+    }
+  } catch (error) {
+    console.error('Error submitting external grant application:', error)
+    
+    await logAgentActivity({
+      artist_id: artistId,
+      activity_type: 'external_application',
+      status: 'failed',
+      details: {
+        message: `Failed to submit external grant application: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        opportunity_id: opportunityId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    })
+
+    return {
+      success: false,
+      message: `Failed to submit external grant application: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
   }
 } 

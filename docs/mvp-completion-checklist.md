@@ -34,6 +34,7 @@ This document outlines the final tasks needed to complete the MVP of the Artist 
 - [x] AI-generated application content
 - [x] Application submission and tracking
 - [x] Application status updates
+- [x] Browser Base integration for external applications
 
 ### Blockchain Integration
 - [x] Wallet connection UI
@@ -55,6 +56,7 @@ This document outlines the final tasks needed to complete the MVP of the Artist 
 - [x] Architecture overview
 - [x] API documentation
 - [x] Blockchain integration details
+- [x] Browser Base integration documentation
 - [ ] Smart contract documentation
 
 ### Bounty Documentation

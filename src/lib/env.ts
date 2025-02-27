@@ -7,8 +7,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_KEY: z.string().min(1).optional(),
   
   // Blockchain
-  NEXT_PUBLIC_NETWORK_ID: z.string().min(1),
-  NEXT_PUBLIC_RPC_URL: z.string().url(),
+  NEXT_PUBLIC_NETWORK_ID: z.string().min(1).optional(),
+  NEXT_PUBLIC_RPC_URL: z.string().url().optional(),
   
   // API Keys
   OPENAI_API_KEY: z.string().min(1).optional(),
@@ -25,7 +25,8 @@ function validateEnv() {
   
   if (!parsed.success) {
     console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors)
-    throw new Error('Invalid environment variables')
+    // Log error but don't throw to prevent app from crashing
+    console.warn('Continuing with available environment variables')
   }
 }
 
@@ -42,8 +43,8 @@ export const env = {
   SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
   
   // Blockchain
-  NEXT_PUBLIC_NETWORK_ID: process.env.NEXT_PUBLIC_NETWORK_ID!,
-  NEXT_PUBLIC_RPC_URL: process.env.NEXT_PUBLIC_RPC_URL!,
+  NEXT_PUBLIC_NETWORK_ID: process.env.NEXT_PUBLIC_NETWORK_ID || '',
+  NEXT_PUBLIC_RPC_URL: process.env.NEXT_PUBLIC_RPC_URL || '',
   
   // API Keys
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
