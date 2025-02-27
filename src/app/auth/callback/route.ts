@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   const redirectTo = requestUrl.searchParams.get('redirect_to') || '/dashboard'
   
   // Log detailed information for debugging
+  console.log('Auth Callback - URL:', request.url)
   console.log('Auth Callback - Code exists:', !!code)
   console.log('Auth Callback - Redirect to:', redirectTo)
   
@@ -21,10 +22,10 @@ export async function GET(request: Request) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
       
       if (error) {
-        console.error('Auth Callback - Error exchanging code:', error.message)
+        console.error('Auth Callback - Error exchanging code:', error.message, error)
         // Redirect to sign-in page with error message
         const errorUrl = new URL('/signin', requestUrl.origin)
-        errorUrl.searchParams.set('error', 'Authentication failed. Please try again.')
+        errorUrl.searchParams.set('error', `Authentication failed: ${error.message}`)
         return NextResponse.redirect(errorUrl)
       }
       
@@ -33,6 +34,15 @@ export async function GET(request: Request) {
       
       if (data.session) {
         console.log('Auth Callback - User authenticated:', data.session.user.id)
+        console.log('Auth Callback - User email:', data.session.user.email)
+        console.log('Auth Callback - User metadata:', JSON.stringify(data.session.user.user_metadata))
+        
+        // Add a small delay to ensure cookies are properly set
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Verify the session was created
+        const { data: sessionCheck } = await supabase.auth.getSession()
+        console.log('Auth Callback - Session verification:', !!sessionCheck.session)
         
         // Check if the user has a profile, create one if not
         const { data: profileData, error: profileError } = await supabase
@@ -52,6 +62,7 @@ export async function GET(request: Request) {
         }
         
         // Redirect to the intended destination
+        console.log('Auth Callback - Redirecting to:', redirectTo)
         return NextResponse.redirect(new URL(redirectTo, requestUrl.origin))
       } else {
         console.error('Auth Callback - No session created after exchange')

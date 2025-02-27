@@ -17,6 +17,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storageKey: 'supabase.auth.token',
+    flowType: 'pkce',
+    debug: true,
+    // Set a longer cookie lifetime
+    cookieOptions: {
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    },
   },
   global: {
     headers: {
@@ -24,6 +32,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     },
   },
 })
+
+// Log session status on client initialization
+if (typeof window !== 'undefined') {
+  supabase.auth.getSession().then(({ data, error }) => {
+    if (error) {
+      console.error('Error getting session on client init:', error.message)
+    } else {
+      console.log('Client init - Session exists:', !!data.session)
+      if (data.session) {
+        console.log('Client init - User ID:', data.session.user.id)
+        console.log('Client init - User email:', data.session.user.email)
+      }
+    }
+  })
+}
 
 // Export the type for use in other files
 export type SupabaseClient = typeof supabase 

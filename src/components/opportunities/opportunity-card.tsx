@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { DollarSign, Clock, Users } from 'lucide-react'
 
 interface OpportunityCardProps {
@@ -88,13 +87,6 @@ export function OpportunityCard({
   // Determine if the opportunity is a sample
   const isSample = opportunity.id.startsWith('sample-')
 
-  // Get the badge color based on opportunity type
-  function getBadgeColor() {
-    if (opportunity.opportunity_type === 'grant') return 'bg-blue-900/30 text-blue-400 border border-blue-800'
-    if (opportunity.opportunity_type === 'job') return 'bg-purple-900/30 text-purple-400 border border-purple-800'
-    return 'bg-gray-800 text-gray-400 border border-gray-700'
-  }
-
   return (
     <Card
       className={`relative overflow-hidden transition-all duration-300 ${
@@ -159,7 +151,7 @@ export function OpportunityCard({
         </div>
       </CardContent>
       
-      <Separator />
+      <div className="border-t border-gray-200 mt-2"></div>
       
       <CardFooter className="pt-3 pb-3 flex justify-between">
         <Button variant="ghost" size="sm" asChild>

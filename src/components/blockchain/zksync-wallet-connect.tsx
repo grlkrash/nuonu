@@ -6,29 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Loader2, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { v4 as uuidv4 } from 'uuid'
-import { zksyncSepoliaTestnet } from 'viem/chains'
-import { createConfig, http } from '@wagmi/core'
-import { zksyncSsoConnector } from 'zksync-sso/connector'
-import { parseEther } from 'viem'
-
-// Create a zkSync SSO connector with session configuration
-const ssoConnector = zksyncSsoConnector({
-  // Optional session configuration
-  session: {
-    expiry: '1 day',
-    // Allow up to 0.1 ETH to be spent in gas fees
-    feeLimit: parseEther('0.1'),
-  },
-})
-
-// Create a wagmi config with the connector
-const wagmiConfig = createConfig({
-  chains: [zksyncSepoliaTestnet],
-  transports: {
-    [zksyncSepoliaTestnet.id]: http(),
-  },
-  connectors: [ssoConnector],
-})
 
 export function ZkSyncWalletConnect() {
   const [isConnecting, setIsConnecting] = useState(false)
@@ -38,10 +15,26 @@ export function ZkSyncWalletConnect() {
 
   // Check if we have a stored wallet address on component mount
   useEffect(() => {
-    const storedWalletAddress = localStorage.getItem('walletAddress')
-    if (storedWalletAddress) {
-      setWalletAddress(storedWalletAddress)
+    const checkSession = async () => {
+      // Check if we have a session
+      const { data } = await supabase.auth.getSession()
+      if (data.session) {
+        // If we have a session, get the wallet address from user metadata
+        const walletAddress = data.session.user.user_metadata?.wallet_address
+        if (walletAddress) {
+          setWalletAddress(walletAddress)
+          localStorage.setItem('walletAddress', walletAddress)
+        }
+      } else {
+        // If no session, check localStorage
+        const storedWalletAddress = localStorage.getItem('walletAddress')
+        if (storedWalletAddress) {
+          setWalletAddress(storedWalletAddress)
+        }
+      }
     }
+    
+    checkSession()
   }, [])
 
   const handleConnectWallet = async () => {
@@ -52,7 +45,7 @@ export function ZkSyncWalletConnect() {
       // Simulate a connection process
       setTimeout(async () => {
         try {
-          // For demo purposes, we'll use a mock address - use a proper format without ellipsis
+          // For demo purposes, we'll use a mock address
           const address = '0x1234567890abcdef1234567890abcdef12345678'
           setWalletAddress(address)
           
@@ -62,85 +55,63 @@ export function ZkSyncWalletConnect() {
           // Create a custom token or use Supabase's custom auth
           try {
             // Generate a valid email format using a UUID
-            // Use a format that will definitely be accepted by Supabase
             const uuid = uuidv4()
-            const walletEmail = `wallet${uuid.replace(/-/g, '')}@nuonu.io`
-            const walletPassword = `Wallet${uuid.replace(/-/g, '')}!2Aa`
+            // Use a simple email format that will be accepted by Supabase
+            const walletEmail = `wallet.${uuid.substring(0, 8)}@example.com`
+            const walletPassword = `Password123!`
             
             console.log('Attempting to sign in with wallet email:', walletEmail)
             
-            // Try to sign in first
+            // Create a new account directly
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+              email: walletEmail,
+              password: walletPassword,
+              options: {
+                data: {
+                  wallet_address: address,
+                  auth_method: 'wallet'
+                }
+              }
+            })
+            
+            if (signUpError) {
+              console.error('Error signing up with wallet:', signUpError.message)
+              throw signUpError
+            }
+            
+            console.log('Sign up successful:', !!signUpData)
+            
+            // Store credentials for auto-login
+            localStorage.setItem('walletEmail', walletEmail)
+            localStorage.setItem('walletPassword', walletPassword)
+            
+            // Try to sign in immediately after signup
             const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
               email: walletEmail,
               password: walletPassword,
             })
             
-            // If sign in fails, create a new account
             if (signInError) {
-              console.log('Sign in failed, attempting to create account:', signInError.message)
-              
-              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email: walletEmail,
-                password: walletPassword,
-                options: {
-                  data: {
-                    wallet_address: address,
-                    auth_method: 'wallet'
-                  }
-                }
-              })
-              
-              if (signUpError) {
-                console.error('Error signing up with wallet:', signUpError.message)
-                throw signUpError
-              }
-              
-              console.log('Sign up successful:', !!signUpData)
-              
-              // For demo purposes, auto-confirm the email
-              try {
-                // This would normally be done through a server-side function
-                // or email confirmation flow
-                console.log('Demo: Auto-confirming wallet account')
-                
-                // Store wallet info in localStorage for persistence
-                localStorage.setItem('walletEmail', walletEmail)
-                
-                // Check if the session was created
-                const { data: sessionData } = await supabase.auth.getSession()
-                console.log('Session after signup:', !!sessionData.session)
-                
-                if (sessionData.session) {
-                  // Redirect to dashboard after successful sign up
-                  router.push('/dashboard')
-                  router.refresh()
-                } else {
-                  // If no session, redirect to sign-in with a message
-                  router.push('/signin?message=Please%20check%20your%20email%20to%20confirm%20your%20account')
-                  router.refresh()
-                }
-              } catch (confirmError) {
-                console.error('Error confirming wallet account:', confirmError)
-                throw confirmError
-              }
+              console.error('Error signing in after signup:', signInError.message)
+              setError('Account created but could not sign in automatically. Please try again.')
+              setWalletAddress(null)
+              setIsConnecting(false)
+              return
+            }
+            
+            console.log('Sign in successful:', !!signInData)
+            
+            // Check if the session was created
+            const { data: sessionData } = await supabase.auth.getSession()
+            console.log('Session after signin:', !!sessionData.session)
+            
+            if (sessionData.session) {
+              // Redirect to dashboard after successful sign in
+              router.push('/dashboard')
+              router.refresh()
             } else {
-              console.log('Sign in successful:', !!signInData)
-              
-              // Store wallet info in localStorage for persistence
-              localStorage.setItem('walletEmail', walletEmail)
-              
-              // Check if the session was created
-              const { data: sessionData } = await supabase.auth.getSession()
-              console.log('Session after signin:', !!sessionData.session)
-              
-              if (sessionData.session) {
-                // Redirect to dashboard after successful sign in
-                router.push('/dashboard')
-                router.refresh()
-              } else {
-                setError('Failed to create session. Please try again.')
-                setWalletAddress(null)
-              }
+              setError('Failed to create session. Please try again.')
+              setWalletAddress(null)
             }
           } catch (authError) {
             console.error('Error authenticating with wallet:', authError)
@@ -173,6 +144,7 @@ export function ZkSyncWalletConnect() {
       setWalletAddress(null)
       localStorage.removeItem('walletAddress')
       localStorage.removeItem('walletEmail')
+      localStorage.removeItem('walletPassword')
       
       // Redirect to home page
       router.push('/')

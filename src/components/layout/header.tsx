@@ -60,7 +60,7 @@ export function Header({ scrolled = true }: HeaderProps) {
       subscription.unsubscribe()
     }
   }, [])
-
+  
   const handleLinkClick = (href: string) => {
     setIsMenuOpen(false)
     
@@ -84,6 +84,6 @@ export function Header({ scrolled = true }: HeaderProps) {
       }, 100)
     }
   }
-
+  
   return (
     <header className={`

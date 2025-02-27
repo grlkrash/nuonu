@@ -6,7 +6,8 @@ export async function middleware(request: NextRequest) {
   const path = requestUrl.pathname
   
   // Create a Supabase client configured to use cookies
-  const supabase = createMiddlewareClient({ req: request, res: NextResponse.next() })
+  const response = NextResponse.next()
+  const supabase = createMiddlewareClient({ req: request, res: response })
   
   // Refresh session if expired - required for Server Components
   const { data: { session }, error } = await supabase.auth.getSession()
@@ -27,6 +28,7 @@ export async function middleware(request: NextRequest) {
   
   // Check if user is in guest mode
   const isGuestMode = requestUrl.searchParams.get('guest') === 'true'
+  console.log('Middleware - Is guest mode:', isGuestMode)
   
   // If the request is for a protected route and the user is not authenticated
   if (isProtectedRoute) {
@@ -34,7 +36,7 @@ export async function middleware(request: NextRequest) {
       // Allow access in guest mode, otherwise redirect to sign-in
       if (isGuestMode) {
         console.log('Middleware - Allowing guest access to protected route:', path)
-        return NextResponse.next()
+        return response
       } else {
         console.log('Middleware - No session, redirecting to sign-in')
         // Redirect to sign-in page with a return URL
@@ -45,7 +47,7 @@ export async function middleware(request: NextRequest) {
     }
     
     console.log('Middleware - Session found, allowing access to protected route:', path)
-    return NextResponse.next()
+    return response
   }
   
   // If the request is for an auth page and the user is authenticated
@@ -56,7 +58,7 @@ export async function middleware(request: NextRequest) {
   }
   
   // For all other routes, proceed normally
-  return NextResponse.next()
+  return response
 }
 
 // Specify which routes this middleware should run on
