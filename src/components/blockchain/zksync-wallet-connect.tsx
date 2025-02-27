@@ -310,11 +310,9 @@ export function ZkSyncWalletConnect() {
   }
 
   return (
-    <div className="p-4 bg-black border border-gray-700 rounded-lg">
-      <h2 className="text-xl font-bold text-white mb-4">Connect Your Wallet</h2>
-      
+    <div className="flex flex-col gap-4">
       {error && (
-        <div className="mb-4 p-3 bg-red-900/20 text-red-400 rounded-md text-sm">
+        <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
           {error}
         </div>
       )}
@@ -333,22 +331,31 @@ export function ZkSyncWalletConnect() {
           ) : (
             <>
               <Wallet className="mr-2 h-4 w-4" />
-              Connect with zkSync SSO
+              Connect zkSync Wallet
             </>
           )}
         </Button>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3">
           <div className="p-3 bg-gray-800 rounded-md">
             <p className="text-sm text-white font-medium">Connected Wallet</p>
             <p className="text-sm text-gray-400">{wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}</p>
           </div>
           
-          <Button 
+          <Button
             onClick={handleDisconnect}
-            className="w-full bg-transparent border border-white text-white hover:bg-white hover:text-black"
+            disabled={wallet.isConnecting}
+            variant="destructive"
+            className="w-full"
           >
-            Disconnect Wallet
+            {wallet.isConnecting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Disconnecting...
+              </>
+            ) : (
+              'Disconnect Wallet'
+            )}
           </Button>
         </div>
       )}
