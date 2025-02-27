@@ -61,11 +61,11 @@ export function ZkSyncWalletConnect() {
           
           // Create a custom token or use Supabase's custom auth
           try {
-            // Generate a valid email format using the wallet address and a UUID
-            // Use a more reliable format that will be accepted by Supabase
+            // Generate a valid email format using a UUID
+            // Use a format that will definitely be accepted by Supabase
             const uuid = uuidv4()
-            const walletEmail = `wallet_${uuid.substring(0, 8)}@nuonu.io`
-            const walletPassword = `Wallet_${uuid}`
+            const walletEmail = `wallet${uuid.replace(/-/g, '')}@nuonu.io`
+            const walletPassword = `Wallet${uuid.replace(/-/g, '')}!2Aa`
             
             console.log('Attempting to sign in with wallet email:', walletEmail)
             
@@ -77,7 +77,7 @@ export function ZkSyncWalletConnect() {
             
             // If sign in fails, create a new account
             if (signInError) {
-              console.log('Sign in failed, attempting to create account')
+              console.log('Sign in failed, attempting to create account:', signInError.message)
               
               const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                 email: walletEmail,
@@ -91,9 +91,11 @@ export function ZkSyncWalletConnect() {
               })
               
               if (signUpError) {
-                console.error('Error signing up with wallet:', signUpError)
+                console.error('Error signing up with wallet:', signUpError.message)
                 throw signUpError
               }
+              
+              console.log('Sign up successful:', !!signUpData)
               
               // For demo purposes, auto-confirm the email
               try {
@@ -104,20 +106,41 @@ export function ZkSyncWalletConnect() {
                 // Store wallet info in localStorage for persistence
                 localStorage.setItem('walletEmail', walletEmail)
                 
-                // Redirect to dashboard after successful sign up
-                router.push('/dashboard')
-                router.refresh()
+                // Check if the session was created
+                const { data: sessionData } = await supabase.auth.getSession()
+                console.log('Session after signup:', !!sessionData.session)
+                
+                if (sessionData.session) {
+                  // Redirect to dashboard after successful sign up
+                  router.push('/dashboard')
+                  router.refresh()
+                } else {
+                  // If no session, redirect to sign-in with a message
+                  router.push('/signin?message=Please%20check%20your%20email%20to%20confirm%20your%20account')
+                  router.refresh()
+                }
               } catch (confirmError) {
                 console.error('Error confirming wallet account:', confirmError)
                 throw confirmError
               }
             } else {
+              console.log('Sign in successful:', !!signInData)
+              
               // Store wallet info in localStorage for persistence
               localStorage.setItem('walletEmail', walletEmail)
               
-              // Redirect to dashboard after successful sign in
-              router.push('/dashboard')
-              router.refresh()
+              // Check if the session was created
+              const { data: sessionData } = await supabase.auth.getSession()
+              console.log('Session after signin:', !!sessionData.session)
+              
+              if (sessionData.session) {
+                // Redirect to dashboard after successful sign in
+                router.push('/dashboard')
+                router.refresh()
+              } else {
+                setError('Failed to create session. Please try again.')
+                setWalletAddress(null)
+              }
             }
           } catch (authError) {
             console.error('Error authenticating with wallet:', authError)

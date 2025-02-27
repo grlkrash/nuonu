@@ -1,59 +1,62 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res: response })
+  const requestUrl = new URL(request.url)
+  const path = requestUrl.pathname
   
-  // Refresh the session to ensure it's valid
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  // Create a Supabase client configured to use cookies
+  const supabase = createMiddlewareClient({ req: request, res: NextResponse.next() })
   
-  // Add detailed logging
-  console.log('Middleware - Path:', request.nextUrl.pathname)
+  // Refresh session if expired - required for Server Components
+  const { data: { session }, error } = await supabase.auth.getSession()
+  
+  // Log detailed information for debugging
+  console.log('Middleware - Path:', path)
   console.log('Middleware - Session exists:', !!session)
-  console.log('Middleware - Query params:', Object.fromEntries(request.nextUrl.searchParams.entries()))
+  console.log('Middleware - Query params:', Object.fromEntries(requestUrl.searchParams.entries()))
   
-  if (session) {
-    console.log('Middleware - User ID:', session.user.id)
-    console.log('Middleware - User email:', session.user.email)
+  if (error) {
+    console.error('Middleware - Session error:', error.message)
   }
   
   // Check if the request is for a protected route
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
-                          request.nextUrl.pathname.startsWith('/profile') ||
-                          request.nextUrl.pathname.startsWith('/applications')
+  const isProtectedRoute = path.startsWith('/dashboard') || 
+                          path.startsWith('/profile') || 
+                          path.startsWith('/applications')
   
-  // Check if the user is in guest mode (for dashboard only)
-  const isGuestMode = request.nextUrl.pathname.startsWith('/dashboard') && 
-                     request.nextUrl.searchParams.get('guest') === 'true'
+  // Check if user is in guest mode
+  const isGuestMode = requestUrl.searchParams.get('guest') === 'true'
   
-  console.log('Middleware - Is guest mode:', isGuestMode)
-  
-  // If accessing a protected route without a session and not in guest mode, redirect to sign in
-  // For dashboard, we need to check if it's guest mode
-  if (isProtectedRoute && !session) {
-    if (request.nextUrl.pathname.startsWith('/dashboard') && isGuestMode) {
-      // Allow access to dashboard in guest mode
-      console.log('Middleware - Allowing access to dashboard in guest mode')
-      return response
+  // If the request is for a protected route and the user is not authenticated
+  if (isProtectedRoute) {
+    if (!session) {
+      // Allow access in guest mode, otherwise redirect to sign-in
+      if (isGuestMode) {
+        console.log('Middleware - Allowing guest access to protected route:', path)
+        return NextResponse.next()
+      } else {
+        console.log('Middleware - No session, redirecting to sign-in')
+        // Redirect to sign-in page with a return URL
+        const redirectUrl = new URL('/signin', requestUrl.origin)
+        redirectUrl.searchParams.set('returnUrl', path)
+        return NextResponse.redirect(redirectUrl)
+      }
     }
     
-    console.log('Middleware - Redirecting to sign in from protected route')
-    const redirectUrl = new URL('/signin', request.url)
-    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
+    console.log('Middleware - Session found, allowing access to protected route:', path)
+    return NextResponse.next()
   }
   
-  // If accessing auth pages with a session, redirect to dashboard
-  if ((request.nextUrl.pathname === '/signin' || request.nextUrl.pathname === '/signup') && session) {
-    console.log('Middleware - Redirecting to dashboard from auth page')
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // If the request is for an auth page and the user is authenticated
+  if ((path === '/signin' || path === '/signup') && session) {
+    console.log('Middleware - Session exists, redirecting from auth page to dashboard')
+    // Redirect to dashboard
+    return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
   }
   
-  return response
+  // For all other routes, proceed normally
+  return NextResponse.next()
 }
 
 // Specify which routes this middleware should run on

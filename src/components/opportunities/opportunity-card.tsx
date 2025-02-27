@@ -6,6 +6,11 @@ import { formatDistanceToNow } from 'date-fns'
 import { Sparkles } from 'lucide-react'
 import type { Opportunity } from '@/lib/services/opportunities'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { DollarSign, Clock, Users } from 'lucide-react'
 
 interface OpportunityCardProps {
   opportunity: Opportunity & {
@@ -31,22 +36,27 @@ export function OpportunityCard({
   isBlockchain = false,
 }: OpportunityCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
   
   const toggleExpand = () => setIsExpanded(!isExpanded)
   
-  // Safely handle date formatting with error handling
-  let timeAgo = 'Recently'
-  try {
-    if (opportunity.created_at) {
-      const createdAt = new Date(opportunity.created_at)
-      if (!isNaN(createdAt.getTime())) {
-        timeAgo = formatDistanceToNow(createdAt, { addSuffix: true })
-      } else {
-        console.log('Invalid created_at date format:', opportunity.created_at)
+  // Use the timeAgo prop if provided, otherwise calculate it from created_at
+  let formattedTimeAgo = timeAgo || 'Recently'
+  
+  // Only calculate if timeAgo prop is not provided
+  if (!timeAgo) {
+    try {
+      if (opportunity.created_at) {
+        const createdAt = new Date(opportunity.created_at)
+        if (!isNaN(createdAt.getTime())) {
+          formattedTimeAgo = formatDistanceToNow(createdAt, { addSuffix: true })
+        } else {
+          console.log('Invalid created_at date format:', opportunity.created_at)
+        }
       }
+    } catch (error) {
+      console.error('Error formatting created_at date:', error, opportunity.created_at)
     }
-  } catch (error) {
-    console.error('Error formatting created_at date:', error, opportunity.created_at)
   }
   
   // Safely handle deadline formatting with error handling
@@ -86,130 +96,80 @@ export function OpportunityCard({
   }
 
   return (
-    <div 
-      className={cn(
-        "rounded-lg overflow-hidden border bg-card text-card-foreground shadow-md transition-all hover:shadow-lg",
-        className
-      )}
+    <Card
+      className={`relative overflow-hidden transition-all duration-300 ${
+        isHovered ? 'shadow-lg' : 'shadow-md'
+      } border-gray-200 hover:border-primary/50`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="p-6">
+      <div
+        className={`absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 opacity-0 transition-opacity duration-300 ${
+          isHovered ? 'opacity-100' : ''
+        }`}
+      />
+      
+      <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <h3 className="text-xl font-semibold mb-2">
-            <Link href={`/opportunities/${opportunity.id}`} className="hover:text-muted-foreground">
-              {opportunity.title}
-            </Link>
-          </h3>
-          
-          <div className="flex items-center gap-2">
-            {showMatchScore && opportunity.matchScore !== undefined && (
-              <span 
-                className={cn(
-                  "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                  getBadgeColor()
-                )}
-              >
-                <Sparkles className="mr-1 h-3 w-3" />
-                {opportunity.matchScore}% Match
-              </span>
-            )}
-            
-            {showAIBadge && (
-              <div
-                className={cn(
-                  "px-2 py-1 rounded text-xs font-medium",
-                  "bg-primary/20 text-primary border border-primary/30"
-                )}
-              >
-                <Sparkles className="mr-1 h-3 w-3" />
-                AI Match
-              </div>
-            )}
-            
-            {isOpen ? (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:border dark:border-green-800">
-                Open
-              </span>
-            ) : opportunity.status === 'closed' ? (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:border dark:border-red-800">
-                Closed
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 dark:border dark:border-gray-700">
-                {opportunity.status}
-              </span>
-            )}
+          <div>
+            <h3 className="text-lg font-semibold line-clamp-1">
+              <Link href={`/opportunities/${opportunity.id}`} className="hover:text-muted-foreground">
+                {opportunity.title}
+              </Link>
+            </h3>
+            <p className="text-sm text-gray-500">{formattedTimeAgo}</p>
           </div>
+          <Badge
+            variant={
+              opportunity.status === 'open'
+                ? 'default'
+                : opportunity.status === 'closed'
+                ? 'destructive'
+                : 'outline'
+            }
+            className="capitalize"
+          >
+            {opportunity.status}
+          </Badge>
         </div>
-        
-        <p className="text-muted-foreground mb-4 line-clamp-2">
+      </CardHeader>
+      
+      <CardContent className="pb-2">
+        <p className="text-sm text-gray-600 line-clamp-2 mb-4">
           {opportunity.description}
         </p>
         
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className={cn(
-            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-            isBlockchain 
-              ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 dark:border dark:border-purple-800"
-              : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:border dark:border-blue-800"
-          )}>
-            {opportunity.opportunity_type === 'grant' ? 'Grant' : 
-             opportunity.opportunity_type === 'job' ? 'Job' : 'Gig'}
-          </span>
-          
-          {opportunity.category && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border dark:border-gray-700">
-              {opportunity.category}
-            </span>
-          )}
-          
-          {opportunity.is_remote && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border dark:border-gray-700">
-              Remote
-            </span>
-          )}
-          
-          {opportunity.location && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border dark:border-gray-700">
-              {opportunity.location}
-            </span>
-          )}
-        </div>
-        
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
+        <div className="grid grid-cols-3 gap-2">
           <div className="flex items-center">
-            {!isSample && opportunity.profiles && (
-              <>
-                <span className="ml-2">
-                  by <span className="font-medium">{opportunity.profiles.full_name}</span>
-                </span>
-              </>
-            )}
+            <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
+            <span className="text-sm font-medium">
+              {formattedAmount && `$${formattedAmount}`}
+            </span>
           </div>
           
           <div className="flex items-center">
-            {formattedAmount && (
-              <span className="font-medium">
-                ${formattedAmount}
-              </span>
-            )}
-            
-            {timeAgo && (
-              <span className="ml-4">
-                {timeAgo}
-              </span>
-            )}
+            <Clock className="h-4 w-4 text-gray-400 mr-1" />
+            <span className="text-sm">{deadline}</span>
+          </div>
+          
+          <div className="flex items-center">
+            <Users className="h-4 w-4 text-gray-400 mr-1" />
+            <span className="text-sm">{opportunity.applicants}</span>
           </div>
         </div>
-      </div>
+      </CardContent>
       
-      <div className="px-6 py-3 bg-secondary/50 dark:bg-gray-800 border-t border-border dark:border-gray-700">
-        <Link 
-          href={`/opportunities/${opportunity.id}`}
-          className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
-        >
-          View Details <span className="ml-1">→</span>
-        </Link>
-      </div>
-    </div>
+      <Separator />
+      
+      <CardFooter className="pt-3 pb-3 flex justify-between">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/opportunities/${opportunity.id}`}>View Details</Link>
+        </Button>
+        
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/opportunities/${opportunity.id}/apply`}>Apply Now</Link>
+        </Button>
+      </CardFooter>
+    </Card>
   )
 } 
