@@ -10,6 +10,11 @@ const envSchema = z.object({
   NEXT_PUBLIC_NETWORK_ID: z.string().min(1).optional(),
   NEXT_PUBLIC_RPC_URL: z.string().url().optional(),
   
+  // zkSync
+  NEXT_PUBLIC_ZKSYNC_RPC_URL: z.string().url().optional(),
+  NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS: z.string().optional(),
+  NEXT_PUBLIC_ZKSYNC_NETWORK: z.string().optional(),
+  
   // API Keys
   OPENAI_API_KEY: z.string().min(1).optional(),
   
@@ -45,6 +50,11 @@ export const env = {
   // Blockchain
   NEXT_PUBLIC_NETWORK_ID: process.env.NEXT_PUBLIC_NETWORK_ID || '',
   NEXT_PUBLIC_RPC_URL: process.env.NEXT_PUBLIC_RPC_URL || '',
+  
+  // zkSync
+  NEXT_PUBLIC_ZKSYNC_RPC_URL: process.env.NEXT_PUBLIC_ZKSYNC_RPC_URL || 'https://testnet.era.zksync.dev',
+  NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+  NEXT_PUBLIC_ZKSYNC_NETWORK: process.env.NEXT_PUBLIC_ZKSYNC_NETWORK || 'testnet',
   
   // API Keys
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
