@@ -2,257 +2,328 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
-import { Plus, Search, Filter, Loader2, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { OpportunityCard } from '@/components/opportunities/opportunity-card'
 import { AIOpportunityFinder } from '@/components/opportunities/ai-opportunity-finder'
+import { useUser } from '@/lib/hooks/use-user'
+import { useToast } from '@/components/ui/use-toast'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Opportunity {
   id: string
   title: string
   description: string
-  opportunity_type: 'grant' | 'job' | 'gig'
   organization: string
-  amount: number
   deadline: string
-  eligibility: string
-  application_url: string
-  source: string
-  source_id: string
+  amount: string
+  location: string
+  opportunity_type: string
+  status: 'open' | 'closed' | 'draft'
   created_at: string
-  status?: 'open' | 'closed'
-  category?: string
-  is_remote?: boolean
-  location?: string | null
-  profiles?: any[] | null
+  updated_at: string
+  matchScore?: number
 }
 
 export default function OpportunitiesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const initialType = searchParams.get('type') || 'all'
-  const initialTab = searchParams.get('tab') || 'browse'
+  const { user, isLoading: userLoading } = useUser()
+  const { toast } = useToast()
   
+  // State for opportunities
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
-  const [loading, setLoading] = useState(true)
+  const [highMatches, setHighMatches] = useState<Opportunity[]>([])
+  const [mediumMatches, setMediumMatches] = useState<Opportunity[]>([])
+  const [isLoadingOpportunities, setIsLoadingOpportunities] = useState(true)
+  const [isLoadingMatches, setIsLoadingMatches] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedType, setSelectedType] = useState<string>(initialType)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<'newest' | 'amount'>('newest')
-  const [activeTab, setActiveTab] = useState<string>(initialTab)
   
-  // Update URL when tab changes
-  const handleTabChange = (value: string) => {
-    setActiveTab(value)
+  // State for search and filters
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedType, setSelectedType] = useState<string>('all')
+  
+  // Get query parameters
+  const initialType = searchParams.get('type') || 'all'
+  const initialQuery = searchParams.get('query') || ''
+  
+  // Set initial filter values from URL
+  useEffect(() => {
+    if (initialType) setSelectedType(initialType)
+    if (initialQuery) setSearchQuery(initialQuery)
+  }, [initialType, initialQuery])
+  
+  // Fetch AI matches if user is logged in
+  useEffect(() => {
+    if (userLoading) return
     
-    // Update URL with the new tab parameter
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('tab', value)
-    
-    // Replace the current URL with the new one
-    router.replace(`/opportunities?${params.toString()}`)
+    if (user) {
+      fetchAIMatches()
+    } else {
+      setIsLoadingMatches(false)
+    }
+  }, [user, userLoading])
+  
+  // Fetch all opportunities
+  useEffect(() => {
+    fetchOpportunities()
+  }, [selectedType, searchQuery])
+  
+  // Fetch AI matches from the agent API
+  async function fetchAIMatches() {
+    try {
+      setIsLoadingMatches(true)
+      const response = await fetch('/api/agent?action=matches')
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to fetch AI matches')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setHighMatches(data.matches.highMatches || [])
+        setMediumMatches(data.matches.mediumMatches || [])
+      } else {
+        throw new Error(data.message || 'Failed to fetch AI matches')
+      }
+    } catch (error) {
+      console.error('Error fetching AI matches:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to fetch AI matches',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoadingMatches(false)
+    }
   }
   
-  useEffect(() => {
-    async function fetchOpportunities() {
-      setLoading(true)
+  // Fetch all opportunities from API
+  async function fetchOpportunities() {
+    try {
+      setIsLoadingOpportunities(true)
       setError(null)
       
-      try {
-        let query = supabase
-          .from('opportunities')
-          .select('*')
-        
-        // Apply type filter
-        if (selectedType !== 'all') {
-          query = query.eq('opportunity_type', selectedType)
-        }
-        
-        // Apply sorting
-        if (sortBy === 'newest') {
-          query = query.order('created_at', { ascending: false })
-        } else if (sortBy === 'amount') {
-          query = query.order('amount', { ascending: false })
-        }
-        
-        const { data, error } = await query
-        
-        if (error) throw error
-        
-        // Apply search filter client-side
-        let filteredData = data || []
-        if (searchQuery) {
-          const lowerQuery = searchQuery.toLowerCase()
-          filteredData = filteredData.filter(opp => 
-            opp.title.toLowerCase().includes(lowerQuery) ||
-            opp.description.toLowerCase().includes(lowerQuery) ||
-            opp.organization.toLowerCase().includes(lowerQuery)
-          )
-        }
-        
-        setOpportunities(filteredData)
-      } catch (err) {
-        console.error('Error fetching opportunities:', err)
-        setError('Failed to load opportunities. Please try again.')
-      } finally {
-        setLoading(false)
+      // Build query parameters
+      const queryParams = new URLSearchParams()
+      if (selectedType !== 'all') queryParams.set('type', selectedType)
+      if (searchQuery) queryParams.set('query', searchQuery)
+      
+      const url = `/api/opportunities${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to fetch opportunities')
       }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setOpportunities(data.opportunities || [])
+      } else {
+        throw new Error(data.message || 'Failed to fetch opportunities')
+      }
+    } catch (error) {
+      console.error('Error fetching opportunities:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load opportunities. Please try again later.')
+    } finally {
+      setIsLoadingOpportunities(false)
     }
-    
-    fetchOpportunities()
-  }, [selectedType, sortBy, searchQuery])
+  }
   
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }
+  
+  // Handle type filter change
   const handleTypeChange = (type: string) => {
     setSelectedType(type)
+    
+    // Update URL with new filter
+    const params = new URLSearchParams(searchParams.toString())
+    if (type === 'all') {
+      params.delete('type')
+    } else {
+      params.set('type', type)
+    }
+    
+    if (searchQuery) {
+      params.set('query', searchQuery)
+    }
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`
+    window.history.pushState({}, '', newUrl)
   }
   
-  const handleSortChange = (sort: 'newest' | 'amount') => {
-    setSortBy(sort)
-  }
-  
-  const handleSearch = (e: React.FormEvent) => {
+  // Handle search submission
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Search is already applied via the useEffect dependency
+    
+    // Update URL with search query
+    const params = new URLSearchParams(searchParams.toString())
+    if (searchQuery) {
+      params.set('query', searchQuery)
+    } else {
+      params.delete('query')
+    }
+    
+    if (selectedType !== 'all') {
+      params.set('type', selectedType)
+    }
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`
+    window.history.pushState({}, '', newUrl)
+    
+    fetchOpportunities()
+  }
+  
+  // Get unique opportunity types for filter
+  const opportunityTypes = ['all', ...new Set(opportunities.map(opp => opp.opportunity_type))]
+  
+  // Show error if there's an issue loading opportunities
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black text-white py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-gray-900 rounded-lg p-8 text-center">
+            <h2 className="text-xl font-semibold mb-4">Error</h2>
+            <p className="text-gray-400 mb-6">{error}</p>
+            <Button onClick={() => fetchOpportunities()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
   
   return (
-    <div className="container py-10">
-      <div className="flex flex-col space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Opportunities</h1>
-            <p className="text-muted-foreground">
-              Discover grants, jobs, and gigs for artists
-            </p>
-          </div>
-          <Button onClick={() => router.push('/opportunities/create')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Opportunity
-          </Button>
-        </div>
+    <div className="min-h-screen bg-black text-white py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Opportunities</h1>
         
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="browse">
-              <Filter className="mr-2 h-4 w-4" />
-              Browse Opportunities
-            </TabsTrigger>
-            <TabsTrigger value="ai">
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI Opportunity Finder
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="browse" className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex gap-2">
-                <Button
-                  variant={selectedType === 'all' ? 'default' : 'outline'}
-                  onClick={() => handleTypeChange('all')}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={selectedType === 'grant' ? 'default' : 'outline'}
-                  onClick={() => handleTypeChange('grant')}
-                >
-                  Grants
-                </Button>
-                <Button
-                  variant={selectedType === 'job' ? 'default' : 'outline'}
-                  onClick={() => handleTypeChange('job')}
-                >
-                  Jobs
-                </Button>
-                <Button
-                  variant={selectedType === 'gig' ? 'default' : 'outline'}
-                  onClick={() => handleTypeChange('gig')}
-                >
-                  Gigs
-                </Button>
-              </div>
-              
-              <div className="flex gap-2 ml-auto">
-                <form onSubmit={handleSearch} className="flex gap-2">
-                  <Input
-                    placeholder="Search opportunities..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-[200px] md:w-[300px]"
-                  />
-                  <Button type="submit">
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </form>
-                
-                <Select value={sortBy} onValueChange={handleSortChange}>
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="amount">Amount</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+        {/* AI-matched opportunities section */}
+        {user && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold mb-6">Your Matches</h2>
             
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            {isLoadingMatches ? (
+              <div className="bg-gray-900 rounded-lg p-8">
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-3/4 bg-gray-800" />
+                  <Skeleton className="h-20 w-full bg-gray-800" />
+                  <Skeleton className="h-20 w-full bg-gray-800" />
+                </div>
               </div>
-            ) : error ? (
-              <div className="text-center py-12">
-                <p className="text-red-500">{error}</p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setLoading(true)
-                    setError(null)
-                    // Trigger a re-fetch by changing a dependency
-                    setSortBy(prev => prev === 'newest' ? 'amount' : 'newest')
-                    setTimeout(() => setSortBy(prev => prev === 'newest' ? 'amount' : 'newest'), 100)
-                  }}
-                  className="mt-4"
-                >
-                  Try Again
+            ) : highMatches.length === 0 && mediumMatches.length === 0 ? (
+              <div className="bg-gray-900 rounded-lg p-8 text-center">
+                <p className="text-gray-400 mb-4">
+                  No matches found. Complete your profile to get personalized recommendations.
+                </p>
+                <Button onClick={() => router.push('/profile/edit')}>
+                  Complete Profile
                 </Button>
-              </div>
-            ) : opportunities.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No opportunities found.</p>
-                {searchQuery && (
-                  <p className="mt-2">
-                    Try different search terms or filters.
-                  </p>
-                )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-6">
-                {opportunities.map((opportunity) => (
-                  <OpportunityCard
-                    key={opportunity.id}
-                    opportunity={opportunity}
-                  />
-                ))}
+              <div className="space-y-8">
+                {highMatches.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-3 text-green-400 border-l-4 border-green-400 pl-3">
+                      High Matches
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      {highMatches.map((opportunity) => (
+                        <OpportunityCard 
+                          key={opportunity.id} 
+                          opportunity={opportunity} 
+                          showMatchScore={true}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {mediumMatches.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-3 text-yellow-400 border-l-4 border-yellow-400 pl-3">
+                      Good Matches
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      {mediumMatches.map((opportunity) => (
+                        <OpportunityCard 
+                          key={opportunity.id} 
+                          opportunity={opportunity} 
+                          showMatchScore={true}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </TabsContent>
+          </div>
+        )}
+        
+        {/* Search and filter section */}
+        <div className="bg-gray-900 rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Browse All Opportunities</h2>
           
-          <TabsContent value="ai" className="space-y-6">
-            <AIOpportunityFinder />
-          </TabsContent>
-        </Tabs>
+          <form onSubmit={handleSearchSubmit} className="mb-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  placeholder="Search opportunities..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              
+              <Button type="submit" className="bg-white text-black hover:bg-gray-200">
+                Search
+              </Button>
+            </div>
+          </form>
+          
+          <div className="flex flex-wrap gap-2 mb-6">
+            {opportunityTypes.map((type) => (
+              <Button
+                key={type}
+                variant={selectedType === type ? 'default' : 'outline'}
+                onClick={() => handleTypeChange(type)}
+                className={selectedType === type ? 'bg-white text-black' : 'border-gray-700 text-gray-300'}
+              >
+                {type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
+              </Button>
+            ))}
+          </div>
+          
+          {isLoadingOpportunities ? (
+            <div className="space-y-4 py-4">
+              <Skeleton className="h-20 w-full bg-gray-800" />
+              <Skeleton className="h-20 w-full bg-gray-800" />
+              <Skeleton className="h-20 w-full bg-gray-800" />
+            </div>
+          ) : opportunities.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No opportunities found matching your criteria.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {opportunities.map((opportunity) => (
+                <OpportunityCard 
+                  key={opportunity.id} 
+                  opportunity={opportunity}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

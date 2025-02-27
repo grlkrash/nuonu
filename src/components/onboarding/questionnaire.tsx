@@ -136,10 +136,10 @@ export function Questionnaire() {
               Create Account
             </Link>
             <Link
-              href="/opportunities"
+              href="/dashboard"
               className="block w-full px-6 py-3 bg-transparent hover:bg-gray-800 text-white font-medium rounded-md transition-colors text-center border border-white"
             >
-              Skip and View Opportunities
+              Skip to View Matches
             </Link>
           </div>
         </div>

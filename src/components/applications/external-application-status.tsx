@@ -5,7 +5,7 @@ import { Loader2, RefreshCw, CheckCircle, AlertCircle, Clock } from 'lucide-reac
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
-import { useUser } from '@/lib/auth'
+import { useUser } from '@/lib/auth-hooks'
 
 interface ExternalApplicationStatusProps {
   opportunityId: string

@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { OpportunityCard } from "./opportunity-card"
 import { useToast } from "@/components/ui/use-toast"
-import { useUser } from "@/lib/auth"
+import { useUser } from "@/lib/auth-hooks"
 import { supabase } from "@/lib/supabase/client"
 
 interface ArtistProfile {

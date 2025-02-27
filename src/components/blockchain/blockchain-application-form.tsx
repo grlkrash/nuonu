@@ -7,10 +7,11 @@ import * as fcl from '@onflow/fcl'
 import { registerArtist as registerArtistOnBase } from '@/lib/services/blockchain'
 import { registerArtist as registerArtistOnZkSync } from '@/lib/services/zksync-blockchain'
 import { registerArtist as registerArtistOnFlow } from '@/lib/services/flow-blockchain'
+import { useUser } from '@/lib/auth-hooks'
+import Link from 'next/link'
 
 interface BlockchainApplicationFormProps {
   opportunityId: string
-  userId: string
   opportunityTitle: string
   className?: string
 }
@@ -25,11 +26,11 @@ interface WalletState {
 
 export function BlockchainApplicationForm({
   opportunityId,
-  userId,
   opportunityTitle,
   className = '',
 }: BlockchainApplicationFormProps) {
   const router = useRouter()
+  const { user, loading } = useUser()
   const [wallet, setWallet] = useState<WalletState | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
@@ -39,6 +40,11 @@ export function BlockchainApplicationForm({
   
   // Connect to wallet based on selected network
   const connectWallet = async () => {
+    if (!user) {
+      setError('Please sign in to connect your wallet')
+      return
+    }
+
     setIsConnecting(true)
     setError(null)
     
@@ -91,6 +97,11 @@ export function BlockchainApplicationForm({
   
   // Apply for opportunity using connected wallet
   const applyForOpportunity = async () => {
+    if (!user) {
+      setError('Please sign in to apply')
+      return
+    }
+
     if (!wallet) {
       setError('Please connect your wallet first')
       return
@@ -103,11 +114,11 @@ export function BlockchainApplicationForm({
     try {
       // Register artist wallet on the appropriate blockchain
       if (wallet.network === 'base') {
-        await registerArtistOnBase(userId, wallet.address)
+        await registerArtistOnBase(user.id, wallet.address)
       } else if (wallet.network === 'zksync') {
-        await registerArtistOnZkSync(userId, wallet.address)
+        await registerArtistOnZkSync(user.id, wallet.address)
       } else if (wallet.network === 'flow') {
-        await registerArtistOnFlow(userId, wallet.address)
+        await registerArtistOnFlow(user.id, wallet.address)
       }
       
       // In a real implementation, this would also submit the application to the opportunity
@@ -125,6 +136,44 @@ export function BlockchainApplicationForm({
     } finally {
       setIsApplying(false)
     }
+  }
+  
+  // If user is not authenticated, show a message prompting them to sign in
+  if (!loading && !user) {
+    return (
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 ${className}`}>
+        <h2 className="text-xl font-semibold mb-4">Blockchain Application</h2>
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
+          <h3 className="text-lg font-medium text-amber-800 dark:text-amber-300 mb-2">
+            Create an account to apply via blockchain
+          </h3>
+          <p className="text-amber-600 dark:text-amber-400 mb-4">
+            Sign up or sign in to apply for this opportunity using blockchain verification.
+          </p>
+          <div className="flex gap-4">
+            <Link href="/signup">
+              <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                Create Account
+              </button>
+            </Link>
+            <Link href="/signin">
+              <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                Sign In
+              </button>
+            </Link>
+          </div>
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+          <p>Applying with blockchain verification allows you to:</p>
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li>Verify your identity using your blockchain wallet</li>
+            <li>Create verifiable credentials for your application</li>
+            <li>Track your application status on-chain</li>
+            <li>Build a verifiable portfolio of applications</li>
+          </ul>
+        </div>
+      </div>
+    )
   }
   
   return (

@@ -1,4 +1,6 @@
 {
-  "/onboarding/page": "app/onboarding/page.js",
-  "/signup/page": "app/signup/page.js"
+  "/not-found": "app/not-found.js",
+  "/api/agent/route": "app/api/agent/route.js",
+  "/opportunities/page": "app/opportunities/page.js",
+  "/onboarding/page": "app/onboarding/page.js"
 }

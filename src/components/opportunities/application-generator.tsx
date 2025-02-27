@@ -19,8 +19,9 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
-import { useUser } from '@/lib/auth'
+import { useUser } from '@/lib/auth-hooks'
 import { supabase } from '@/lib/supabase/client'
+import Link from 'next/link'
 
 interface ApplicationGeneratorProps {
   opportunityId: string
@@ -29,7 +30,7 @@ interface ApplicationGeneratorProps {
 
 export function ApplicationGenerator({ opportunityId, opportunityTitle }: ApplicationGeneratorProps) {
   const { toast } = useToast()
-  const { user } = useUser()
+  const { user, loading } = useUser()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmittingExternal, setIsSubmittingExternal] = useState(false)
@@ -50,13 +51,7 @@ export function ApplicationGenerator({ opportunityId, opportunityTitle }: Applic
     budget: string
     timeline: string
     impactStatement: string
-  }>({
-    artistStatement: '',
-    projectDescription: '',
-    budget: '',
-    timeline: '',
-    impactStatement: ''
-  })
+  } | null>(null)
   const [copied, setCopied] = useState<{
     [key: string]: boolean
   }>({
@@ -137,7 +132,7 @@ export function ApplicationGenerator({ opportunityId, opportunityTitle }: Applic
   }
 
   const handleCopy = (field: string) => {
-    const content = editedContent[field as keyof typeof editedContent]
+    const content = editedContent?.[field as keyof typeof editedContent]
     navigator.clipboard.writeText(content)
     
     setCopied({
@@ -175,19 +170,19 @@ export function ApplicationGenerator({ opportunityId, opportunityTitle }: Applic
       // Combine all sections into a single proposal
       const proposal = `
 # Artist Statement
-${editedContent.artistStatement}
+${editedContent?.artistStatement}
 
 # Project Description
-${editedContent.projectDescription}
+${editedContent?.projectDescription}
 
 # Budget
-${editedContent.budget}
+${editedContent?.budget}
 
 # Timeline
-${editedContent.timeline}
+${editedContent?.timeline}
 
 # Impact Statement
-${editedContent.impactStatement}
+${editedContent?.impactStatement}
       `.trim()
 
       // Create a new application in the database
@@ -228,19 +223,19 @@ ${editedContent.impactStatement}
 # Application for ${opportunityTitle}
 
 ## Artist Statement
-${editedContent.artistStatement}
+${editedContent?.artistStatement}
 
 ## Project Description
-${editedContent.projectDescription}
+${editedContent?.projectDescription}
 
 ## Budget
-${editedContent.budget}
+${editedContent?.budget}
 
 ## Timeline
-${editedContent.timeline}
+${editedContent?.timeline}
 
 ## Impact Statement
-${editedContent.impactStatement}
+${editedContent?.impactStatement}
     `.trim()
     
     // Create a blob and download link
@@ -286,19 +281,19 @@ ${editedContent.impactStatement}
       // Combine all sections into a single proposal
       const proposal = `
 # Artist Statement
-${editedContent.artistStatement}
+${editedContent?.artistStatement}
 
 # Project Description
-${editedContent.projectDescription}
+${editedContent?.projectDescription}
 
 # Budget
-${editedContent.budget}
+${editedContent?.budget}
 
 # Timeline
-${editedContent.timeline}
+${editedContent?.timeline}
 
 # Impact Statement
-${editedContent.impactStatement}
+${editedContent?.impactStatement}
       `.trim()
 
       // Call the API to submit the external application using Browser Base
@@ -313,11 +308,11 @@ ${editedContent.impactStatement}
           applicationData: {
             text: proposal,
             formFields: {
-              artistStatement: editedContent.artistStatement,
-              projectDescription: editedContent.projectDescription,
-              budget: editedContent.budget,
-              timeline: editedContent.timeline,
-              impactStatement: editedContent.impactStatement
+              artistStatement: editedContent?.artistStatement,
+              projectDescription: editedContent?.projectDescription,
+              budget: editedContent?.budget,
+              timeline: editedContent?.timeline,
+              impactStatement: editedContent?.impactStatement
             }
           }
         }),
@@ -344,6 +339,41 @@ ${editedContent.impactStatement}
     } finally {
       setIsSubmittingExternal(false)
     }
+  }
+
+  // If user is not authenticated, show a message prompting them to sign in
+  if (!loading && !user) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
+            AI Application Generator
+          </CardTitle>
+          <CardDescription>
+            Generate a customized application for this opportunity
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-amber-800 dark:text-amber-300 mb-2">
+              Create an account to use the AI Application Generator
+            </h3>
+            <p className="text-amber-600 dark:text-amber-400 mb-4">
+              Sign up or sign in to generate a customized application for this opportunity using AI.
+            </p>
+            <div className="flex gap-4">
+              <Link href="/signup">
+                <Button>Create Account</Button>
+              </Link>
+              <Link href="/signin">
+                <Button variant="outline">Sign In</Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -415,7 +445,7 @@ ${editedContent.impactStatement}
                   </Button>
                 </div>
                 <Textarea 
-                  value={editedContent.artistStatement} 
+                  value={editedContent?.artistStatement} 
                   onChange={(e) => setEditedContent({...editedContent, artistStatement: e.target.value})}
                   className="min-h-[200px]"
                 />
@@ -443,7 +473,7 @@ ${editedContent.impactStatement}
                   </Button>
                 </div>
                 <Textarea 
-                  value={editedContent.projectDescription} 
+                  value={editedContent?.projectDescription} 
                   onChange={(e) => setEditedContent({...editedContent, projectDescription: e.target.value})}
                   className="min-h-[200px]"
                 />
@@ -471,7 +501,7 @@ ${editedContent.impactStatement}
                   </Button>
                 </div>
                 <Textarea 
-                  value={editedContent.budget} 
+                  value={editedContent?.budget} 
                   onChange={(e) => setEditedContent({...editedContent, budget: e.target.value})}
                   className="min-h-[200px]"
                 />
@@ -499,7 +529,7 @@ ${editedContent.impactStatement}
                   </Button>
                 </div>
                 <Textarea 
-                  value={editedContent.timeline} 
+                  value={editedContent?.timeline} 
                   onChange={(e) => setEditedContent({...editedContent, timeline: e.target.value})}
                   className="min-h-[200px]"
                 />
@@ -527,7 +557,7 @@ ${editedContent.impactStatement}
                   </Button>
                 </div>
                 <Textarea 
-                  value={editedContent.impactStatement} 
+                  value={editedContent?.impactStatement} 
                   onChange={(e) => setEditedContent({...editedContent, impactStatement: e.target.value})}
                   className="min-h-[200px]"
                 />
