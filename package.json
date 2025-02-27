@@ -18,6 +18,7 @@
     "verify:zksync": "hardhat verify --network zkSyncTestnet",
     "prepare-bounty": "node scripts/prepare-bounty.js",
     "test:zksync-sso": "node scripts/test-zksync-sso.js",
+    "test:blockchain-integration": "node scripts/test-blockchain-integration.js",
     "cleanup": "node scripts/cleanup-repo.js"
   },
   "dependencies": {
