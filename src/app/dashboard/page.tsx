@@ -6,6 +6,8 @@ import { getProfileById } from '@/lib/services/profiles'
 import { getMatchedOpportunities } from '@/lib/services/ai-matching'
 import { OpportunityCard } from '@/components/opportunities/opportunity-card'
 import { SimpleWalletConnect } from '@/components/blockchain/simple-wallet-connect'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 export const metadata = {
   title: 'Artist Grant AI - Dashboard',
@@ -191,6 +193,30 @@ export default async function DashboardPage() {
             <SimpleWalletConnect />
           </div>
           
+          {/* AI Agent Preview */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">AI Agent</h2>
+              <Link
+                href="/dashboard/agent"
+                className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+              >
+                View Dashboard
+              </Link>
+            </div>
+            
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Your AI agent can autonomously discover opportunities, generate applications, and monitor your submissions.
+            </p>
+            
+            <Link
+              href="/dashboard/agent"
+              className="inline-block w-full px-4 py-2 bg-purple-600 text-white text-center rounded-md hover:bg-purple-700"
+            >
+              Manage AI Agent
+            </Link>
+          </div>
+          
           {/* Quick links */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
@@ -212,6 +238,12 @@ export default async function DashboardPage() {
                 className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
               >
                 View Applications
+              </Link>
+              <Link
+                href="/dashboard/agent"
+                className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+              >
+                AI Agent Dashboard
               </Link>
             </nav>
           </div>
