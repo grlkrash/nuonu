@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Loader2, Wallet } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 import { zksyncSsoConnector } from 'zksync-sso/connector'
 import { zksyncSepoliaTestnet } from 'viem/chains'
@@ -12,62 +12,73 @@ import { createConfig, connect, disconnect } from '@wagmi/core'
 import { parseEther } from 'viem'
 import { ssoConnector, wagmiConfig } from '@/lib/zksync-sso-config'
 
+interface WalletState {
+  address: string | null
+  isConnected: boolean
+  isConnecting: boolean
+}
+
 export function ZkSyncWalletConnect() {
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [isConnected, setIsConnected] = useState(false)
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const [wallet, setWallet] = useState<WalletState>({
+    address: null,
+    isConnected: false,
+    isConnecting: false,
+  })
+  const [error, setError] = useState<string | null>(null)
 
   // Check if wallet is already connected on component mount
   useEffect(() => {
     const checkWalletConnection = async () => {
+      console.log('Checking wallet connection on component mount')
       try {
-        console.log('Checking for existing wallet connection...')
+        // Check if wallet address is stored in localStorage
+        const storedAddress = localStorage.getItem('walletAddress')
+        console.log('Wallet address from localStorage:', storedAddress)
         
-        // Check localStorage first
-        const storedWalletAddress = localStorage.getItem('walletAddress')
+        // Check if there's an active Supabase session
+        const { data: sessionData } = await supabase.auth.getSession()
+        console.log('Supabase session exists:', sessionData.session ? 'Yes' : 'No')
         
-        if (storedWalletAddress) {
-          console.log('Found wallet address in localStorage:', storedWalletAddress)
+        if (sessionData.session && storedAddress) {
+          console.log('Session and wallet address found, verifying match')
           
-          // Verify if the user is also logged in with Supabase
-          console.log('Checking for Supabase session...')
-          const { data, error } = await supabase.auth.getSession()
+          // Verify the wallet address matches the one in the session metadata
+          const sessionWalletAddress = sessionData.session.user.user_metadata.wallet_address
           
-          if (error) {
-            console.error('Error getting Supabase session:', error)
-            localStorage.removeItem('walletAddress')
-            return
-          }
-          
-          console.log('Current Supabase session:', data.session ? 'exists' : 'none')
-          
-          if (data.session) {
-            console.log('Valid session found, setting wallet as connected')
+          if (sessionWalletAddress && sessionWalletAddress !== storedAddress) {
+            console.warn('Wallet address mismatch between localStorage and session metadata')
+            console.log('localStorage address:', storedAddress)
+            console.log('Session metadata address:', sessionWalletAddress)
             
-            // Check if the wallet address in session metadata matches localStorage
-            const metadataWalletAddress = data.session.user?.user_metadata?.wallet_address
+            // Update localStorage with the correct address from session
+            localStorage.setItem('walletAddress', sessionWalletAddress)
             
-            if (metadataWalletAddress && metadataWalletAddress !== storedWalletAddress) {
-              console.warn('Wallet address mismatch between localStorage and session metadata')
-              console.log('localStorage:', storedWalletAddress)
-              console.log('Session metadata:', metadataWalletAddress)
-            }
-            
-            setWalletAddress(storedWalletAddress)
-            setIsConnected(true)
+            // Set wallet state with the address from session
+            setWallet({
+              address: sessionWalletAddress,
+              isConnected: true,
+              isConnecting: false,
+            })
           } else {
-            console.log('No Supabase session found, clearing wallet connection')
-            localStorage.removeItem('walletAddress')
+            // Set wallet state with the stored address
+            setWallet({
+              address: storedAddress,
+              isConnected: true,
+              isConnecting: false,
+            })
           }
-        } else {
-          console.log('No wallet address found in localStorage')
         }
       } catch (err) {
         console.error('Error checking wallet connection:', err)
-        // Clear any potentially invalid wallet connection
+        
+        // Clean up if there was an error
         localStorage.removeItem('walletAddress')
+        setWallet({
+          address: null,
+          isConnected: false,
+          isConnecting: false,
+        })
       }
     }
     
@@ -75,194 +86,226 @@ export function ZkSyncWalletConnect() {
   }, [])
 
   const handleConnect = async () => {
-    setIsConnecting(true)
+    setWallet(prev => ({ ...prev, isConnecting: true }))
     setError(null)
     
     try {
-      console.log('Connecting wallet with zkSync SSO...')
-      console.log('Using zkSync Sepolia testnet with chain ID:', zksyncSepoliaTestnet.id)
+      console.log('Initializing connection with ssoConnector on zkSync Sepolia testnet')
       
-      // Connect using zkSync SSO
-      console.log('Initializing connection with ssoConnector...')
+      // Attempt to connect the wallet
       const result = await connect(wagmiConfig, {
         connector: ssoConnector,
         chainId: zksyncSepoliaTestnet.id,
       })
-      
       console.log('Connection result:', JSON.stringify(result, null, 2))
       
-      if (!result) {
-        throw new Error('Connection failed: No result returned')
+      // Check if connection was successful
+      if (!result || !result.accounts || result.accounts.length === 0) {
+        throw new Error('Failed to connect wallet: No accounts returned')
       }
       
-      if (!result.accounts || result.accounts.length === 0) {
-        throw new Error('Connection failed: No accounts returned')
-      }
-      
+      // Get the connected wallet address
       const address = result.accounts[0]
-      console.log('Wallet connected successfully:', address)
+      console.log('Connected wallet address:', address)
       
-      // Verify the connection was successful
+      // Verify the address is valid
       if (!address) {
-        throw new Error('Connection failed: Invalid address')
+        throw new Error('Failed to connect wallet: Invalid address')
       }
       
-      setWalletAddress(address)
-      setIsConnected(true)
+      // Generate a random password for the user
+      // Note: This is only used for Supabase authentication, not for the wallet
+      const password = crypto.randomUUID()
       
-      // Store wallet address in localStorage for persistence
-      localStorage.setItem('walletAddress', address)
-      
-      // Generate a wallet-specific email for Supabase authentication
-      const walletEmail = `${address.toLowerCase()}@wallet.user`
-      // Use UUID for better security
-      const walletPassword = uuidv4()
-      
-      console.log('Attempting to sign in with wallet email:', walletEmail)
+      // Create an email from the wallet address
+      const email = `${address.toLowerCase()}@wallet.zksync`
+      console.log('Using wallet email for Supabase auth:', email)
       
       // Try to sign in with the wallet email
-      console.log('Signing in with Supabase...')
+      console.log('Attempting to sign in with wallet email')
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: walletEmail,
-        password: walletPassword,
+        email,
+        password,
       })
       
+      // If sign in fails, create a new account
       if (signInError) {
         console.log('Sign in failed, creating new account:', signInError.message)
         
-        // If sign in fails, create a new account
-        console.log('Creating new Supabase account...')
+        // Create a new account with the wallet email
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: walletEmail,
-          password: walletPassword,
+          email,
+          password,
           options: {
             data: {
               wallet_address: address,
-              auth_method: 'wallet',
             },
           },
         })
         
+        // Check if account creation was successful
         if (signUpError) {
           console.error('Failed to create account:', signUpError)
           throw new Error(`Failed to create account: ${signUpError.message}`)
         }
         
-        console.log('Account created successfully:', signUpData?.user?.id)
-        
         // Verify session was created
-        console.log('Verifying session after signup...')
-        const { data: sessionData } = await supabase.auth.getSession()
-        console.log('Session after signup:', sessionData.session ? 'exists' : 'none')
-        
-        if (!sessionData.session) {
-          // Try to sign in again after account creation
-          console.log('No session after signup, attempting to sign in again')
-          const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-            email: walletEmail,
-            password: walletPassword,
-          })
-          
-          if (retryError) {
-            console.error('Failed to sign in after account creation:', retryError)
-            throw new Error(`Failed to sign in after account creation: ${retryError.message}`)
-          }
-          
-          console.log('Retry sign in successful:', retryData?.user?.id)
+        if (!signUpData.session) {
+          console.error('No session created after sign up')
+          throw new Error('Session creation failed after sign up')
         }
         
-        // Redirect to onboarding if new account
-        console.log('Redirecting to onboarding...')
+        console.log('New account created successfully')
+        console.log('Session created:', signUpData.session ? 'Yes' : 'No')
+        
+        // Store the wallet address in localStorage
+        localStorage.setItem('walletAddress', address)
+        
+        // Set the wallet state
+        setWallet({
+          address,
+          isConnected: true,
+          isConnecting: false,
+        })
+        
+        // Redirect to onboarding for new users
+        console.log('Redirecting to onboarding for new user')
         router.push('/onboarding')
       } else {
-        console.log('Signed in successfully:', signInData?.user?.id)
+        // Sign in was successful
+        console.log('Sign in successful')
+        console.log('Session created:', signInData.session ? 'Yes' : 'No')
         
-        // Verify session exists
-        console.log('Verifying session after signin...')
-        const { data: sessionData } = await supabase.auth.getSession()
-        console.log('Session after signin:', sessionData.session ? 'exists' : 'none')
-        
-        if (!sessionData.session) {
-          throw new Error('Failed to create session after successful sign in')
+        // Verify session was created
+        if (!signInData.session) {
+          console.error('No session created after sign in')
+          throw new Error('Session creation failed after sign in')
         }
         
+        // Store the wallet address in localStorage
+        localStorage.setItem('walletAddress', address)
+        
+        // Set the wallet state
+        setWallet({
+          address,
+          isConnected: true,
+          isConnecting: false,
+        })
+        
         // Redirect to dashboard for existing users
-        console.log('Redirecting to dashboard...')
+        console.log('Redirecting to dashboard for existing user')
         router.push('/dashboard')
       }
     } catch (err: unknown) {
-      console.error('Wallet connection error:', err)
+      console.error('Error connecting wallet:', err)
       
-      // Properly type the error for TypeScript
-      const errorMessage = err instanceof Error ? err.message : String(err)
-      console.log('Error message:', errorMessage)
+      // Extract error message based on error type
+      let errorMessage = 'Failed to connect wallet'
       
-      // Provide more specific error messages based on the error type
-      if (errorMessage.includes('Request rejected')) {
-        setError('Connection request was rejected. Please try again and approve the connection in your wallet.')
-      } else if (errorMessage.includes('User rejected')) {
-        setError('You rejected the connection request. Please try again and approve the connection.')
-      } else if (errorMessage.includes('session creation')) {
-        setError('Error during session creation. Please try again or use a different wallet.')
-        console.error('Session creation error details:', err)
-      } else if (errorMessage.includes('Failed to create account')) {
-        setError('Failed to create account. Please try again with a different wallet.')
-      } else {
-        setError('Failed to connect wallet: ' + errorMessage)
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = String(err)
       }
       
-      // Clean up if there was an error
+      // Handle specific error cases
+      if (errorMessage.includes('rejected') || errorMessage.includes('denied')) {
+        setError('Connection request was rejected. Please approve the connection request in your wallet.')
+      } else if (errorMessage.includes('user rejected')) {
+        setError('You rejected the connection request. Please try again and approve the connection.')
+      } else if (errorMessage.includes('Session creation failed')) {
+        setError('Error during session creation. Please see console for more info.')
+        console.error('Session creation error details:', err)
+      } else if (errorMessage.includes('Failed to create account')) {
+        setError('Failed to create account. Please try again later.')
+      } else if (errorMessage.includes('high approval amount')) {
+        setError('The approval amount is higher than expected. This is normal for zkSync SSO and is used as a maximum limit, not an actual charge.')
+      } else {
+        setError(`Failed to connect wallet: ${errorMessage}`)
+      }
+      
+      // Clean up in case of error
       localStorage.removeItem('walletAddress')
-      setWalletAddress(null)
-      setIsConnected(false)
       
       // Try to disconnect the wallet if it was partially connected
       try {
         await disconnect(wagmiConfig)
       } catch (disconnectErr) {
-        console.error('Error during disconnect after failed connection:', disconnectErr)
+        console.error('Error disconnecting after failed connection:', disconnectErr)
       }
+      
+      // Reset wallet state
+      setWallet({
+        address: null,
+        isConnected: false,
+        isConnecting: false,
+      })
     } finally {
-      setIsConnecting(false)
+      setWallet(prev => ({ ...prev, isConnecting: false }))
     }
   }
 
   const handleDisconnect = async () => {
+    setWallet(prev => ({ ...prev, isConnecting: true }))
+    setError(null)
+    
     try {
-      console.log('Disconnecting wallet...')
+      console.log('Disconnecting wallet')
       
-      // Disconnect wallet
-      console.log('Calling disconnect on wagmiConfig...')
+      // Disconnect from wagmiConfig
+      console.log('Calling disconnect from wagmiConfig')
       await disconnect(wagmiConfig)
-      console.log('Wallet disconnected from zkSync SSO')
+      console.log('Successfully disconnected from zkSync SSO')
       
       // Sign out from Supabase
-      console.log('Signing out from Supabase...')
+      console.log('Signing out from Supabase')
       const { error: signOutError } = await supabase.auth.signOut()
+      
       if (signOutError) {
         console.error('Error signing out from Supabase:', signOutError)
-        throw new Error(`Failed to sign out from Supabase: ${signOutError.message}`)
       } else {
-        console.log('Signed out from Supabase successfully')
+        console.log('Successfully signed out from Supabase')
       }
       
-      // Clear local storage
-      console.log('Clearing wallet address from localStorage...')
+      // Clear wallet address from localStorage
+      console.log('Clearing wallet address from localStorage')
       localStorage.removeItem('walletAddress')
       
-      // Reset state
-      setWalletAddress(null)
-      setIsConnected(false)
+      // Reset wallet state
+      console.log('Resetting wallet state')
+      setWallet({
+        address: null,
+        isConnected: false,
+        isConnecting: false,
+      })
       
       console.log('Wallet disconnected successfully')
       
       // Redirect to home page
-      console.log('Redirecting to home page...')
+      console.log('Redirecting to home page')
       router.push('/')
     } catch (err: unknown) {
-      console.error('Disconnect error:', err)
-      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.error('Error disconnecting wallet:', err)
+      
+      // Extract error message based on error type
+      let errorMessage = 'Failed to disconnect wallet'
+      
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = String(err)
+      }
+      
       setError(`Failed to disconnect wallet: ${errorMessage}`)
+      
+      // Reset wallet state anyway to allow user to try again
+      setWallet({
+        address: null,
+        isConnected: false,
+        isConnecting: false,
+      })
+    } finally {
+      setWallet(prev => ({ ...prev, isConnecting: false }))
     }
   }
 
@@ -276,13 +319,13 @@ export function ZkSyncWalletConnect() {
         </div>
       )}
       
-      {!isConnected ? (
+      {!wallet.isConnected ? (
         <Button
           onClick={handleConnect}
-          disabled={isConnecting}
+          disabled={wallet.isConnecting}
           className="w-full bg-transparent border border-white text-white hover:bg-white hover:text-black"
         >
-          {isConnecting ? (
+          {wallet.isConnecting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Connecting...
@@ -298,7 +341,7 @@ export function ZkSyncWalletConnect() {
         <div className="space-y-4">
           <div className="p-3 bg-gray-800 rounded-md">
             <p className="text-sm text-white font-medium">Connected Wallet</p>
-            <p className="text-sm text-gray-400">{walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}</p>
+            <p className="text-sm text-gray-400">{wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}</p>
           </div>
           
           <Button 
