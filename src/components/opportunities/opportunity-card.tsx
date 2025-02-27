@@ -28,16 +28,53 @@ export function OpportunityCard({
   
   const toggleExpand = () => setIsExpanded(!isExpanded)
   
-  const createdAt = new Date(opportunity.created_at)
-  const timeAgo = formatDistanceToNow(createdAt, { addSuffix: true })
+  // Safely handle date formatting with error handling
+  let timeAgo = 'Recently'
+  try {
+    if (opportunity.created_at) {
+      const createdAt = new Date(opportunity.created_at)
+      if (!isNaN(createdAt.getTime())) {
+        timeAgo = formatDistanceToNow(createdAt, { addSuffix: true })
+      } else {
+        console.log('Invalid created_at date format:', opportunity.created_at)
+      }
+    }
+  } catch (error) {
+    console.error('Error formatting created_at date:', error, opportunity.created_at)
+  }
   
-  const deadline = opportunity.deadline 
-    ? formatDistanceToNow(new Date(opportunity.deadline), { addSuffix: true })
-    : null
+  // Safely handle deadline formatting with error handling
+  let deadline = 'No deadline'
+  try {
+    if (opportunity.deadline) {
+      const deadlineDate = new Date(opportunity.deadline)
+      if (!isNaN(deadlineDate.getTime())) {
+        deadline = formatDistanceToNow(deadlineDate, { addSuffix: true })
+      } else {
+        console.log('Invalid deadline date format:', opportunity.deadline)
+        deadline = typeof opportunity.deadline === 'string' ? opportunity.deadline : 'No deadline'
+      }
+    }
+  } catch (error) {
+    console.error('Error formatting deadline date:', error, opportunity.deadline)
+    deadline = typeof opportunity.deadline === 'string' ? opportunity.deadline : 'No deadline'
+  }
   
-  const formattedAmount = opportunity.amount 
-    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(opportunity.amount)
-    : 'Amount not specified'
+  // Safely handle amount formatting
+  let formattedAmount = 'Amount not specified'
+  try {
+    if (opportunity.amount) {
+      if (typeof opportunity.amount === 'number') {
+        formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(opportunity.amount)
+      } else if (typeof opportunity.amount === 'string') {
+        // If it's already a string (like "$5,000"), use it directly
+        formattedAmount = opportunity.amount
+      }
+    }
+  } catch (error) {
+    console.error('Error formatting amount:', error)
+    formattedAmount = opportunity.amount?.toString() || 'Amount not specified'
+  }
   
   // Function to get match score color based on score value
   const getMatchScoreColor = (score: number) => {
@@ -139,7 +176,7 @@ export function OpportunityCard({
           </div>
           
           <div className="flex items-center">
-            {opportunity.amount > 0 && (
+            {opportunity.amount && (
               <span className="font-medium text-white">
                 {formattedAmount}
               </span>

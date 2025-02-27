@@ -295,48 +295,94 @@ function calculateProfileCompletion(profile) {
 
 // Helper function to get sample opportunities for guest mode
 async function getSampleOpportunities() {
-  // This would typically fetch from an API or database
-  // For now, we'll return some sample data
-  return {
-    highMatches: [
-      {
-        id: 'sample-1',
-        title: 'Artist Innovation Grant',
-        organization: 'Creative Foundation',
-        deadline: '2023-12-31',
-        amount: '$5,000',
-        description: 'Funding for innovative art projects that push boundaries.',
-        matchScore: 85,
-      },
-      {
-        id: 'sample-2',
-        title: 'Digital Art Fellowship',
-        organization: 'Tech Arts Initiative',
-        deadline: '2023-11-15',
-        amount: '$10,000',
-        description: 'Support for artists working with digital media and technology.',
-        matchScore: 80,
-      },
-    ],
-    mediumMatches: [
-      {
-        id: 'sample-3',
-        title: 'Community Art Project Grant',
-        organization: 'Local Arts Council',
-        deadline: '2023-12-01',
-        amount: '$3,000',
-        description: 'Funding for art projects that engage with local communities.',
-        matchScore: 65,
-      },
-      {
-        id: 'sample-4',
-        title: 'Emerging Artist Scholarship',
-        organization: 'National Arts Foundation',
-        deadline: '2024-01-15',
-        amount: '$7,500',
-        description: 'Support for early-career artists to develop their practice.',
-        matchScore: 60,
-      },
-    ],
+  try {
+    // This would typically fetch from an API or database
+    // For now, we'll return some sample data with valid dates
+    const currentDate = new Date()
+    const oneMonthLater = new Date(currentDate)
+    oneMonthLater.setMonth(currentDate.getMonth() + 1)
+    
+    const twoMonthsLater = new Date(currentDate)
+    twoMonthsLater.setMonth(currentDate.getMonth() + 2)
+    
+    console.log('Sample opportunities - Generated dates:', {
+      currentDate: currentDate.toISOString(),
+      oneMonthLater: oneMonthLater.toISOString(),
+      twoMonthsLater: twoMonthsLater.toISOString()
+    })
+    
+    return {
+      highMatches: [
+        {
+          id: 'sample-1',
+          title: 'Artist Innovation Grant',
+          organization: 'Creative Foundation',
+          deadline: oneMonthLater.toISOString(),
+          amount: '$5,000',
+          description: 'Funding for innovative art projects that push boundaries.',
+          matchScore: 85,
+          created_at: currentDate.toISOString(),
+          status: 'open',
+          location: 'Global',
+          url: 'https://example.com/grant1',
+          opportunity_type: 'grant',
+          is_remote: true,
+          category: 'Visual Arts'
+        },
+        {
+          id: 'sample-2',
+          title: 'Digital Art Fellowship',
+          organization: 'Tech Arts Initiative',
+          deadline: twoMonthsLater.toISOString(),
+          amount: '$10,000',
+          description: 'Support for artists working with digital media and technology.',
+          matchScore: 80,
+          created_at: currentDate.toISOString(),
+          status: 'open',
+          location: 'Remote',
+          url: 'https://example.com/grant2',
+          opportunity_type: 'grant',
+          is_remote: true,
+          category: 'Digital Arts'
+        },
+      ],
+      mediumMatches: [
+        {
+          id: 'sample-3',
+          title: 'Community Art Project Grant',
+          organization: 'Local Arts Council',
+          deadline: oneMonthLater.toISOString(),
+          amount: '$3,000',
+          description: 'Funding for art projects that engage with local communities.',
+          matchScore: 65,
+          created_at: currentDate.toISOString(),
+          status: 'open',
+          location: 'New York',
+          url: 'https://example.com/grant3',
+          opportunity_type: 'grant',
+          is_remote: false,
+          category: 'Community Arts'
+        },
+        {
+          id: 'sample-4',
+          title: 'Emerging Artist Scholarship',
+          organization: 'National Arts Foundation',
+          deadline: twoMonthsLater.toISOString(),
+          amount: '$7,500',
+          description: 'Support for early-career artists to develop their practice.',
+          matchScore: 60,
+          created_at: currentDate.toISOString(),
+          status: 'open',
+          location: 'United States',
+          url: 'https://example.com/grant4',
+          opportunity_type: 'grant',
+          is_remote: false,
+          category: 'Emerging Artists'
+        },
+      ],
+    }
+  } catch (error) {
+    console.error('Error generating sample opportunities:', error)
+    return { highMatches: [], mediumMatches: [] }
   }
 } 
