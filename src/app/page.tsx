@@ -2,14 +2,43 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import Questionnaire from "@/components/onboarding/questionnaire"
 import { LandingHeader } from "@/components/layout/landing-header"
-import { Button } from "@/components/ui/button"
+import { supabase } from "@/lib/supabase/client"
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false)
   const [logoScale, setLogoScale] = useState(1)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const homeRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      try {
+        setIsLoading(true)
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          console.log("Home - User is logged in, redirecting to dashboard")
+          setIsAuthenticated(true)
+          router.push("/dashboard")
+        } else {
+          setIsAuthenticated(false)
+          setIsLoading(false)
+        }
+      } catch (error) {
+        console.error("Home - Error checking auth:", error)
+        setIsAuthenticated(false)
+        setIsLoading(false)
+      }
+    }
+    
+    checkAuth()
+  }, [router])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,6 +57,22 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-pulse">
+          <Image
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/nuonu%20logomark-sYgJYMazAtVYSiirs625uXJ2QFnzqE.png"
+            alt="nuonu logo"
+            width={200}
+            height={50}
+            priority
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-black text-white">

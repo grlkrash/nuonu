@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { SignOutButton } from '@/components/auth/sign-out-button'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 
 interface LandingHeaderProps {
   scrolled?: boolean;
@@ -120,7 +121,10 @@ export function LandingHeader({ scrolled = false }: LandingHeaderProps) {
         >
           <Menu />
         </Button>
-        <Link href="/" className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div 
+          onClick={() => user ? handleLinkClick("/dashboard") : handleLinkClick("/")} 
+          className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+        >
           <div 
             className="transition-all duration-300"
             style={{ 
@@ -137,8 +141,9 @@ export function LandingHeader({ scrolled = false }: LandingHeaderProps) {
               className="transition-all duration-300"
             />
           </div>
-        </Link>
-        <div className="transition-opacity duration-300" style={{ opacity: internalScrolled ? 1 : 0.8 }}>
+        </div>
+        <div className="flex items-center gap-2 transition-opacity duration-300" style={{ opacity: internalScrolled ? 1 : 0.8 }}>
+          <ThemeToggle />
           {isLoading ? (
             <div className="h-10 w-20 bg-gray-800 rounded animate-pulse"></div>
           ) : user ? (

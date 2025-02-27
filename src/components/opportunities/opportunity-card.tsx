@@ -15,14 +15,20 @@ interface OpportunityCardProps {
     } | null
     matchScore?: number
   }
+  timeAgo: string
   className?: string
   showMatchScore?: boolean
+  showAIBadge?: boolean
+  isBlockchain?: boolean
 }
 
 export function OpportunityCard({ 
   opportunity, 
+  timeAgo,
   className,
-  showMatchScore = true
+  showMatchScore = true,
+  showAIBadge = false,
+  isBlockchain = false,
 }: OpportunityCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   
@@ -60,40 +66,36 @@ export function OpportunityCard({
     deadline = typeof opportunity.deadline === 'string' ? opportunity.deadline : 'No deadline'
   }
   
-  // Safely handle amount formatting
-  let formattedAmount = 'Amount not specified'
-  try {
-    if (opportunity.amount) {
-      if (typeof opportunity.amount === 'number') {
-        formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(opportunity.amount)
-      } else if (typeof opportunity.amount === 'string') {
-        // If it's already a string (like "$5,000"), use it directly
-        formattedAmount = opportunity.amount
-      }
-    }
-  } catch (error) {
-    console.error('Error formatting amount:', error)
-    formattedAmount = opportunity.amount?.toString() || 'Amount not specified'
-  }
-  
-  // Function to get match score color based on score value
-  const getMatchScoreColor = (score: number) => {
-    if (score >= 80) return 'bg-green-900/30 text-green-400 border border-green-800'
-    if (score >= 60) return 'bg-yellow-900/30 text-yellow-400 border border-yellow-800'
+  // Format amount with currency symbol
+  const formattedAmount = opportunity.amount 
+    ? opportunity.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    : null
+
+  // Check if opportunity is open based on status and deadline
+  const isOpen = opportunity.status === 'open' && 
+    (!opportunity.deadline || new Date() < new Date(opportunity.deadline))
+
+  // Determine if the opportunity is a sample
+  const isSample = opportunity.id.startsWith('sample-')
+
+  // Get the badge color based on opportunity type
+  function getBadgeColor() {
+    if (opportunity.opportunity_type === 'grant') return 'bg-blue-900/30 text-blue-400 border border-blue-800'
+    if (opportunity.opportunity_type === 'job') return 'bg-purple-900/30 text-purple-400 border border-purple-800'
     return 'bg-gray-800 text-gray-400 border border-gray-700'
   }
-  
+
   return (
     <div 
       className={cn(
-        'bg-gray-900 rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow border border-gray-800',
+        "rounded-lg overflow-hidden border bg-card text-card-foreground shadow-md transition-all hover:shadow-lg",
         className
       )}
     >
       <div className="p-6">
         <div className="flex justify-between items-start">
-          <h3 className="text-xl font-semibold mb-2 text-white">
-            <Link href={`/opportunities/${opportunity.id}`} className="hover:text-gray-300">
+          <h3 className="text-xl font-semibold mb-2">
+            <Link href={`/opportunities/${opportunity.id}`} className="hover:text-muted-foreground">
               {opportunity.title}
             </Link>
           </h3>
@@ -103,7 +105,7 @@ export function OpportunityCard({
               <span 
                 className={cn(
                   "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                  getMatchScoreColor(opportunity.matchScore)
+                  getBadgeColor()
                 )}
               >
                 <Sparkles className="mr-1 h-3 w-3" />
@@ -111,90 +113,99 @@ export function OpportunityCard({
               </span>
             )}
             
-            {opportunity.status === 'open' && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/30 text-green-400 border border-green-800">
+            {showAIBadge && (
+              <div
+                className={cn(
+                  "px-2 py-1 rounded text-xs font-medium",
+                  "bg-primary/20 text-primary border border-primary/30"
+                )}
+              >
+                <Sparkles className="mr-1 h-3 w-3" />
+                AI Match
+              </div>
+            )}
+            
+            {isOpen ? (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:border dark:border-green-800">
                 Open
               </span>
-            )}
-            {opportunity.status === 'closed' && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900/30 text-red-400 border border-red-800">
+            ) : opportunity.status === 'closed' ? (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:border dark:border-red-800">
                 Closed
               </span>
-            )}
-            {opportunity.status === 'draft' && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">
-                Draft
+            ) : (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 dark:border dark:border-gray-700">
+                {opportunity.status}
               </span>
             )}
           </div>
         </div>
         
-        <p className="text-gray-300 mb-4 line-clamp-2">
+        <p className="text-muted-foreground mb-4 line-clamp-2">
           {opportunity.description}
         </p>
         
         <div className="flex flex-wrap gap-2 mb-4">
           <span className={cn(
-            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-            opportunity.opportunity_type === 'grant' 
-              ? "bg-blue-900/30 text-blue-400 border-blue-800"
-              : opportunity.opportunity_type === 'job'
-                ? "bg-purple-900/30 text-purple-400 border-purple-800"
-                : "bg-orange-900/30 text-orange-400 border-orange-800"
+            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+            isBlockchain 
+              ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 dark:border dark:border-purple-800"
+              : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:border dark:border-blue-800"
           )}>
             {opportunity.opportunity_type === 'grant' ? 'Grant' : 
              opportunity.opportunity_type === 'job' ? 'Job' : 'Gig'}
           </span>
           
           {opportunity.category && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border dark:border-gray-700">
               {opportunity.category}
             </span>
           )}
           
           {opportunity.is_remote && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border dark:border-gray-700">
               Remote
             </span>
           )}
           
           {opportunity.location && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border dark:border-gray-700">
               {opportunity.location}
             </span>
           )}
         </div>
         
-        <div className="flex justify-between items-center text-sm text-gray-400">
+        <div className="flex justify-between items-center text-sm text-muted-foreground">
           <div className="flex items-center">
-            <span>Posted {timeAgo}</span>
-            {opportunity.profiles?.full_name && (
-              <span className="ml-2">
-                by <span className="font-medium text-white">{opportunity.profiles.full_name}</span>
-              </span>
+            {!isSample && opportunity.profiles && (
+              <>
+                <span className="ml-2">
+                  by <span className="font-medium">{opportunity.profiles.full_name}</span>
+                </span>
+              </>
             )}
           </div>
           
           <div className="flex items-center">
-            {opportunity.amount && (
-              <span className="font-medium text-white">
-                {formattedAmount}
+            {formattedAmount && (
+              <span className="font-medium">
+                ${formattedAmount}
               </span>
             )}
             
-            {deadline && (
+            {timeAgo && (
               <span className="ml-4">
-                Deadline: {deadline}
+                {timeAgo}
               </span>
             )}
           </div>
         </div>
       </div>
       
-      <div className="px-6 py-3 bg-gray-800 border-t border-gray-700">
+      <div className="px-6 py-3 bg-secondary/50 dark:bg-gray-800 border-t border-border dark:border-gray-700">
         <Link 
           href={`/opportunities/${opportunity.id}`}
-          className="text-white hover:text-gray-300 font-medium text-sm flex items-center"
+          className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
         >
           View Details <span className="ml-1">→</span>
         </Link>

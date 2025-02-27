@@ -34,7 +34,7 @@ export function WalletModal({ trigger }: WalletModalProps) {
         <DialogHeader>
           <DialogTitle className="text-white">Connect Wallet</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Connect your wallet to access blockchain features
+            Connect your zkSync wallet to access exclusive features.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">

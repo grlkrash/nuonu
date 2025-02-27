@@ -33,7 +33,7 @@ export function SignOutButton({ className, variant = 'default' }: SignOutButtonP
       variant={variant}
       onClick={handleSignOut}
       disabled={loading}
-      className={className}
+      className={`bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-4 py-2 ${className}`}
     >
       {loading ? 'Signing out...' : 'Sign out'}
     </Button>

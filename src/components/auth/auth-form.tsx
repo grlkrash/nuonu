@@ -134,7 +134,14 @@ export function AuthForm({ type }: AuthFormProps) {
         
         if (error) throw error
         
-        setMessage('Check your email for a confirmation link')
+        setMessage(
+          'Check your email for a confirmation link. ' +
+          'If you don\'t see it, please check your spam folder. ' +
+          'The email will come from noreply@mail.app.supabase.io'
+        )
+        
+        // Log the email being used for debugging purposes
+        console.log('Auth form - Sign up email sent to:', email)
       }
     } catch (error: any) {
       setError(error.message || 'An error occurred')

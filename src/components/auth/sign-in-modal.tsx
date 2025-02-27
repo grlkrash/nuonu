@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase/client"
 import { ZkSyncWalletConnect } from "@/components/blockchain/zksync-wallet-connect"
 
@@ -83,7 +83,10 @@ export function SignInModal({ isOpen, onClose, method }: SignInModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-black border border-white text-white">
         <DialogHeader>
-          <DialogTitle>{method === "email" ? "Sign in with Email" : "Connect Wallet"}</DialogTitle>
+          <DialogTitle>Sign In</DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Sign in to your account to access all features.
+          </DialogDescription>
         </DialogHeader>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         {method === "email" && (
