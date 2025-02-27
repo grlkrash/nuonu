@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase/client"
+import { ZkSyncWalletConnect } from "@/components/blockchain/zksync-wallet-connect"
 
 interface SignInModalProps {
   isOpen: boolean
@@ -69,9 +70,6 @@ export function SignInModal({ isOpen, onClose, method }: SignInModalProps) {
           alert("Verification email sent. Please check your inbox.")
           onClose()
         }
-      } else if (method === "wallet") {
-        // Implement zksync flow here
-        console.log("Implement zksync flow")
       }
     } catch (err) {
       console.error("Authentication error:", err)
@@ -132,10 +130,7 @@ export function SignInModal({ isOpen, onClose, method }: SignInModalProps) {
         )}
         {method === "wallet" && (
           <div>
-            <p>Connect your wallet to sign in</p>
-            <Button onClick={handleSubmit} className="w-full mt-4" disabled={isLoading}>
-              {isLoading ? "Connecting..." : "Connect Wallet"}
-            </Button>
+            <ZkSyncWalletConnect />
           </div>
         )}
       </DialogContent>

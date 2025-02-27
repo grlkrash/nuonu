@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json(
           { error: 'Bad Request', message: 'Invalid action' },
-          { status: 400 }
+        { status: 400 }
         )
     }
   } catch (error) {
@@ -241,9 +241,9 @@ export async function match_opportunities(request: NextRequest) {
     const { profile } = await request.json()
 
     // Validate request
-    if (!profile) {
-      return NextResponse.json(
-        { error: 'Missing required parameter: profile' },
+        if (!profile) {
+          return NextResponse.json(
+            { error: 'Missing required parameter: profile' },
             { status: 400 }
           )
         }

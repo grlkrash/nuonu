@@ -1,37 +1,32 @@
-import { redirect } from 'next/navigation'
-import { AuthForm } from '@/components/auth/auth-form'
-import { getSession } from '@/lib/auth'
-import { Header } from '@/components/layout/header'
+import { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { AuthForm } from "@/components/auth/auth-form"
+import { getSession } from "@/lib/auth"
+import { FixedHeader } from "@/components/layout/fixed-header"
 
-export const metadata = {
-  title: 'Sign Up | Nuonu',
-  description: 'Create a new Nuonu account',
+export const metadata: Metadata = {
+  title: "Sign Up",
+  description: "Sign up for an account",
 }
 
 export default async function SignUpPage() {
   const session = await getSession()
-  
-  // Redirect to dashboard if already signed in
+
   if (session) {
-    redirect('/dashboard')
+    redirect("/dashboard")
   }
-  
+
   return (
     <>
-      <Header />
-      <div className="container mx-auto px-4 py-16 mt-16">
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Create an Account
-            </h1>
-            <p className="text-gray-300">
-              Sign up for Nuonu to discover funding opportunities for your art
-            </p>
-          </div>
-          
-          <div className="bg-black border border-gray-700 rounded-lg shadow-md p-6">
-            <AuthForm mode="signup" />
+      <FixedHeader />
+      <div className="flex flex-col min-h-screen bg-black">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-md mx-auto space-y-6 bg-black border border-gray-800 p-6 rounded-lg">
+            <div className="space-y-2 text-center">
+              <h1 className="text-3xl font-bold text-white">Sign Up</h1>
+              <p className="text-gray-400">Create an account to get started</p>
+            </div>
+            <AuthForm type="signup" />
           </div>
         </div>
       </div>

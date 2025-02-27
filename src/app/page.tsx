@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Questionnaire from "@/components/onboarding/questionnaire"
-import { Header } from "@/components/layout/header"
+import { LandingHeader } from "@/components/layout/landing-header"
+import { Button } from "@/components/ui/button"
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false)
@@ -30,7 +31,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      <Header scrolled={scrolled} />
+      <LandingHeader />
       <div ref={homeRef} className="h-screen flex flex-col items-center justify-center relative">
         <div className="flex flex-col items-center justify-center">
           <div style={{ transform: `scale(${logoScale})`, transition: "transform 0.3s ease-out" }}>

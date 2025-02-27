@@ -3,16 +3,23 @@ import { evaluateOpportunityMatch } from './openai'
 import { Profile } from '@/types/profile'
 import { Opportunity } from '@/types/opportunity'
 import { supabase } from '@/lib/supabase/client'
-import { OpenAI } from 'openai'
 
-// Initialize OpenAI with error handling
-let openai: OpenAI | null = null;
+// Import OpenAI with error handling
+let OpenAI: any
+let openai: any = null
+
 try {
-  openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+  // Dynamic import to avoid build errors
+  OpenAI = require('openai').OpenAI
+  
+  // Initialize OpenAI client if API key is available
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
 } catch (error) {
-  console.error('Failed to initialize OpenAI client:', error);
+  console.error('Failed to import or initialize OpenAI client:', error)
 }
 
 /**

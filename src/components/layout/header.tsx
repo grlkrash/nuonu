@@ -63,69 +63,27 @@ export function Header({ scrolled = true }: HeaderProps) {
 
   const handleLinkClick = (href: string) => {
     setIsMenuOpen(false)
-    router.push(href)
+    
+    // Check if this is a protected route and we have a user
+    const isProtectedRoute = href.startsWith('/dashboard') || 
+                            href.startsWith('/profile') || 
+                            href.startsWith('/applications')
+    
+    if (isProtectedRoute && !user) {
+      // If trying to access a protected route without being logged in,
+      // redirect to sign in with the intended destination
+      const redirectUrl = `/signin?redirect=${encodeURIComponent(href)}`
+      router.push(redirectUrl)
+    } else {
+      // Otherwise, proceed with navigation
+      router.push(href)
+      
+      // Force a refresh to ensure the page gets the latest session state
+      setTimeout(() => {
+        router.refresh()
+      }, 100)
+    }
   }
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${internalScrolled ? "bg-black" : "bg-transparent"}`}>
-      <div className="container mx-auto px-4 py-2 flex justify-between items-center relative">
-        <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
-          <Menu />
-        </Button>
-        <Link href="/" className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <div className={internalScrolled ? "animate-pulse" : ""}>
-            <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/nuonu%20logomark-sYgJYMazAtVYSiirs625uXJ2QFnzqE.png"
-              alt="nuonu logo"
-              width={100}
-              height={40}
-              priority
-            />
-          </div>
-        </Link>
-        {isLoading ? (
-          <div className="h-10 w-20 bg-gray-800 rounded animate-pulse"></div>
-        ) : user ? (
-          <SignOutButton variant="outline" />
-        ) : (
-          <SignInButton />
-        )}
-      </div>
-      {isMenuOpen && (
-        <nav className="container mx-auto px-4 py-2 bg-black border-t border-white">
-          <ul className="space-y-2">
-            <li>
-              <button onClick={() => handleLinkClick("/")} className="text-white hover:underline">
-                Home
-              </button>
-            </li>
-            <li>
-              <button onClick={() => handleLinkClick("/about")} className="text-white hover:underline">
-                About nuonu
-              </button>
-            </li>
-            {user && (
-              <>
-                <li>
-                  <button onClick={() => handleLinkClick("/dashboard")} className="text-white hover:underline">
-                    Dashboard
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => handleLinkClick("/profile")} className="text-white hover:underline">
-                    My Profile
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => handleLinkClick("/funds")} className="text-white hover:underline">
-                    My Funds
-                  </button>
-                </li>
-              </>
-            )}
-          </ul>
-        </nav>
-      )}
-    </header>
-  )
-} 
+    <header className={`

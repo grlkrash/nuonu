@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { Header } from "@/components/layout/header"
+import { FixedHeader } from "@/components/layout/fixed-header"
 
 interface Grant {
   id: number
@@ -149,7 +149,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <Header scrolled={scrolled} />
+      <FixedHeader />
       <div className="min-h-screen bg-black text-white py-8 px-4 sm:px-6 lg:px-8 mt-16">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-6">My Profile</h1>

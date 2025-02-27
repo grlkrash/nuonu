@@ -153,6 +153,8 @@ export default function Questionnaire() {
   }
 
   const handleSignUpOption = async (option: string) => {
+    console.log(`Selected option: ${option}`)
+    
     if (option === "signup") {
       // Store email in local storage for sign-up process
       if (typeof window !== "undefined" && answers[2]) {
@@ -169,11 +171,31 @@ export default function Questionnaire() {
       
       // Redirect to sign-in page
       router.push("/signin")
-    } else {
+    } else if (option === "skip") {
       // Skip sign up and go directly to dashboard
-      // For unauthenticated users, we'll show a limited dashboard view
-      router.push("/dashboard")
+      console.log("Skipping sign-up, redirecting to dashboard as guest")
+      
+      try {
+        // Store the email in localStorage in case the user decides to sign up later
+        if (typeof window !== "undefined" && answers[2]) {
+          localStorage.setItem("onboardingEmail", answers[2] as string)
+        }
+        
+        // Explicitly set guest mode parameter and ensure it's properly encoded
+        const guestUrl = "/dashboard?guest=true"
+        console.log("Redirecting to:", guestUrl)
+        
+        // Use replace instead of push to avoid back button issues
+        router.replace(guestUrl)
+      } catch (error) {
+        console.error("Error skipping sign-up:", error)
+        // Fallback to home page if there's an error
+        router.push("/")
+      }
     }
+    
+    // Hide the sign-up prompt
+    setShowSignUpPrompt(false)
   }
 
   return (
@@ -248,25 +270,23 @@ export default function Questionnaire() {
               apply for matches using your unique information
             </p>
             <div className="flex flex-col items-center">
-              <div className="flex gap-2 w-full mb-2">
-                <Button
-                  onClick={() => handleSignUpOption("signup")}
-                  className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-2 py-1 text-xs flex-1"
-                >
-                  Sign Up
-                </Button>
-                <Button
-                  onClick={() => handleSignUpOption("signin")}
-                  className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-2 py-1 text-xs flex-1"
-                >
-                  Sign In
-                </Button>
-              </div>
+              <Button
+                onClick={() => handleSignUpOption("signup")}
+                className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-4 py-2 mb-2 w-full"
+              >
+                Sign Up
+              </Button>
+              <Button
+                onClick={() => handleSignUpOption("signin")}
+                className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-4 py-2 mb-2 w-full"
+              >
+                Sign In
+              </Button>
               <Button
                 onClick={() => handleSignUpOption("skip")}
-                className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-2 py-1 text-xs w-full"
+                className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-4 py-2 w-full"
               >
-                Skip
+                Skip for Now
               </Button>
             </div>
           </div>
