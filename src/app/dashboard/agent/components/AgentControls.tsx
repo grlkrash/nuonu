@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { toast } from '@/components/ui/use-toast'
+import { useToast } from '@/components/ui/use-toast'
 import { Loader2, Play, Settings, Zap } from 'lucide-react'
 
 interface AgentControlsProps {
@@ -16,6 +16,7 @@ interface AgentControlsProps {
 
 export function AgentControls({ artistId }: AgentControlsProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [instructions, setInstructions] = useState('')
   const [autonomousMode, setAutonomousMode] = useState(false)

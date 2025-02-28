@@ -4,17 +4,41 @@ import { createConfig, http } from "@wagmi/core"
 import { parseEther } from "viem"
 import { env } from "@/lib/env"
 
-// Add a check for the correct contract address
+// Official contract addresses from zkSync documentation
 const OFFICIAL_ZKSYNC_SSO_CONTRACT = {
-  sepolia: "0x7a1d5e38e8d3a0f8f8f8a9b3f9a9f8f8a9b8f8a9",  // Replace with actual address
-  testnet: "0x7a1d5e38e8d3a0f8f8f8a9b3f9a9f8f8a9b8f8a9"   // Replace with actual address
+  sepolia: "0x9A6DE0f62Aa270A8bCB1e2610078650D539B1Ef9", // Official Sepolia testnet address
+  testnet: "0x9A6DE0f62Aa270A8bCB1e2610078650D539B1Ef9"  // Same as Sepolia for testnet
 }
 
+// Chain configuration matching official docs
+const sepoliaChain = {
+  ...zksyncSepoliaTestnet,
+  id: 300,
+  name: 'zkSync Sepolia',
+  network: 'zksync-sepolia',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: { http: ['https://sepolia.era.zksync.dev'] },
+    public: { http: ['https://sepolia.era.zksync.dev'] },
+  },
+  blockExplorers: {
+    default: { name: 'Explorer', url: 'https://sepolia.explorer.zksync.io' },
+  },
+  testnet: true,
+}
+
+// Get network from env or default to sepolia
+const network = (env.NEXT_PUBLIC_ZKSYNC_NETWORK || 'sepolia') as keyof typeof OFFICIAL_ZKSYNC_SSO_CONTRACT
+
 console.log('Initializing zkSync SSO with:')
-console.log(`- Network: ${env.NEXT_PUBLIC_ZKSYNC_NETWORK}`)
-console.log(`- RPC URL: ${env.NEXT_PUBLIC_ZKSYNC_RPC_URL}`)
-console.log(`- Contract Address: ${env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS}`)
-console.log(`- Chain ID: ${zksyncSepoliaTestnet.id}`)
+console.log(`- Network: ${network}`)
+console.log(`- RPC URL: ${sepoliaChain.rpcUrls.default.http[0]}`)
+console.log(`- Contract Address: ${OFFICIAL_ZKSYNC_SSO_CONTRACT[network]}`)
+console.log(`- Chain ID: ${sepoliaChain.id}`)
 
 // Validate required environment variables
 if (!env.NEXT_PUBLIC_ZKSYNC_RPC_URL) {
@@ -36,20 +60,20 @@ if (!isUsingOfficialContract) {
   console.warn('Expected addresses:', OFFICIAL_ZKSYNC_SSO_CONTRACT)
 }
 
-// Create the zkSync SSO connector with minimal configuration
-// Following the official documentation at https://docs.zksync.io/zksync-era/unique-features/zksync-sso/getting-started
+// Create the zkSync SSO connector with official configuration
 export const ssoConnector = zksyncSsoConnector({
-  // Session configuration allows users to perform actions without signing each transaction
+  chains: [sepoliaChain],
+  options: {
+    shimDisconnect: true,
+  },
   session: {
-    // Set session expiry to 1 day
     expiry: "1 day",
-    // Allow up to 0.1 ETH to be spent in gas fees
     feeLimit: parseEther("0.1"),
   }
 })
 
 // Log the exact configuration for debugging
-console.log('zkSync SSO connector initialized with EXACT configuration from documentation:', {
+console.log('zkSync SSO connector initialized with configuration:', {
   session: {
     expiry: "1 day",
     feeLimit: parseEther("0.1").toString()
@@ -59,9 +83,9 @@ console.log('zkSync SSO connector initialized with EXACT configuration from docu
 // Create the wagmi config with the required client property
 export const wagmiConfig = createConfig({
   connectors: [ssoConnector],
-  chains: [zksyncSepoliaTestnet],
+  chains: [sepoliaChain],
   transports: {
-    [zksyncSepoliaTestnet.id]: http(env.NEXT_PUBLIC_ZKSYNC_RPC_URL),
+    [sepoliaChain.id]: http(sepoliaChain.rpcUrls.default.http[0])
   },
 })
 
