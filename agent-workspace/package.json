@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-node test-agent.ts"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +13,11 @@
     "@coinbase/agentkit": "0.2.3",
     "@coinbase/agentkit-langchain": "0.2.3",
     "ethers": "6.13.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }
