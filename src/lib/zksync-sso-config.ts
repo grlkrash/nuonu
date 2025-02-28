@@ -1,4 +1,4 @@
-import { zksyncSsoConnector } from "zksync-sso/connector"
+import { zksyncSsoConnector, callPolicy } from "zksync-sso/connector"
 import { zksyncSepoliaTestnet } from "viem/chains"
 import { createConfig } from "@wagmi/core"
 import { parseEther } from "viem"
@@ -34,53 +34,32 @@ export const ssoConnector = zksyncSsoConnector({
     transfers: [
       // Example: Allow transfers to a specific address with a limit
       // {
-      //   token: "ETH", // Use ETH for native token
       //   to: "0x...", // Specific address to allow transfers to
-      //   limit: {
-      //     type: "lifetime", // Can be "lifetime", "allowance", or "unlimited"
-      //     value: parseEther("0.01"), // Maximum amount that can be transferred
-      //   },
+      //   valueLimit: parseEther("0.01"), // Maximum amount that can be transferred
       // },
     ],
     
-    // Configure contract call policies (optional)
-    // This allows the session to call specific contract methods
-    calls: [
+    // Configure contract call policies using the callPolicy helper as recommended in the docs
+    contractCalls: [
       // Example: Allow calls to a specific contract method
-      // {
-      //   to: "0x...", // Contract address
-      //   function: "transfer(address,uint256)", // Function signature
-      //   args: [
-      //     // Argument constraints (optional)
-      //     // { type: "address", value: "0x..." }, // Specific address
-      //     // { type: "uint256", max: parseEther("0.01") }, // Maximum amount
-      //   ],
-      //   limit: {
-      //     type: "unlimited", // No limit on number of calls
-      //   },
-      // },
-    ],
-    
-    // Configure batch call policies (optional)
-    // This allows the session to make batch calls to contracts
-    batches: [
-      // Example: Allow batch calls to specific contracts
-      // {
-      //   calls: [
+      // callPolicy({
+      //   address: "0x...", // Contract address
+      //   abi: erc20Abi, // ABI of the contract
+      //   functionName: "transfer", // Function name to allow
+      //   constraints: [
       //     {
-      //       to: "0x...", // Contract address
-      //       function: "approve(address,uint256)", // Function signature
+      //       index: 0, // First argument (recipient address)
+      //       value: "0x...", // Specific address to allow transfers to
       //     },
       //     {
-      //       to: "0x...", // Contract address
-      //       function: "transferFrom(address,address,uint256)", // Function signature
+      //       index: 1, // Second argument (amount)
+      //       limit: {
+      //         limit: parseEther("0.01"), // Maximum amount
+      //         period: "1 hour", // Time period for the limit
+      //       },
       //     },
       //   ],
-      //   limit: {
-      //     type: "lifetime", // Can be "lifetime", "allowance", or "unlimited"
-      //     value: 5, // Maximum number of times this batch can be called
-      //   },
-      // },
+      // }),
     ],
   },
   
@@ -103,6 +82,8 @@ export const ssoConnector = zksyncSsoConnector({
       // Could trigger a session refresh here
     } else if (error.message?.includes('Policy violation')) {
       console.log('Session policy violation - attempted action not allowed by session policy')
+    } else if (error.message?.includes('code verifier')) {
+      console.log('Code verifier issue - this may indicate a conflict with Supabase auth')
     }
   }
 })
@@ -113,10 +94,6 @@ console.log('zkSync SSO connector initialized with debug mode enabled')
 export const wagmiConfig = createConfig({
   connectors: [ssoConnector],
   chains: [zksyncSepoliaTestnet],
-  logger: {
-    warn: (message) => console.warn(message),
-    error: (message) => console.error(message),
-  },
 })
 
 console.log('wagmiConfig created with zkSync SSO connector') 

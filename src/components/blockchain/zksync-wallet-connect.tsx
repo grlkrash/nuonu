@@ -5,12 +5,10 @@ import { useRouter } from 'next/navigation'
 import { Button } from '../../components/ui/button'
 import { Loader2, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase/client'
-import { v4 as uuidv4 } from 'uuid'
-import { zksyncSsoConnector } from 'zksync-sso/connector'
+import { connect, disconnect } from '@wagmi/core'
 import { zksyncSepoliaTestnet } from 'viem/chains'
-import { createConfig, connect, disconnect } from '@wagmi/core'
-import { parseEther } from 'viem'
 import { ssoConnector, wagmiConfig } from '../../lib/zksync-sso-config'
+import { useToast } from '@/components/ui/use-toast'
 
 interface WalletState {
   address: string | null
@@ -20,6 +18,7 @@ interface WalletState {
 
 export function ZkSyncWalletConnect() {
   const router = useRouter()
+  const { toast } = useToast()
   const [wallet, setWallet] = useState<WalletState>({
     address: null,
     isConnected: false,
@@ -85,59 +84,14 @@ export function ZkSyncWalletConnect() {
               isConnecting: false,
             })
           }
-        } else if (walletAddress && !sessionData.session) {
-          // We have a wallet address but no session - attempt session recovery
-          console.log('Wallet address exists but no session found, attempting recovery')
-          
-          // Try to reconnect the wallet
-          try {
-            const result = await connect(wagmiConfig, {
-              connector: ssoConnector,
-              chainId: zksyncSepoliaTestnet.id,
-            })
-            
-            if (result && result.accounts && result.accounts.length > 0) {
-              const address = result.accounts[0]
-              console.log('Wallet reconnected successfully:', address)
-              
-              // Check if the reconnected address matches the stored one
-              if (address.toLowerCase() !== walletAddress.toLowerCase()) {
-                console.warn('Reconnected wallet address differs from stored address')
-                console.log('Stored address:', walletAddress)
-                console.log('Reconnected address:', address)
-                
-                // Update the stored address
-                localStorage.setItem('walletAddress', address)
-              }
-              
-              // Set wallet as connected
-              setWallet({
-                address,
-                isConnected: true,
-                isConnecting: false,
-              })
-              
-              // Attempt to sign in with the wallet address
-              const email = `${address.toLowerCase()}@wallet.zksync`
-              const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
-              
-              console.log('Attempting to sign in after recovery with wallet-based email')
-              const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-              })
-              
-              if (signInError) {
-                console.error('Session recovery sign-in failed:', signInError.message)
-              } else {
-                console.log('Session recovery successful')
-              }
-            } else {
-              console.error('Failed to reconnect wallet during recovery')
-            }
-          } catch (reconnectError) {
-            console.error('Error during wallet reconnection:', reconnectError)
-          }
+        } else if (walletAddress) {
+          // We have a wallet address but may not have a session
+          // Just update the UI state, actual recovery is handled by SessionRecovery component
+          setWallet({
+            address: walletAddress,
+            isConnected: true,
+            isConnecting: false,
+          })
         }
       } catch (err) {
         console.error('Error checking wallet connection:', err)
@@ -164,6 +118,18 @@ export function ZkSyncWalletConnect() {
     setError(null)
 
     try {
+      // First, disconnect any existing connections to prevent conflicts
+      try {
+        await disconnect(wagmiConfig)
+        console.log('Disconnected any existing zkSync connections')
+        
+        // Wait a moment before reconnecting
+        await new Promise(resolve => setTimeout(resolve, 500))
+      } catch (disconnectError) {
+        console.error('Error disconnecting:', disconnectError)
+        // Continue anyway
+      }
+      
       console.log('Initializing connection with zkSync Sepolia testnet')
       const result = await connect(wagmiConfig, {
         connector: ssoConnector,
@@ -178,12 +144,13 @@ export function ZkSyncWalletConnect() {
       const address = result.accounts[0]
       console.log('Using wallet address:', address)
 
-      // Store the wallet address in localStorage immediately
-      // This helps with recovery if the authentication process fails
+      // Store the wallet address in localStorage and cookies for redundancy
       localStorage.setItem('walletAddress', address)
+      document.cookie = `wallet-address=${address}; path=/; max-age=604800; SameSite=Lax`
 
       // Generate a random password for Supabase authentication
-      const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
+      // Use a deterministic password based on the wallet address for better recovery
+      const password = `${address.toLowerCase()}-${address.slice(2, 10)}-recovery`
       
       // Create an email from the wallet address
       const email = `${address.toLowerCase()}@wallet.zksync`
@@ -227,6 +194,12 @@ export function ZkSyncWalletConnect() {
           isConnecting: false,
         })
         
+        toast({
+          title: "Wallet Connected",
+          description: `Connected to ${address.slice(0, 6)}...${address.slice(-4)}`,
+          duration: 3000,
+        })
+        
         // If we have a session, redirect to onboarding
         if (signUpData.session) {
           console.log('Redirecting to onboarding for new user')
@@ -257,141 +230,113 @@ export function ZkSyncWalletConnect() {
           isConnecting: false,
         })
         
-        // If we have a session, redirect to dashboard
-        if (signInData.session) {
-          console.log('Redirecting to dashboard for existing user')
-          router.push('/dashboard')
-        } else {
-          // Otherwise, wait for the auth callback
-          console.log('Waiting for session creation via auth callback')
-          // The auth callback will handle the redirect
-        }
+        toast({
+          title: "Wallet Connected",
+          description: `Connected to ${address.slice(0, 6)}...${address.slice(-4)}`,
+          duration: 3000,
+        })
+        
+        // Redirect to dashboard
+        console.log('Redirecting to dashboard')
+        router.push('/dashboard')
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Error connecting wallet:', err)
-      
-      // Extract error message based on error type
-      let errorMessage = 'Failed to connect wallet'
-      
-      if (err instanceof Error) {
-        errorMessage = err.message
-      } else if (typeof err === 'object' && err !== null) {
-        errorMessage = String(err)
-      }
-      
-      // Handle specific error cases
-      if (errorMessage.includes('rejected') || errorMessage.includes('denied')) {
-        setError('Connection request was rejected. Please approve the connection request in your wallet.')
-      } else if (errorMessage.includes('user rejected')) {
-        setError('You rejected the connection request. Please try again and approve the connection.')
-      } else if (errorMessage.includes('Session creation failed')) {
-        setError('Error during session creation. Please try again later.')
-      } else if (errorMessage.includes('Failed to create account')) {
-        setError('Failed to create account. Please try again later.')
-      } else if (errorMessage.includes('high approval amount')) {
-        setError('The approval amount is higher than expected. This is normal for zkSync SSO and is used as a maximum limit, not an actual charge.')
-      } else {
-        setError(`Failed to connect wallet: ${errorMessage}`)
-      }
-      
-      // Clean up in case of error
-      localStorage.removeItem('walletAddress')
-      
-      // Try to disconnect the wallet if it was partially connected
-      try {
-        await disconnect(wagmiConfig)
-      } catch (disconnectErr) {
-        console.error('Error disconnecting after failed connection:', disconnectErr)
-      }
-      
-      // Reset wallet state
+      setError(err.message || 'Failed to connect wallet')
       setWallet({
         address: null,
         isConnected: false,
         isConnecting: false,
       })
-    } finally {
-      setWallet(prev => ({ ...prev, isConnecting: false }))
+      
+      toast({
+        title: "Connection Failed",
+        description: err.message || "Failed to connect wallet. Please try again.",
+        variant: "destructive",
+        duration: 5000,
+      })
     }
   }
 
   const handleDisconnect = async () => {
-    setWallet(prev => ({ ...prev, isConnecting: true }))
-    setError(null)
-    
     try {
       console.log('Disconnecting wallet')
-      
-      // Disconnect from wagmiConfig
-      console.log('Calling disconnect from wagmiConfig')
       await disconnect(wagmiConfig)
-      console.log('Successfully disconnected from zkSync SSO')
       
       // Sign out from Supabase
-      console.log('Signing out from Supabase')
-      const { error: signOutError } = await supabase.auth.signOut()
+      await supabase.auth.signOut()
       
-      if (signOutError) {
-        console.error('Error signing out from Supabase:', signOutError)
-      } else {
-        console.log('Successfully signed out from Supabase')
-      }
-      
-      // Clear wallet address from localStorage
-      console.log('Clearing wallet address from localStorage')
+      // Clear stored wallet address
       localStorage.removeItem('walletAddress')
+      document.cookie = 'wallet-address=; path=/; max-age=0; SameSite=Lax'
       
-      // Reset wallet state
-      console.log('Resetting wallet state')
+      // Update state
       setWallet({
         address: null,
         isConnected: false,
         isConnecting: false,
       })
       
-      console.log('Wallet disconnected successfully')
+      toast({
+        title: "Wallet Disconnected",
+        description: "Your wallet has been disconnected.",
+        duration: 3000,
+      })
       
-      // Redirect to home page
-      console.log('Redirecting to home page')
-      router.push('/')
-    } catch (err: unknown) {
+      // Redirect to sign in page
+      router.push('/signin')
+    } catch (err) {
       console.error('Error disconnecting wallet:', err)
       
-      // Extract error message based on error type
-      let errorMessage = 'Failed to disconnect wallet'
-      
-      if (err instanceof Error) {
-        errorMessage = err.message
-      } else if (typeof err === 'object' && err !== null) {
-        errorMessage = String(err)
-      }
-      
-      setError(`Failed to disconnect wallet: ${errorMessage}`)
-      
-      // Reset wallet state anyway to allow user to try again
-      setWallet({
-        address: null,
-        isConnected: false,
-        isConnecting: false,
+      toast({
+        title: "Disconnection Failed",
+        description: "Failed to disconnect wallet. Please try again.",
+        variant: "destructive",
+        duration: 5000,
       })
-    } finally {
-      setWallet(prev => ({ ...prev, isConnecting: false }))
     }
   }
 
   return (
     <div className="flex flex-col gap-4">
       {error && (
-        <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
-          {error}
+        <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-md">
+          <p className="text-sm">{error}</p>
         </div>
       )}
       
-      {!wallet.isConnected ? (
-        <Button
-          onClick={handleConnect}
+      {wallet.isConnected ? (
+        <div className="flex flex-col gap-2">
+          <div className="bg-gray-800 p-3 rounded-md flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-green-500" />
+              <span className="text-sm font-medium">
+                {wallet.address ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : 'Connected'}
+              </span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDisconnect}
+              className="h-8 px-2 text-xs"
+            >
+              Disconnect
+            </Button>
+          </div>
+          <Button 
+            variant="default" 
+            onClick={() => router.push('/dashboard')}
+            className="w-full"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      ) : (
+        <Button 
+          variant="default" 
+          onClick={handleConnect} 
           disabled={wallet.isConnecting}
-          className="w-full bg-transparent border border-white text-white hover:bg-white hover:text-black"
+          className="w-full"
         >
           {wallet.isConnecting ? (
             <>
@@ -401,38 +346,11 @@ export function ZkSyncWalletConnect() {
           ) : (
             <>
               <Wallet className="mr-2 h-4 w-4" />
-              Connect zkSync Wallet
+              Connect Wallet
             </>
           )}
         </Button>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <div className="p-3 bg-gray-800 rounded-md">
-            <p className="text-sm text-white font-medium">Connected Wallet</p>
-            <p className="text-sm text-gray-400">{wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}</p>
-          </div>
-          
-          <Button
-            onClick={handleDisconnect}
-            disabled={wallet.isConnecting}
-            variant="destructive"
-            className="w-full"
-          >
-            {wallet.isConnecting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Disconnecting...
-              </>
-            ) : (
-              'Disconnect Wallet'
-            )}
-          </Button>
-        </div>
       )}
-      
-      <p className="mt-4 text-xs text-gray-400">
-        Connect your zkSync wallet to access exclusive features and manage your blockchain assets.
-      </p>
     </div>
   )
 } 
