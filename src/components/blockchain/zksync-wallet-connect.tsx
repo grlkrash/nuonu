@@ -9,6 +9,7 @@ import { connect, disconnect } from '@wagmi/core'
 import { zksyncSepoliaTestnet } from 'viem/chains'
 import { ssoConnector, wagmiConfig, handleZkSyncError } from '../../lib/zksync-sso-config'
 import { useToast } from '@/components/ui/use-toast'
+import { env } from '@/lib/env'
 
 interface WalletState {
   address: string | null
@@ -118,55 +119,85 @@ export function ZkSyncWalletConnect() {
     setError(null)
 
     try {
-      // Step 1: Clear existing connections and storage to prevent conflicts
-      console.log('Preparing for zkSync SSO connection...')
+      // Step 1: Clear ALL browser storage to prevent conflicts
+      console.log('Clearing ALL storage before zkSync SSO connection...')
+      
+      // First disconnect any existing connections
       try {
         await disconnect(wagmiConfig)
-        console.log('Disconnected any existing zkSync connections')
-        
-        // Wait a moment before reconnecting
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // Clear any localStorage items that might be related to zkSync SSO
-        // This helps prevent code verifier conflicts
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && (key.includes('zksync') || key.includes('wagmi') || key.includes('walletconnect'))) {
-            if (key !== 'walletAddress') { // Keep our wallet address
-              console.log(`Clearing localStorage item: ${key}`)
-              localStorage.removeItem(key)
-            }
-          }
-        }
-        
-        // Clear related cookies
-        document.cookie = 'zksync-sso-code-verifier=; path=/; max-age=0; SameSite=Lax'
-        document.cookie = 'zksync-sso-state=; path=/; max-age=0; SameSite=Lax'
-      } catch (disconnectError) {
-        console.error('Error disconnecting:', disconnectError)
-        // Continue anyway
+        console.log('Disconnected any existing connections')
+      } catch (e) {
+        console.log('No existing connections to disconnect')
       }
       
-      // Step 2: Connect to zkSync SSO (independent of Supabase)
-      console.log('Initializing connection with zkSync Sepolia testnet')
+      // Clear localStorage completely
+      console.log('Clearing localStorage completely')
+      localStorage.clear()
+      
+      // Clear sessionStorage completely
+      console.log('Clearing sessionStorage completely')
+      sessionStorage.clear()
+      
+      // Clear all cookies
+      console.log('Clearing all cookies')
+      document.cookie.split(';').forEach(cookie => {
+        const [name] = cookie.trim().split('=')
+        if (name) {
+          document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`
+        }
+      })
+      
+      // Step 2: Verify browser compatibility
+      console.log('Checking browser compatibility for zkSync SSO...')
+      if (!window.isSecureContext) {
+        throw new Error('Browser is not in a secure context. Please use HTTPS or localhost.')
+      }
+      
+      if (!('credentials' in navigator)) {
+        throw new Error('Browser does not support WebAuthn/Passkeys required for zkSync SSO')
+      }
+      
+      // Step 3: Verify contract configuration
+      console.log('Verifying zkSync SSO contract configuration...')
+      console.log('Contract address:', env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS)
+      console.log('RPC URL:', env.NEXT_PUBLIC_ZKSYNC_RPC_URL)
+      
+      // Check if contract address looks like a local development address
+      if (env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS?.startsWith('0xe7f1725E')) {
+        console.warn('WARNING: Using what appears to be a Hardhat default contract address')
+        console.warn('This is likely not the correct zkSync SSO contract address')
+        
+        // Show warning but continue - don't throw error yet
+        toast({
+          title: "Configuration Warning",
+          description: "Using a development contract address. Connection may fail.",
+          variant: "destructive"
+        })
+      }
+      
+      // Step 4: Connect using EXACTLY the official documentation approach
+      console.log('Connecting to zkSync SSO using EXACT documentation approach')
+      console.log('Chain ID:', zksyncSepoliaTestnet.id)
+      
+      // This is the exact code from the documentation
       const result = await connect(wagmiConfig, {
         connector: ssoConnector,
         chainId: zksyncSepoliaTestnet.id,
       })
-      console.log('Connection result:', result ? 'Success' : 'Failed')
+      
+      console.log('Connection successful:', result)
 
       if (!result || !result.accounts || result.accounts.length === 0) {
-        throw new Error('Failed to connect wallet: No accounts returned')
+        throw new Error('No accounts returned from connection')
       }
 
       const address = result.accounts[0]
-      console.log('Successfully connected to zkSync SSO with address:', address)
-
-      // Store the wallet address in localStorage and cookies for redundancy
-      localStorage.setItem('walletAddress', address)
-      document.cookie = `wallet-address=${address}; path=/; max-age=604800; SameSite=Lax`
+      console.log('Connected with address:', address)
       
-      // Update UI state to show connected
+      // Store the wallet address
+      localStorage.setItem('walletAddress', address)
+      
+      // Update UI state
       setWallet({
         address,
         isConnected: true,
@@ -178,7 +209,7 @@ export function ZkSyncWalletConnect() {
         description: `Connected to ${address.slice(0, 6)}...${address.slice(-4)}`
       })
 
-      // Step 3: Now handle Supabase authentication (after successful zkSync connection)
+      // Step 5: Handle Supabase authentication
       try {
         // Create an email from the wallet address
         const email = `${address.toLowerCase()}@wallet.zksync`
@@ -263,18 +294,35 @@ export function ZkSyncWalletConnect() {
       const userFriendlyError = handleZkSyncError(err)
       setError(userFriendlyError)
       
+      // Check for contract address issues
+      if (err.message && (err.message.includes('contract') || err.message.includes('address'))) {
+        console.error('CONTRACT ADDRESS ERROR DETECTED')
+        console.error('Current contract address:', env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS)
+        
+        toast({
+          title: "Contract Configuration Error",
+          description: "The zkSync SSO contract address may be incorrect. Please check your configuration.",
+          variant: "destructive"
+        })
+      }
       // Check for session creation errors
-      if (err.message && err.message.includes('session creation')) {
+      else if (err.message && err.message.includes('session creation')) {
         console.log('Session creation error detected - clearing all related storage')
         
         // Clear all localStorage items related to zkSync SSO
+        const keysToRemove = []
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i)
           if (key && (key.includes('zksync') || key.includes('wagmi') || key.includes('walletconnect'))) {
-            console.log(`Clearing localStorage item: ${key}`)
-            localStorage.removeItem(key)
+            keysToRemove.push(key)
           }
         }
+        
+        // Remove the keys in a separate loop to avoid index issues
+        keysToRemove.forEach(key => {
+          console.log(`Clearing localStorage item: ${key}`)
+          localStorage.removeItem(key)
+        })
         
         // Clear all cookies related to zkSync SSO
         document.cookie = 'zksync-sso-code-verifier=; path=/; max-age=0; SameSite=Lax'
@@ -283,7 +331,8 @@ export function ZkSyncWalletConnect() {
         
         toast({
           title: "Session Creation Error",
-          description: userFriendlyError
+          description: "Failed to create session. This may be due to an incorrect contract address configuration.",
+          variant: "destructive"
         })
       }
       // Check for code verifier issues
@@ -291,13 +340,19 @@ export function ZkSyncWalletConnect() {
         console.log('Code verifier issue detected - clearing related storage')
         
         // Clear localStorage items related to zkSync SSO
+        const keysToRemove = []
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i)
           if (key && (key.includes('zksync') || key.includes('wagmi') || key.includes('walletconnect'))) {
-            console.log(`Clearing localStorage item: ${key}`)
-            localStorage.removeItem(key)
+            keysToRemove.push(key)
           }
         }
+        
+        // Remove the keys in a separate loop to avoid index issues
+        keysToRemove.forEach(key => {
+          console.log(`Clearing localStorage item: ${key}`)
+          localStorage.removeItem(key)
+        })
         
         // Clear related cookies
         document.cookie = 'zksync-sso-code-verifier=; path=/; max-age=0; SameSite=Lax'
@@ -305,12 +360,14 @@ export function ZkSyncWalletConnect() {
         
         toast({
           title: "Connection Error",
-          description: userFriendlyError
+          description: "Authentication conflict detected. Please clear your browser cache and try again.",
+          variant: "destructive"
         })
       } else {
         toast({
           title: "Connection Error",
-          description: userFriendlyError
+          description: userFriendlyError,
+          variant: "destructive"
         })
       }
     }
@@ -329,13 +386,19 @@ export function ZkSyncWalletConnect() {
       document.cookie = 'wallet-address=; path=/; max-age=0; SameSite=Lax'
       
       // Clear any localStorage items that might be related to zkSync SSO
+      const keysToRemove = []
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (key && (key.includes('zksync') || key.includes('wagmi') || key.includes('walletconnect'))) {
-          console.log(`Clearing localStorage item: ${key}`)
-          localStorage.removeItem(key)
+          keysToRemove.push(key)
         }
       }
+      
+      // Remove the keys in a separate loop to avoid index issues
+      keysToRemove.forEach(key => {
+        console.log(`Clearing localStorage item: ${key}`)
+        localStorage.removeItem(key)
+      })
       
       // Clear related cookies
       document.cookie = 'zksync-sso-code-verifier=; path=/; max-age=0; SameSite=Lax'

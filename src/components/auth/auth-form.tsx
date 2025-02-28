@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ZkSyncWalletConnect } from '@/components/blockchain/zksync-wallet-connect'
-import { toast } from '@/components/ui/use-toast'
+import { useToast } from '@/components/ui/use-toast'
 
 // Icons component for loading spinner
 const Icons = {
@@ -57,6 +57,7 @@ export function AuthForm({ type = 'signin' }: { type?: 'signin' | 'signup' }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams?.get('redirect') || '/dashboard'
+  const { toast } = useToast()
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
