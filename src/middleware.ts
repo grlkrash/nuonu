@@ -1,64 +1,104 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 
 export async function middleware(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const path = requestUrl.pathname
   
-  // Create a Supabase client configured to use cookies
-  const response = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res: response })
+  console.log('Middleware - Processing request for path:', path)
   
-  // Refresh session if expired - required for Server Components
+  // Create a Supabase client configured to use cookies
+  const supabase = createMiddlewareClient({ req: request, res: NextResponse.next() })
+  
+  // Refresh session if it exists
   const { data: { session }, error } = await supabase.auth.getSession()
   
-  // Log detailed information for debugging
-  console.log('Middleware - Path:', path)
-  console.log('Middleware - Session exists:', !!session)
-  console.log('Middleware - Query params:', Object.fromEntries(requestUrl.searchParams.entries()))
-  
   if (error) {
-    console.error('Middleware - Session error:', error.message)
+    console.error('Middleware - Error getting session:', error.message)
   }
   
-  // Check if the request is for a protected route
+  console.log('Middleware - Session exists:', !!session)
+  
+  // Check if this is a protected route
   const isProtectedRoute = path.startsWith('/dashboard') || 
-                          path.startsWith('/profile') || 
-                          path.startsWith('/applications')
+                           path.startsWith('/profile') || 
+                           path.startsWith('/applications')
+  
+  // Check if this is an auth route
+  const isAuthRoute = path.startsWith('/signin') || path.startsWith('/signup')
   
   // Check if user is in guest mode
   const isGuestMode = requestUrl.searchParams.get('guest') === 'true'
-  console.log('Middleware - Is guest mode:', isGuestMode)
+  console.log('Middleware - Guest mode:', isGuestMode)
   
-  // If the request is for a protected route and the user is not authenticated
-  if (isProtectedRoute) {
-    if (!session) {
-      // Allow access in guest mode, otherwise redirect to sign-in
-      if (isGuestMode) {
-        console.log('Middleware - Allowing guest access to protected route:', path)
-        return response
-      } else {
-        console.log('Middleware - No session, redirecting to sign-in')
-        // Redirect to sign-in page with a return URL
-        const redirectUrl = new URL('/signin', requestUrl.origin)
-        redirectUrl.searchParams.set('returnUrl', path)
-        return NextResponse.redirect(redirectUrl)
-      }
+  // Check for wallet address in cookies as a fallback for wallet-based authentication
+  const walletAddressCookie = request.cookies.get('wallet-address')
+  const hasWalletCookie = !!walletAddressCookie
+  console.log('Middleware - Wallet cookie exists:', hasWalletCookie)
+  
+  // Allow access to protected routes in guest mode or if a wallet cookie is present
+  if (isProtectedRoute && !session) {
+    console.log('Middleware - Protected route without session')
+    
+    if (isGuestMode) {
+      console.log('Middleware - Allowing access in guest mode')
+      return NextResponse.next()
     }
     
-    console.log('Middleware - Session found, allowing access to protected route:', path)
-    return response
+    if (hasWalletCookie) {
+      console.log('Middleware - Wallet cookie found but no session')
+      
+      // Special handling for wallet-based users
+      // We'll let them through but the client-side SessionRecovery component
+      // will attempt to recover their session
+      const response = NextResponse.next()
+      
+      // Add a header to indicate that session recovery is needed
+      response.headers.set('X-Needs-Session-Recovery', 'true')
+      response.headers.set('X-Wallet-Address', walletAddressCookie.value)
+      
+      console.log('Middleware - Allowing access with wallet cookie, recovery needed')
+      return response
+    }
+    
+    // Redirect to sign in page with the original URL as redirect target
+    const redirectUrl = new URL('/signin', requestUrl.origin)
+    redirectUrl.searchParams.set('redirect', path)
+    
+    console.log('Middleware - Redirecting to sign in:', redirectUrl.toString())
+    return NextResponse.redirect(redirectUrl)
   }
   
-  // If the request is for an auth page and the user is authenticated
-  if ((path === '/signin' || path === '/signup') && session) {
-    console.log('Middleware - Session exists, redirecting from auth page to dashboard')
-    // Redirect to dashboard
+  // For authenticated users, check if they're trying to access auth pages
+  if (session && isAuthRoute) {
+    console.log('Middleware - Authenticated user trying to access auth page, redirecting to dashboard')
     return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
   }
   
-  // For all other routes, proceed normally
-  return response
+  // Check if this is a wallet-based user
+  if (session && session.user?.email?.endsWith('@wallet.zksync')) {
+    console.log('Middleware - Wallet-based user detected')
+    
+    // Extract wallet address from email
+    const walletAddress = session.user.email.split('@')[0]
+    
+    // Set wallet address cookie for client-side access if it doesn't exist
+    if (!hasWalletCookie) {
+      console.log('Middleware - Setting wallet address cookie')
+      const response = NextResponse.next()
+      response.cookies.set('wallet-address', walletAddress, {
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      })
+      return response
+    }
+  }
+  
+  // Allow the request to continue
+  return NextResponse.next()
 }
 
 // Specify which routes this middleware should run on

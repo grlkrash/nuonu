@@ -12,22 +12,98 @@ const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 console.log('Initializing Supabase client with URL:', supabaseUrl)
 
-// Create a Supabase client with session handling options
+// Create a custom storage implementation that uses both localStorage and sessionStorage
+const customStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined') {
+      return null
+    }
+    
+    // Try to get from localStorage first
+    try {
+      const localValue = localStorage.getItem(key)
+      console.log(`Storage lookup for ${key}: ${localValue ? 'Found in localStorage' : 'Not in localStorage'}`)
+      if (localValue) {
+        return localValue
+      }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error)
+    }
+    
+    // Fallback to sessionStorage
+    try {
+      const sessionValue = sessionStorage.getItem(key)
+      console.log(`Storage lookup for ${key}: ${sessionValue ? 'Found in sessionStorage' : 'Not in sessionStorage'}`)
+      if (sessionValue) {
+        return sessionValue
+      }
+    } catch (error) {
+      console.error('Error accessing sessionStorage:', error)
+    }
+    
+    console.log(`No value found for ${key} in any storage`)
+    return null
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    
+    console.log(`Storing ${key} in storage (length: ${value.length})`)
+    
+    // Store in both localStorage and sessionStorage for redundancy
+    try {
+      localStorage.setItem(key, value)
+      sessionStorage.setItem(key, value)
+      console.log(`Successfully stored ${key} in both storage types`)
+    } catch (error) {
+      console.error('Error storing in storage:', error)
+      
+      // Try to store in sessionStorage only if localStorage fails
+      try {
+        sessionStorage.setItem(key, value)
+        console.log(`Fallback: Stored ${key} in sessionStorage only`)
+      } catch (innerError) {
+        console.error('Error storing in sessionStorage as fallback:', innerError)
+      }
+    }
+  },
+  removeItem: (key: string): void => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    
+    console.log(`Removing ${key} from storage`)
+    
+    // Remove from both storage types
+    try {
+      localStorage.removeItem(key)
+      sessionStorage.removeItem(key)
+      console.log(`Successfully removed ${key} from both storage types`)
+    } catch (error) {
+      console.error('Error removing from storage:', error)
+    }
+  }
+}
+
+// Create a Supabase client with improved session handling options
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    // Use a different storage key to avoid conflicts with zkSync SSO
+    // Use a consistent storage key for all session-related operations
     storageKey: 'supabase.auth.session',
     flowType: 'pkce',
     debug: true,
-    // Set a longer cookie lifetime
+    // Set a longer cookie lifetime and ensure proper cookie settings
+    storage: customStorage,
     cookieOptions: {
       maxAge: 60 * 60 * 24 * 7, // 7 days
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
+      domain: typeof window !== 'undefined' ? window.location.hostname : undefined,
     },
   },
   global: {

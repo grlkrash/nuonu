@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/components/theme/theme-provider'
+import { SessionRecovery } from '@/components/blockchain/session-recovery'
+import { SessionMonitor } from '@/components/blockchain/session-monitor'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,6 +28,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div id="nprogress-container" />
+          <SessionRecovery />
+          <SessionMonitor />
           <main>{children}</main>
           <Toaster />
         </ThemeProvider>

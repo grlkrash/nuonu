@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { Button } from '../../components/ui/button'
 import { Loader2, Wallet } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
+import { supabase } from '../../lib/supabase/client'
 import { v4 as uuidv4 } from 'uuid'
 import { zksyncSsoConnector } from 'zksync-sso/connector'
 import { zksyncSepoliaTestnet } from 'viem/chains'
 import { createConfig, connect, disconnect } from '@wagmi/core'
 import { parseEther } from 'viem'
-import { ssoConnector, wagmiConfig } from '@/lib/zksync-sso-config'
+import { ssoConnector, wagmiConfig } from '../../lib/zksync-sso-config'
 
 interface WalletState {
   address: string | null
@@ -36,19 +36,36 @@ export function ZkSyncWalletConnect() {
         const storedAddress = localStorage.getItem('walletAddress')
         console.log('Wallet address from localStorage:', storedAddress)
         
+        // Also check for wallet address in cookies as a fallback
+        const getCookieValue = (name: string) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return null;
+        };
+        
+        const cookieAddress = getCookieValue('wallet-address');
+        if (cookieAddress && !storedAddress) {
+          console.log('Wallet address found in cookie but not localStorage, restoring:', cookieAddress);
+          localStorage.setItem('walletAddress', cookieAddress);
+        }
+        
+        // Use the address from localStorage or cookie
+        const walletAddress = storedAddress || cookieAddress;
+        
         // Check if there's an active Supabase session
         const { data: sessionData } = await supabase.auth.getSession()
         console.log('Supabase session exists:', sessionData.session ? 'Yes' : 'No')
         
-        if (sessionData.session && storedAddress) {
+        if (sessionData.session && walletAddress) {
           console.log('Session and wallet address found, verifying match')
           
           // Verify the wallet address matches the one in the session metadata
-          const sessionWalletAddress = sessionData.session.user.user_metadata.wallet_address
+          const sessionWalletAddress = sessionData.session.user.user_metadata?.wallet_address
           
-          if (sessionWalletAddress && sessionWalletAddress !== storedAddress) {
-            console.warn('Wallet address mismatch between localStorage and session metadata')
-            console.log('localStorage address:', storedAddress)
+          if (sessionWalletAddress && sessionWalletAddress !== walletAddress) {
+            console.warn('Wallet address mismatch between storage and session metadata')
+            console.log('Storage address:', walletAddress)
             console.log('Session metadata address:', sessionWalletAddress)
             
             // Update localStorage with the correct address from session
@@ -63,10 +80,63 @@ export function ZkSyncWalletConnect() {
           } else {
             // Set wallet state with the stored address
             setWallet({
-              address: storedAddress,
+              address: walletAddress,
               isConnected: true,
               isConnecting: false,
             })
+          }
+        } else if (walletAddress && !sessionData.session) {
+          // We have a wallet address but no session - attempt session recovery
+          console.log('Wallet address exists but no session found, attempting recovery')
+          
+          // Try to reconnect the wallet
+          try {
+            const result = await connect(wagmiConfig, {
+              connector: ssoConnector,
+              chainId: zksyncSepoliaTestnet.id,
+            })
+            
+            if (result && result.accounts && result.accounts.length > 0) {
+              const address = result.accounts[0]
+              console.log('Wallet reconnected successfully:', address)
+              
+              // Check if the reconnected address matches the stored one
+              if (address.toLowerCase() !== walletAddress.toLowerCase()) {
+                console.warn('Reconnected wallet address differs from stored address')
+                console.log('Stored address:', walletAddress)
+                console.log('Reconnected address:', address)
+                
+                // Update the stored address
+                localStorage.setItem('walletAddress', address)
+              }
+              
+              // Set wallet as connected
+              setWallet({
+                address,
+                isConnected: true,
+                isConnecting: false,
+              })
+              
+              // Attempt to sign in with the wallet address
+              const email = `${address.toLowerCase()}@wallet.zksync`
+              const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
+              
+              console.log('Attempting to sign in after recovery with wallet-based email')
+              const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+              })
+              
+              if (signInError) {
+                console.error('Session recovery sign-in failed:', signInError.message)
+              } else {
+                console.log('Session recovery successful')
+              }
+            } else {
+              console.error('Failed to reconnect wallet during recovery')
+            }
+          } catch (reconnectError) {
+            console.error('Error during wallet reconnection:', reconnectError)
           }
         }
       } catch (err) {
@@ -86,53 +156,51 @@ export function ZkSyncWalletConnect() {
   }, [])
 
   const handleConnect = async () => {
-    setWallet(prev => ({ ...prev, isConnecting: true }))
+    setWallet({
+      address: null,
+      isConnected: false,
+      isConnecting: true,
+    })
     setError(null)
-    
+
     try {
-      console.log('Initializing connection with ssoConnector on zkSync Sepolia testnet')
-      
-      // Attempt to connect the wallet
+      console.log('Initializing connection with zkSync Sepolia testnet')
       const result = await connect(wagmiConfig, {
         connector: ssoConnector,
         chainId: zksyncSepoliaTestnet.id,
       })
-      console.log('Connection result:', JSON.stringify(result, null, 2))
-      
-      // Check if connection was successful
+      console.log('Connection result:', result ? 'Success' : 'Failed')
+
       if (!result || !result.accounts || result.accounts.length === 0) {
         throw new Error('Failed to connect wallet: No accounts returned')
       }
-      
-      // Get the connected wallet address
+
       const address = result.accounts[0]
-      console.log('Connected wallet address:', address)
-      
-      // Verify the address is valid
-      if (!address) {
-        throw new Error('Failed to connect wallet: Invalid address')
-      }
-      
-      // Generate a random password for the user
-      // Note: This is only used for Supabase authentication, not for the wallet
-      const password = crypto.randomUUID()
+      console.log('Using wallet address:', address)
+
+      // Store the wallet address in localStorage immediately
+      // This helps with recovery if the authentication process fails
+      localStorage.setItem('walletAddress', address)
+
+      // Generate a random password for Supabase authentication
+      const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
       
       // Create an email from the wallet address
       const email = `${address.toLowerCase()}@wallet.zksync`
-      console.log('Using wallet email for Supabase auth:', email)
-      
-      // Try to sign in with the wallet email
-      console.log('Attempting to sign in with wallet email')
+      console.log('Using email for authentication:', email)
+
+      // Try to sign in first
+      console.log('Attempting to sign in with wallet-based email')
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      
+
       // If sign in fails, create a new account
       if (signInError) {
         console.log('Sign in failed, creating new account:', signInError.message)
         
-        // Create a new account with the wallet email
+        // Create a new account
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -140,26 +208,17 @@ export function ZkSyncWalletConnect() {
             data: {
               wallet_address: address,
             },
+            emailRedirectTo: `${window.location.origin}/auth/callback?skip_confirmation=true`
           },
         })
-        
-        // Check if account creation was successful
+
         if (signUpError) {
-          console.error('Failed to create account:', signUpError)
-          throw new Error(`Failed to create account: ${signUpError.message}`)
+          console.error('Account creation failed:', signUpError)
+          throw new Error('Failed to create account')
         }
-        
-        // Verify session was created
-        if (!signUpData.session) {
-          console.error('No session created after sign up')
-          throw new Error('Session creation failed after sign up')
-        }
-        
+
         console.log('New account created successfully')
         console.log('Session created:', signUpData.session ? 'Yes' : 'No')
-        
-        // Store the wallet address in localStorage
-        localStorage.setItem('walletAddress', address)
         
         // Set the wallet state
         setWallet({
@@ -168,22 +227,28 @@ export function ZkSyncWalletConnect() {
           isConnecting: false,
         })
         
-        // Redirect to onboarding for new users
-        console.log('Redirecting to onboarding for new user')
-        router.push('/onboarding')
+        // If we have a session, redirect to onboarding
+        if (signUpData.session) {
+          console.log('Redirecting to onboarding for new user')
+          router.push('/onboarding')
+        } else {
+          // Otherwise, wait for the email confirmation or auth callback
+          console.log('Waiting for session creation via auth callback')
+          // The auth callback will handle the redirect
+        }
       } else {
         // Sign in was successful
         console.log('Sign in successful')
         console.log('Session created:', signInData.session ? 'Yes' : 'No')
         
-        // Verify session was created
-        if (!signInData.session) {
-          console.error('No session created after sign in')
-          throw new Error('Session creation failed after sign in')
+        // Update user metadata if needed
+        if (signInData.session && (!signInData.user?.user_metadata?.wallet_address || 
+            signInData.user.user_metadata.wallet_address !== address)) {
+          console.log('Updating user metadata with wallet address')
+          await supabase.auth.updateUser({
+            data: { wallet_address: address }
+          })
         }
-        
-        // Store the wallet address in localStorage
-        localStorage.setItem('walletAddress', address)
         
         // Set the wallet state
         setWallet({
@@ -192,9 +257,15 @@ export function ZkSyncWalletConnect() {
           isConnecting: false,
         })
         
-        // Redirect to dashboard for existing users
-        console.log('Redirecting to dashboard for existing user')
-        router.push('/dashboard')
+        // If we have a session, redirect to dashboard
+        if (signInData.session) {
+          console.log('Redirecting to dashboard for existing user')
+          router.push('/dashboard')
+        } else {
+          // Otherwise, wait for the auth callback
+          console.log('Waiting for session creation via auth callback')
+          // The auth callback will handle the redirect
+        }
       }
     } catch (err: unknown) {
       console.error('Error connecting wallet:', err)
@@ -214,8 +285,7 @@ export function ZkSyncWalletConnect() {
       } else if (errorMessage.includes('user rejected')) {
         setError('You rejected the connection request. Please try again and approve the connection.')
       } else if (errorMessage.includes('Session creation failed')) {
-        setError('Error during session creation. Please see console for more info.')
-        console.error('Session creation error details:', err)
+        setError('Error during session creation. Please try again later.')
       } else if (errorMessage.includes('Failed to create account')) {
         setError('Failed to create account. Please try again later.')
       } else if (errorMessage.includes('high approval amount')) {
