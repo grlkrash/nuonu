@@ -60,6 +60,41 @@ if (!isUsingOfficialContract) {
   console.warn('Expected addresses:', OFFICIAL_ZKSYNC_SSO_CONTRACT)
 }
 
+// Storage keys
+const STORAGE_KEYS = {
+  SESSION: 'zksync-sso-session',
+  CODE_VERIFIER: 'zksync-sso-code-verifier'
+}
+
+// Client-side storage helper
+const storage = {
+  getItem: (key: string) => {
+    if (typeof window === 'undefined') return null
+    try {
+      return window.localStorage.getItem(key)
+    } catch (error) {
+      console.warn('Failed to get item from storage:', error)
+      return null
+    }
+  },
+  setItem: (key: string, value: string) => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(key, value)
+    } catch (error) {
+      console.warn('Failed to set item in storage:', error)
+    }
+  },
+  removeItem: (key: string) => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.removeItem(key)
+    } catch (error) {
+      console.warn('Failed to remove item from storage:', error)
+    }
+  }
+}
+
 // Create the zkSync SSO connector with official configuration
 export const ssoConnector = zksyncSsoConnector({
   chains: [sepoliaChain],

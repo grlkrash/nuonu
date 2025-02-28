@@ -38,6 +38,50 @@ export interface Database {
           avatar_url?: string | null
         }
       }
+      artist_wallets: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string | null
+          artist_id: string
+          wallet_address: string
+          wallet_id: string
+          blockchain: string
+          status: string
+          balance: Json | null
+          last_sync: string | null
+          chain_type: 'base' | 'zksync' | 'flow'
+          chain_specific_data: Json | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string | null
+          artist_id: string
+          wallet_address: string
+          wallet_id: string
+          blockchain?: string
+          status?: string
+          balance?: Json | null
+          last_sync?: string | null
+          chain_type?: 'base' | 'zksync' | 'flow'
+          chain_specific_data?: Json | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string | null
+          artist_id?: string
+          wallet_address?: string
+          wallet_id?: string
+          blockchain?: string
+          status?: string
+          balance?: Json | null
+          last_sync?: string | null
+          chain_type?: 'base' | 'zksync' | 'flow'
+          chain_specific_data?: Json | null
+        }
+      }
       opportunities: {
         Row: {
           id: string
@@ -133,6 +177,8 @@ export interface Database {
     Enums: {
       opportunity_status: 'open' | 'closed' | 'draft' | 'archived'
       application_status: 'pending' | 'accepted' | 'rejected' | 'withdrawn'
+      wallet_status: 'active' | 'inactive' | 'pending' | 'blocked'
+      chain_type: 'base' | 'zksync' | 'flow'
     }
   }
 } 

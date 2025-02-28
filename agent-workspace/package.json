@@ -1,0 +1,17 @@
+{
+  "name": "agent-workspace",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@coinbase/agentkit": "0.2.3",
+    "@coinbase/agentkit-langchain": "0.2.3",
+    "ethers": "6.13.5"
+  }
+}

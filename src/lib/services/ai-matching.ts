@@ -23,85 +23,159 @@ try {
 }
 
 /**
- * Calculates a match score between a profile and an opportunity
- * Falls back to this method if OpenAI is not available
+ * Calculate match score between artist profile and opportunity
  */
-export function calculateMatchScore(profile: Profile, opportunity: Opportunity): number {
-  let score = 0
+function calculateMatchScore(profile: Profile, opportunity: Opportunity): number {
+  let score = 0;
+  let maxScore = 0;
   
-  // Extract profile interests and skills
-  const interests = Array.isArray(profile.interests) 
-    ? profile.interests 
-    : (profile.interests?.split(',').map(i => i.trim().toLowerCase()) || [])
-  
-  const skills = Array.isArray(profile.skills) 
-    ? profile.skills 
-    : (profile.skills?.split(',').map(s => s.trim().toLowerCase()) || [])
-  
-  // Extract opportunity text for matching
-  const opportunityText = [
-    opportunity.title,
-    opportunity.description,
-    opportunity.requirements,
-    opportunity.category,
-    opportunity.eligibility
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-  
-  // Match interests (weighted)
-  interests.forEach(interest => {
-    if (interest && opportunityText.includes(interest.toLowerCase())) {
-      score += 10
-    }
-  })
-  
-  // Match skills (weighted higher)
-  skills.forEach(skill => {
-    if (skill && opportunityText.includes(skill.toLowerCase())) {
-      score += 15
-    }
-  })
-  
-  // Artistic discipline matching (weighted highest)
+  // Match based on artistic discipline (highest weight)
   if (profile.artistic_discipline && opportunity.category) {
-    const discipline = profile.artistic_discipline.toLowerCase()
-    const category = opportunity.category.toLowerCase()
-    
-    if (discipline === category) {
-      score += 25
-    } else if (category.includes(discipline) || discipline.includes(category)) {
-      score += 15
-    }
+    maxScore += 40;
+    const disciplineMatch = matchDiscipline(profile.artistic_discipline, opportunity.category);
+    score += disciplineMatch * 40;
   }
   
-  // Location matching
+  // Match based on experience level
+  if (profile.experience_level && opportunity.eligibility) {
+    maxScore += 20;
+    const experienceMatch = matchExperience(profile.experience_level, opportunity.eligibility);
+    score += experienceMatch * 20;
+  }
+  
+  // Match based on location
   if (profile.location && opportunity.location) {
-    const profileLocation = profile.location.toLowerCase()
-    const opportunityLocation = opportunity.location.toLowerCase()
-    
-    if (profileLocation === opportunityLocation) {
-      score += 20
-    } else if (opportunityLocation.includes(profileLocation) || profileLocation.includes(opportunityLocation)) {
-      score += 10
-    }
+    maxScore += 20;
+    const locationMatch = matchLocation(profile.location, opportunity.location, opportunity.is_remote);
+    score += locationMatch * 20;
   }
   
-  // Remote work preference
-  if (opportunity.is_remote) {
-    score += 5
+  // Match based on skills and interests
+  if (profile.skills || profile.interests) {
+    maxScore += 20;
+    const skillsMatch = matchSkillsAndInterests(
+      profile.skills || '',
+      profile.interests || '',
+      opportunity.description || ''
+    );
+    score += skillsMatch * 20;
   }
   
-  // Experience level matching
-  if (profile.experience_level && opportunity.experience_level) {
-    if (profile.experience_level === opportunity.experience_level) {
-      score += 15
-    }
-  }
+  // If we don't have enough matching criteria, adjust the score
+  if (maxScore === 0) return 50; // Default score for insufficient data
   
   // Normalize score to 0-100 range
-  return Math.min(Math.round(score * 1.2), 100)
+  return Math.round((score / maxScore) * 100);
+}
+
+/**
+ * Helper function to match artistic disciplines
+ */
+function matchDiscipline(profileDiscipline: string, opportunityCategory: string): number {
+  const disciplines = {
+    visual_arts: ['visual arts', 'painting', 'sculpture', 'photography', 'illustration'],
+    performing_arts: ['performing arts', 'theater', 'dance', 'music', 'performance'],
+    digital_media: ['digital media', 'digital art', 'new media', 'technology', 'nft'],
+    literature: ['literature', 'writing', 'poetry', 'publishing'],
+    film: ['film', 'video', 'cinema', 'animation'],
+    mixed_media: ['mixed media', 'installation', 'multimedia'],
+  };
+  
+  const normalizedProfile = profileDiscipline.toLowerCase();
+  const normalizedCategory = opportunityCategory.toLowerCase();
+  
+  // Direct match
+  if (normalizedProfile === normalizedCategory) return 1;
+  
+  // Check if they belong to the same category group
+  for (const [category, keywords] of Object.entries(disciplines)) {
+    const isProfileInCategory = keywords.some(k => normalizedProfile.includes(k));
+    const isOpportunityInCategory = keywords.some(k => normalizedCategory.includes(k));
+    
+    if (isProfileInCategory && isOpportunityInCategory) return 0.8;
+  }
+  
+  return 0.2; // Some minimal match for all arts
+}
+
+/**
+ * Helper function to match experience levels
+ */
+function matchExperience(profileExperience: string, opportunityEligibility: string): number {
+  const experienceLevels = {
+    student: 1,
+    emerging: 2,
+    mid_career: 3,
+    established: 4
+  };
+  
+  const normalizedEligibility = opportunityEligibility.toLowerCase();
+  const profileLevel = experienceLevels[profileExperience as keyof typeof experienceLevels] || 2;
+  
+  // If eligibility mentions "all levels" or similar
+  if (normalizedEligibility.includes('all') || normalizedEligibility.includes('any')) return 1;
+  
+  // Match specific experience levels
+  if (normalizedEligibility.includes(profileExperience)) return 1;
+  
+  // If eligibility mentions "emerging" and profile is student or emerging
+  if (normalizedEligibility.includes('emerging') && profileLevel <= 2) return 0.8;
+  
+  // If eligibility mentions "established" and profile is mid_career or established
+  if (normalizedEligibility.includes('established') && profileLevel >= 3) return 0.8;
+  
+  return 0.4; // Some minimal match
+}
+
+/**
+ * Helper function to match locations
+ */
+function matchLocation(profileLocation: string, opportunityLocation: string, isRemote?: boolean): number {
+  if (isRemote) return 1; // Remote opportunities match any location
+  
+  const normalizedProfile = profileLocation.toLowerCase();
+  const normalizedOpportunity = opportunityLocation.toLowerCase();
+  
+  // Direct city/region match
+  if (normalizedProfile.includes(normalizedOpportunity) || 
+      normalizedOpportunity.includes(normalizedProfile)) return 1;
+  
+  // Country match
+  const profileParts = normalizedProfile.split(',').map(p => p.trim());
+  const opportunityParts = normalizedOpportunity.split(',').map(p => p.trim());
+  
+  const profileCountry = profileParts[profileParts.length - 1];
+  const opportunityCountry = opportunityParts[opportunityParts.length - 1];
+  
+  if (profileCountry === opportunityCountry) return 0.8;
+  
+  return 0.2; // Different locations
+}
+
+/**
+ * Helper function to match skills and interests
+ */
+function matchSkillsAndInterests(skills: string, interests: string, description: string): number {
+  const normalizedDescription = description.toLowerCase();
+  let matches = 0;
+  let total = 0;
+  
+  // Check skills
+  const skillsList = skills.split(',').map(s => s.trim().toLowerCase());
+  skillsList.forEach(skill => {
+    if (skill && normalizedDescription.includes(skill)) matches++;
+    if (skill) total++;
+  });
+  
+  // Check interests
+  const interestsList = interests.split(',').map(i => i.trim().toLowerCase());
+  interestsList.forEach(interest => {
+    if (interest && normalizedDescription.includes(interest)) matches++;
+    if (interest) total++;
+  });
+  
+  if (total === 0) return 0.5; // No skills/interests provided
+  return matches / total;
 }
 
 export interface MatchResult {
