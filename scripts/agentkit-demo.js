@@ -138,17 +138,15 @@ async function main() {
     }
     
     // Check if we need ETH from faucet
-    if (balance.toString() === '0') {
-      console.log('\nRequesting ETH from faucet...');
-      const faucetAction = actions.find(a => a.name === 'CdpApiActionProvider_request_faucet_funds');
-      if (faucetAction) {
-        const faucetResult = await faucetAction.invoke({
-          assetId: 'eth'
-        });
-        console.log('Faucet result:', faucetResult);
-      } else {
-        console.warn('Faucet action not found');
-      }
+    console.log('\nRequesting ETH from faucet...');
+    const faucetAction = actions.find(a => a.name === 'CdpApiActionProvider_request_faucet_funds');
+    if (faucetAction) {
+      const faucetResult = await faucetAction.invoke({
+        assetId: 'eth'
+      });
+      console.log('Faucet result:', faucetResult);
+    } else {
+      console.warn('Faucet action not found');
     }
     
     // Send a small amount of ETH to another address
