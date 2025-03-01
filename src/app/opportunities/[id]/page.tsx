@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { getCurrentUser } from '@/lib/auth'
 import OpportunityDetailClient from './opportunity-detail-client'
+import { ApplicationGeneratorButton } from '@/components/opportunities/application-generator-button'
 
 interface OpportunityPageProps {
   params: {
@@ -231,11 +232,147 @@ export default async function OpportunityPage({ params }: OpportunityPageProps) 
     ? new Date(opportunity.deadline)
     : null
   
-  // Pass all data to the client component
-  return <OpportunityDetailClient 
-    opportunity={opportunity}
-    timeAgo={timeAgo}
-    deadline={deadline}
-    user={user}
-  />
+  if (!opportunity) {
+    return (
+      <div className="min-h-screen bg-black text-white p-4">
+        <h1 className="text-2xl font-bold mb-4">Opportunity Not Found</h1>
+        <p>The opportunity you're looking for doesn't exist or has been removed.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">{opportunity.title}</h1>
+          <div className="flex items-center space-x-4 mb-4">
+            <span className="text-gray-400">{opportunity.organization}</span>
+            {opportunity.matchScore && (
+              <div className="flex items-center space-x-2 bg-blue-900/50 px-3 py-1 rounded-full">
+                <span className="text-sm">Match Score:</span>
+                <span className="font-bold">{opportunity.matchScore}%</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 space-y-6">
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Description</h2>
+              <p className="text-gray-300 whitespace-pre-wrap">{opportunity.description}</p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Requirements</h2>
+              <p className="text-gray-300">{opportunity.requirements || 'No specific requirements listed.'}</p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Eligibility</h2>
+              <p className="text-gray-300">{opportunity.eligibility || 'No specific eligibility criteria listed.'}</p>
+            </section>
+
+            {opportunity.tags && opportunity.tags.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold mb-3">Tags</h2>
+                <div className="flex flex-wrap gap-2">
+                  {opportunity.tags.map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-gray-900 p-6 rounded-lg space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Grant Amount</h3>
+                <p className="text-2xl font-bold">{opportunity.amount}</p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium mb-2">Deadline</h3>
+                <p className="text-gray-300">
+                  {new Date(opportunity.deadline).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium mb-2">Location</h3>
+                <p className="text-gray-300">
+                  {opportunity.location}
+                  {opportunity.is_remote && ' (Remote Available)'}
+                </p>
+              </div>
+
+              <div className="pt-4 space-y-3">
+                <ApplicationGeneratorButton
+                  opportunityId={opportunity.id}
+                  opportunityTitle={opportunity.title}
+                />
+                
+                <a
+                  href={opportunity.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center bg-transparent border border-white hover:bg-white hover:text-black text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  View Original Listing
+                </a>
+              </div>
+            </div>
+
+            {opportunity.profiles && (
+              <div className="bg-gray-900 p-6 rounded-lg">
+                <h3 className="text-lg font-medium mb-4">Posted By</h3>
+                <div className="flex items-center space-x-3">
+                  {opportunity.profiles.avatar_url ? (
+                    <img
+                      src={opportunity.profiles.avatar_url}
+                      alt={opportunity.profiles.full_name}
+                      className="w-12 h-12 rounded-full"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
+                      <span className="text-xl">
+                        {opportunity.profiles.full_name.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium">{opportunity.profiles.full_name}</p>
+                    {opportunity.profiles.website && (
+                      <a
+                        href={opportunity.profiles.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-400 hover:text-blue-300"
+                      >
+                        Visit Website
+                      </a>
+                    )}
+                  </div>
+                </div>
+                {opportunity.profiles.bio && (
+                  <p className="mt-3 text-sm text-gray-300">{opportunity.profiles.bio}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 } 

@@ -1,0 +1,38 @@
+{
+  "emulators": {
+    "default": {
+      "port": 3569,
+      "serviceAccount": "emulator-account"
+    }
+  },
+  "contracts": {
+    "FlowArtistManager": "./src/contracts/flow/FlowArtistManager.cdc"
+  },
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "testnet": "access.testnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "key": "1272967fd2bd75234ae9037dd4694c1f7d6a6d2fb59c291c21706a281f9992af"
+    },
+    "testnet-account": {
+      "address": "0x4f6D0cA7E66D5e447862793F23904ba15F51f4De",
+      "key": {
+        "type": "hex",
+        "index": 0,
+        "signatureAlgorithm": "ECDSA_P256",
+        "hashAlgorithm": "SHA3_256",
+        "privateKey": "159f7a0a3fe7c07d041265e2d58f841e4525d8b7080f7daab7591ec593b00633"
+      }
+    }
+  },
+  "deployments": {
+    "testnet": {
+      "testnet-account": [
+        "FlowArtistManager"
+      ]
+    }
+  }
+}

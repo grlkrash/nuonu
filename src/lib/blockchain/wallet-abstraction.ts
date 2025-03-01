@@ -3,6 +3,7 @@ import { Provider, Wallet } from 'zksync-web3'
 import * as fcl from '@onflow/fcl'
 import { zksyncSsoConnector, callPolicy } from 'zksync-sso/connector'
 import { zksyncSepoliaTestnet } from 'viem/chains'
+import { cdpWalletManager, CdpWalletConfig } from './cdp-wallet'
 
 // Define interfaces for different blockchain wallets
 export interface BaseWallet {
@@ -20,10 +21,15 @@ export interface FlowWallet {
   authenticated: boolean
 }
 
+export interface CdpWalletProvider {
+  provider: any
+}
+
 export interface WalletState {
   baseWallet: BaseWallet | null
   zkSyncWallet: ZkSyncWallet | null
   flowWallet: FlowWallet | null
+  cdpWallet: CdpWalletProvider | null
   isConnecting: boolean
   error: string | null
 }
@@ -34,6 +40,7 @@ export class WalletAbstraction {
     baseWallet: null,
     zkSyncWallet: null,
     flowWallet: null,
+    cdpWallet: null,
     isConnecting: false,
     error: null
   }
@@ -203,6 +210,34 @@ export class WalletAbstraction {
     }
   }
 
+  // Initialize CDP wallet for agent
+  async initializeAgentWallet(config: CdpWalletConfig) {
+    try {
+      this.setState({ isConnecting: true, error: null })
+      
+      const provider = await cdpWalletManager.initialize(config)
+      
+      this.setState({ 
+        cdpWallet: provider,
+        isConnecting: false
+      })
+      
+      return provider
+    } catch (error) {
+      console.error('Error initializing CDP wallet:', error)
+      this.setState({ 
+        error: error instanceof Error ? error.message : 'Failed to initialize CDP wallet',
+        isConnecting: false
+      })
+      throw error
+    }
+  }
+
+  // Get CDP wallet provider
+  getCdpWallet() {
+    return this.state.cdpWallet
+  }
+
   // Disconnect all wallets
   disconnectAll() {
     // Disconnect Flow wallet if connected
@@ -214,6 +249,7 @@ export class WalletAbstraction {
       baseWallet: null,
       zkSyncWallet: null,
       flowWallet: null,
+      cdpWallet: null,
       error: null
     })
   }
@@ -225,7 +261,7 @@ export class WalletAbstraction {
 
   // Check if any wallet is connected
   isAnyWalletConnected(): boolean {
-    return !!(this.state.baseWallet || this.state.zkSyncWallet || this.state.flowWallet)
+    return !!(this.state.baseWallet || this.state.zkSyncWallet || this.state.flowWallet || this.state.cdpWallet)
   }
 
   // Get connected wallet addresses
@@ -233,7 +269,8 @@ export class WalletAbstraction {
     return {
       base: this.state.baseWallet?.address || null,
       zkSync: this.state.zkSyncWallet?.address || null,
-      flow: this.state.flowWallet?.address || null
+      flow: this.state.flowWallet?.address || null,
+      cdp: this.state.cdpWallet?.provider.connection.url || null
     }
   }
 }
@@ -255,6 +292,8 @@ export function useWalletAbstraction() {
     connectZkSyncWallet: () => walletAbstraction.connectZkSyncWallet(),
     createZkSyncSessionKey: () => walletAbstraction.createZkSyncSessionKey(),
     connectFlowWallet: () => walletAbstraction.connectFlowWallet(),
+    initializeAgentWallet: (config: CdpWalletConfig) => walletAbstraction.initializeAgentWallet(config),
+    getCdpWallet: () => walletAbstraction.getCdpWallet(),
     disconnectAll: () => walletAbstraction.disconnectAll(),
     isAnyWalletConnected: () => walletAbstraction.isAnyWalletConnected(),
     getConnectedAddresses: () => walletAbstraction.getConnectedAddresses()

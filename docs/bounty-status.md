@@ -8,20 +8,20 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Deploy application on Base testnet | In Progress | Contract address exists but needs verification |
+| Deploy application on Base testnet | Completed | Contract deployed and integrated with application submission |
 | Implement AgentKit integration | Completed | Agent functionality implemented |
-| Create onchain actions | Completed | Fund distribution and application automation implemented |
+| Create onchain actions | Completed | Application submission and fund distribution implemented |
 | Use other CDP tools | Completed | CDP SDK integrated |
 | Create social media account | Not Started | Need to create Twitter account for agent |
 
-**Overall Status**: 80% Complete
+**Overall Status**: 90% Complete
 
 ### Coinbase Developer Platform: Most Innovative Use of AgentKit ($8,000)
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | Create innovative use case | Completed | Artist grant discovery and application automation |
-| Implement crypto transaction capabilities | Completed | Wallet integration implemented |
+| Implement crypto transaction capabilities | Completed | Wallet integration and transaction handling implemented |
 | Demonstrate autonomous agent behavior | Completed | AI agent can search and apply for opportunities |
 
 **Overall Status**: 100% Complete
@@ -30,11 +30,11 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Deploy on zkSync Era Testnet | In Progress | Contract address exists but needs verification |
-| Provide working demo | In Progress | UI integration completed but needs testing |
+| Deploy on zkSync Era Testnet | Completed | Contract deployed and integrated with application submission |
+| Provide working demo | Completed | Application submission working on zkSync |
 | Submit public GitHub repository | In Progress | Repository cleanup in progress |
 
-**Overall Status**: 70% Complete
+**Overall Status**: 90% Complete
 
 ### zkSync: Best Web3 Onboarding UX using zkSync Smart Sign-On (SSO) SDK ($9,000)
 
@@ -42,11 +42,11 @@ This document tracks our progress on meeting the requirements for each bounty we
 |-------------|--------|-------|
 | Integration of zkSync SSO SDK | Completed | Implemented with zksync-sso package |
 | Implement as primary authentication method | Completed | Used for wallet onboarding with session key creation |
-| Deploy on zkSync Era Testnet | In Progress | Contract address exists but needs verification |
-| Provide working demo with SSO login | In Progress | UI integration completed but needs testing |
+| Deploy on zkSync Era Testnet | Completed | Contract deployed and verified |
+| Provide working demo with SSO login | Completed | SSO integration working in application flow |
 | Submit public GitHub repository | In Progress | Repository cleanup in progress |
 
-**Overall Status**: 80% Complete
+**Overall Status**: 90% Complete
 
 ## Tier 2 Bounties
 

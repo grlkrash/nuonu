@@ -1,9 +1,17 @@
 import { createServerSupabaseClient } from '@/lib/auth'
 import { Database } from '@/lib/supabase/database.types'
+import { contractManager } from '@/lib/blockchain/contracts'
+import { createHash } from 'crypto'
 
 export type Application = Database['public']['Tables']['applications']['Row']
 export type ApplicationInsert = Database['public']['Tables']['applications']['Insert']
 export type ApplicationUpdate = Database['public']['Tables']['applications']['Update']
+
+// Helper to generate content hash
+function generateContentHash(content: any): string {
+  const contentString = JSON.stringify(content)
+  return createHash('sha256').update(contentString).digest('hex')
+}
 
 export async function getApplicationsByOpportunityId(opportunityId: string) {
   const supabase = createServerSupabaseClient()
@@ -57,41 +65,123 @@ export async function getApplicationById(id: string) {
     throw new Error(`Failed to fetch application: ${error.message}`)
   }
   
+  // Get blockchain status if available
+  if (data.chain === 'base' && data.transaction_hash) {
+    try {
+      const onChainData = await contractManager.getApplicationFromBase(id)
+      data.onchain_status = onChainData.status
+      data.onchain_timestamp = onChainData.timestamp
+    } catch (chainError) {
+      console.error('Error fetching Base chain status:', chainError)
+    }
+  } else if (data.chain === 'zksync' && data.zksync_transaction_hash) {
+    try {
+      const onChainData = await contractManager.getApplicationFromZkSync(id)
+      data.onchain_status = onChainData.status
+      data.onchain_timestamp = onChainData.timestamp
+    } catch (chainError) {
+      console.error('Error fetching zkSync chain status:', chainError)
+    }
+  }
+  
   return data
 }
 
 export async function createApplication(application: ApplicationInsert) {
   const supabase = createServerSupabaseClient()
   
-  // Check if user already applied to this opportunity
-  const { data: existingApplications, error: checkError } = await supabase
-    .from('applications')
-    .select('id')
-    .eq('opportunity_id', application.opportunity_id)
-    .eq('applicant_id', application.applicant_id)
-  
-  if (checkError) {
-    console.error('Error checking existing applications:', checkError)
-    throw new Error(`Failed to check existing applications: ${checkError.message}`)
+  try {
+    // Check if user already applied
+    const { data: existingApplications, error: checkError } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('opportunity_id', application.opportunity_id)
+      .eq('applicant_id', application.applicant_id)
+    
+    if (checkError) throw checkError
+    if (existingApplications?.length) {
+      throw new Error('You have already applied to this opportunity')
+    }
+    
+    // Generate content hash for blockchain
+    const contentHash = generateContentHash({
+      applicant_id: application.applicant_id,
+      opportunity_id: application.opportunity_id,
+      proposal: application.proposal,
+      portfolio_url: application.portfolio_url,
+      contact_info: application.contact_info
+    })
+    
+    // Start database transaction
+    const { data, error } = await supabase
+      .from('applications')
+      .insert({
+        ...application,
+        content_hash: contentHash,
+        chain_status: 'pending'
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    // Submit to blockchain
+    try {
+      // Try Base first
+      const baseResult = await contractManager.submitApplicationToBase(
+        data.id,
+        contentHash,
+        application.opportunity_id
+      )
+      
+      // Update with Base transaction hash
+      await supabase
+        .from('applications')
+        .update({
+          transaction_hash: baseResult.transactionHash,
+          chain_status: 'submitted_base',
+          chain: 'base'
+        })
+        .eq('id', data.id)
+      
+      // Try zkSync as well
+      try {
+        const zkSyncResult = await contractManager.submitApplicationToZkSync(
+          data.id,
+          contentHash,
+          application.opportunity_id
+        )
+        
+        // Update with zkSync status
+        await supabase
+          .from('applications')
+          .update({
+            zksync_transaction_hash: zkSyncResult.transactionHash,
+            chain_status: 'submitted_both'
+          })
+          .eq('id', data.id)
+      } catch (zkError) {
+        console.error('zkSync submission failed:', zkError)
+        // Continue with Base submission only
+      }
+    } catch (chainError) {
+      console.error('Blockchain submission failed:', chainError)
+      // Update status to indicate blockchain failure
+      await supabase
+        .from('applications')
+        .update({
+          chain_status: 'failed'
+        })
+        .eq('id', data.id)
+      
+      throw new Error('Failed to submit application to blockchain')
+    }
+    
+    return data
+  } catch (error) {
+    console.error('Error in createApplication:', error)
+    throw error
   }
-  
-  if (existingApplications && existingApplications.length > 0) {
-    throw new Error('You have already applied to this opportunity')
-  }
-  
-  // Create the application
-  const { data, error } = await supabase
-    .from('applications')
-    .insert(application)
-    .select()
-    .single()
-  
-  if (error) {
-    console.error('Error creating application:', error)
-    throw new Error(`Failed to create application: ${error.message}`)
-  }
-  
-  return data
 }
 
 export async function updateApplicationStatus(id: string, status: string) {

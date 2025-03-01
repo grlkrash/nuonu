@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/sonia/Desktop/nuonu/src/contracts/base/ArtistFundManager.sol": {
-      "lastModificationDate": 1740525769366,
-      "contentHash": "0a6155b8891b8a1c854cf6cea1b2b4b8",
+      "lastModificationDate": 1740803267949,
+      "contentHash": "0dd2ca2e08e5beb4762a76f05052a13d",
       "sourceName": "src/contracts/base/ArtistFundManager.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -678,8 +678,8 @@
       ]
     },
     "/Users/sonia/Desktop/nuonu/src/contracts/ZkSyncArtistManager.sol": {
-      "lastModificationDate": 1740527591987,
-      "contentHash": "fae953be5fd2c00963566b37a9d37583",
+      "lastModificationDate": 1740801305539,
+      "contentHash": "20d6da73ab85128b4524f35ed65ea5c3",
       "sourceName": "src/contracts/ZkSyncArtistManager.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -705,7 +705,11 @@
           }
         }
       },
-      "imports": [],
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+        "@openzeppelin/contracts/utils/Counters.sol"
+      ],
       "versionPragmas": [
         "^0.8.17"
       ],
