@@ -1,9 +1,11 @@
-import artistFundActionProvider from './ArtistFundActionProvider';
-import zkSyncArtistFundActionProvider from './ZkSyncArtistFundActionProvider';
-import flowArtistFundActionProvider from './FlowArtistFundActionProvider';
+import { ArtistFundActionProvider } from './ArtistFundActionProvider';
+import { ZkSyncArtistFundActionProvider } from './ZkSyncArtistFundActionProvider';
+import { FlowArtistFundActionProvider } from './FlowArtistFundActionProvider';
+import { OptimismInteropActionProvider } from './OptimismInteropActionProvider';
 
 export {
-  artistFundActionProvider,
-  zkSyncArtistFundActionProvider,
-  flowArtistFundActionProvider
+  ArtistFundActionProvider,
+  ZkSyncArtistFundActionProvider,
+  FlowArtistFundActionProvider,
+  OptimismInteropActionProvider
 }; 

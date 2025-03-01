@@ -26,7 +26,10 @@
     "test:artist-fund-action": "node scripts/test-artist-fund-action-provider.js",
     "audit-dependencies": "node scripts/audit-dependencies.js",
     "audit-dependencies:interactive": "node scripts/audit-dependencies.js --interactive",
-    "cleanup": "node scripts/cleanup-repo.js"
+    "cleanup": "node scripts/cleanup-repo.js",
+    "test:optimism-interop": "node scripts/test-optimism-interop.js",
+    "test:optimism-interop-action": "node scripts/test-optimism-interop-action-provider.js",
+    "test:all-action-providers": "node scripts/test-all-action-providers.js"
   },
   "dependencies": {
     "@coinbase/agentkit": "^0.2.3",

@@ -2,6 +2,8 @@
 const hre = require("hardhat");
 const { Wallet, Provider } = require("zksync-web3");
 const { Deployer } = require("@matterlabs/hardhat-zksync-deploy");
+const fs = require("fs");
+const path = require("path");
 
 async function main() {
   console.log("Deploying ZkSyncArtistManager contract to zkSync Era Testnet...");
@@ -45,9 +47,33 @@ async function main() {
     const contractAddress = zkSyncArtistManager.address;
     
     console.log(`ZkSyncArtistManager deployed to: ${contractAddress}`);
-    console.log("");
-    console.log("Update your .env.local file with:");
-    console.log(`NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=${contractAddress}`);
+    
+    // Update .env.local with the contract address
+    const envPath = path.resolve(__dirname, '../.env.local');
+    let envContent = fs.readFileSync(envPath, 'utf8');
+    
+    // Replace or add the contract address
+    if (envContent.includes('NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=')) {
+      envContent = envContent.replace(
+        /NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=.*/,
+        `NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=${contractAddress}`
+      );
+    } else {
+      envContent += `\nNEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=${contractAddress}`;
+    }
+    
+    if (envContent.includes('NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=')) {
+      envContent = envContent.replace(
+        /NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=.*/,
+        `NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=${contractAddress}`
+      );
+    } else {
+      envContent += `\nNEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=${contractAddress}`;
+    }
+    
+    fs.writeFileSync(envPath, envContent);
+    console.log(`Updated .env.local with zkSync contract address: ${contractAddress}`);
+    
     console.log("");
     console.log("To verify the contract:");
     console.log(`npx hardhat verify --network zkSyncTestnet ${contractAddress}`);
@@ -72,9 +98,31 @@ async function main() {
     
     console.log(`Session key created and registered: ${sessionKeyAddress}`);
     console.log(`Session key private key (keep secure!): ${sessionKeyPrivate}`);
-    console.log("");
-    console.log("Add this to your .env.local file:");
-    console.log(`ZKSYNC_SESSION_KEY=${sessionKeyPrivate}`);
+    
+    // Update .env.local with the session key
+    if (envContent.includes('ZKSYNC_SESSION_KEY=')) {
+      envContent = envContent.replace(
+        /ZKSYNC_SESSION_KEY=.*/,
+        `ZKSYNC_SESSION_KEY=${sessionKeyPrivate}`
+      );
+    } else {
+      envContent += `\nZKSYNC_SESSION_KEY=${sessionKeyPrivate}`;
+    }
+    
+    fs.writeFileSync(envPath, envContent);
+    console.log(`Updated .env.local with zkSync session key`);
+    
+    // Create a test grant
+    console.log("Creating a test grant...");
+    const grantAmount = hre.ethers.utils.parseEther("0.01");
+    const createGrantTx = await zkSyncArtistManager.createGrant(
+      "test-grant-1",
+      "Test Grant",
+      grantAmount,
+      { value: grantAmount }
+    );
+    await createGrantTx.wait();
+    console.log(`Test grant created with amount: ${hre.ethers.utils.formatEther(grantAmount)} ETH`);
     
     console.log("Deployment and setup completed successfully");
   } catch (error) {
