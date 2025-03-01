@@ -81,13 +81,13 @@ const storage = {
 }
 
 export const getZkSyncSSOConfig = () => {
-  const contractAddress = process.env.NEXT_PUBLIC_ZKSYNC_SSO_CONTRACT_ADDRESS;
-  const authServerUrl = process.env.NEXT_PUBLIC_ZKSYNC_SSO_AUTH_SERVER_URL;
+  const contractAddress = process.env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS;
+  const authServerUrl = process.env.NEXT_PUBLIC_ZKSYNC_SSO_AUTH_SERVER_URL || 'https://sso-testnet.zksync.dev';
   const chainId = process.env.NEXT_PUBLIC_ZKSYNC_CHAIN_ID;
 
   if (!contractAddress) {
-    console.error("Missing NEXT_PUBLIC_ZKSYNC_SSO_CONTRACT_ADDRESS");
-    throw new Error("Missing ZKSYNC_SSO_CONTRACT_ADDRESS");
+    console.error("Missing NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS");
+    throw new Error("Missing ZKSYNC_CONTRACT_ADDRESS");
   }
 
   if (!authServerUrl) {
