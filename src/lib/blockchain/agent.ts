@@ -1,5 +1,5 @@
 import { AgentKit, CdpWalletProvider } from '@coinbase/agentkit';
-import { artistFundActionProvider, zkSyncArtistFundActionProvider, flowArtistFundActionProvider } from './action-providers';
+import { registerActionProviders } from '../agent/register-action-providers';
 import { cdpWalletManager } from './cdp-wallet';
 import fs from 'fs';
 import path from 'path';
@@ -45,15 +45,13 @@ class AgentManager {
       // Initialize wallet provider
       this.walletProvider = await cdpWalletManager.initialize(config);
 
-      // Initialize AgentKit
-      this.agentKit = await AgentKit.from({
-        walletProvider: this.walletProvider,
-        actionProviders: [
-          artistFundActionProvider(),
-          zkSyncArtistFundActionProvider(),
-          flowArtistFundActionProvider(),
-        ],
+      // Initialize AgentKit with wallet provider
+      this.agentKit = new AgentKit({
+        walletProvider: this.walletProvider
       });
+      
+      // Register action providers
+      registerActionProviders(this.agentKit);
 
       // Save wallet data for future use
       const exportedWallet = await this.walletProvider.exportWallet();

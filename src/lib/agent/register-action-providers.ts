@@ -12,11 +12,13 @@ import {
  * @returns The AgentKit instance with registered action providers
  */
 export function registerActionProviders(agentKit: AgentKit): AgentKit {
-  // Initialize action providers
-  const artistFundActionProvider = new ArtistFundActionProvider();
-  const zkSyncArtistFundActionProvider = new ZkSyncArtistFundActionProvider();
-  const flowArtistFundActionProvider = new FlowArtistFundActionProvider();
-  const optimismInteropActionProvider = new OptimismInteropActionProvider();
+  // Initialize action providers with wallet provider from AgentKit
+  const walletProvider = agentKit.getWalletProvider();
+  
+  const artistFundActionProvider = new ArtistFundActionProvider({ walletProvider });
+  const zkSyncArtistFundActionProvider = new ZkSyncArtistFundActionProvider({ walletProvider });
+  const flowArtistFundActionProvider = new FlowArtistFundActionProvider({ walletProvider });
+  const optimismInteropActionProvider = new OptimismInteropActionProvider({ walletProvider });
 
   // Register action providers with AgentKit
   agentKit.registerActionProvider('artistFundActionProvider', artistFundActionProvider);

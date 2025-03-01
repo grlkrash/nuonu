@@ -1,6 +1,6 @@
 import { ActionProvider, ActionProviderParams, ActionProviderResult } from '@coinbase/agentkit';
 import { z } from 'zod';
-import { Contract, Provider } from 'zksync-web3';
+import { Contract, Provider, Wallet } from 'zksync-web3';
 import { ethers } from 'ethers';
 import { env } from '../../env';
 
@@ -33,8 +33,8 @@ export class ZkSyncArtistFundActionProvider implements ActionProvider {
   private contractAddress: string;
   private zkSyncProvider: Provider;
 
-  constructor(params: ActionProviderParams) {
-    this.walletProvider = params.walletProvider;
+  constructor(params?: ActionProviderParams) {
+    this.walletProvider = params?.walletProvider;
     // Get contract address from environment variables
     this.contractAddress = env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS || '';
     
@@ -67,35 +67,47 @@ export class ZkSyncArtistFundActionProvider implements ActionProvider {
   }
 
   /**
+   * Get a wallet instance for zkSync transactions
+   * @private
+   */
+  private async getWallet() {
+    if (!this.walletProvider) {
+      throw new Error('Wallet provider not initialized');
+    }
+    
+    const wallet = await this.walletProvider.get();
+    
+    if (!wallet || !wallet.address) {
+      throw new Error('Wallet not initialized');
+    }
+    
+    return wallet;
+  }
+
+  /**
+   * Get a contract instance for the zkSync ArtistFundManager
+   * @private
+   */
+  private async getContract() {
+    if (!this.contractAddress) {
+      throw new Error('zkSync contract address not configured');
+    }
+    
+    const wallet = await this.getWallet();
+    
+    return new Contract(
+      this.contractAddress,
+      ZkSyncArtistFundManagerABI,
+      wallet.signer
+    );
+  }
+
+  /**
    * Disburse funds to an artist on zkSync
    */
   async zkSyncDisburseGrant(params: { artistId: string; amount: string }): Promise<ActionProviderResult> {
     try {
-      // Get wallet from provider
-      const wallet = await this.walletProvider.get();
-      
-      if (!wallet || !wallet.address) {
-        return {
-          success: false,
-          message: 'Wallet not initialized',
-        };
-      }
-      
-      if (!this.contractAddress) {
-        return {
-          success: false,
-          message: 'zkSync contract address not configured',
-        };
-      }
-      
-      // Create contract instance
-      // Note: In a real implementation, you would need to adapt this to work with zkSync's wallet
-      // This is a simplified example
-      const contract = new Contract(
-        this.contractAddress,
-        ZkSyncArtistFundManagerABI,
-        wallet.signer
-      );
+      const contract = await this.getContract();
       
       // Call distributeFunds function
       const tx = await contract.distributeFunds(params.artistId);
@@ -123,29 +135,7 @@ export class ZkSyncArtistFundActionProvider implements ActionProvider {
    */
   async zkSyncGetArtistDetails(params: { artistId: string }): Promise<ActionProviderResult> {
     try {
-      // Get wallet from provider
-      const wallet = await this.walletProvider.get();
-      
-      if (!wallet || !wallet.address) {
-        return {
-          success: false,
-          message: 'Wallet not initialized',
-        };
-      }
-      
-      if (!this.contractAddress) {
-        return {
-          success: false,
-          message: 'zkSync contract address not configured',
-        };
-      }
-      
-      // Create contract instance
-      const contract = new Contract(
-        this.contractAddress,
-        ZkSyncArtistFundManagerABI,
-        wallet.signer
-      );
+      const contract = await this.getContract();
       
       // For this example, we'll query the application data as a proxy for artist details
       // In a real implementation, you would have a dedicated function for artist details
