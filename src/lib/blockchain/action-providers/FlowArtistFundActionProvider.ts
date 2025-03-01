@@ -36,8 +36,8 @@ export class FlowArtistFundActionProvider implements ActionProvider {
   private walletProvider: any;
   private contractAddress: string;
 
-  constructor(params: ActionProviderParams) {
-    this.walletProvider = params.walletProvider;
+  constructor(params?: ActionProviderParams) {
+    this.walletProvider = params?.walletProvider;
     this.contractAddress = env.NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS || '';
     
     console.log(`Initializing FlowArtistFundActionProvider with contract address: ${this.contractAddress}`);
@@ -88,25 +88,43 @@ export class FlowArtistFundActionProvider implements ActionProvider {
   }
 
   /**
+   * Get a wallet instance for Flow transactions
+   * @private
+   */
+  private async getWallet() {
+    if (!this.walletProvider) {
+      throw new Error('Wallet provider not initialized');
+    }
+    
+    const wallet = await this.walletProvider.get();
+    
+    if (!wallet || !wallet.address) {
+      throw new Error('Wallet not initialized');
+    }
+    
+    return wallet;
+  }
+
+  /**
    * Authenticate with Flow if not already authenticated
+   * @private
    */
   private async ensureAuthenticated(): Promise<boolean> {
-    const user = await fcl.currentUser().snapshot();
-    
-    if (!user.loggedIn) {
-      console.log('Flow wallet not authenticated, attempting to authenticate...');
-      try {
+    try {
+      const user = await fcl.currentUser().snapshot();
+      
+      if (!user.loggedIn) {
+        console.log('Flow wallet not authenticated, attempting to authenticate...');
         await fcl.authenticate();
         const authenticatedUser = await fcl.currentUser().snapshot();
         console.log(`Authenticated with Flow as: ${authenticatedUser.addr}`);
-        return true;
-      } catch (error) {
-        console.error('Failed to authenticate with Flow:', error);
-        return false;
       }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to authenticate with Flow:', error);
+      return false;
     }
-    
-    return true;
   }
 
   /**
@@ -250,6 +268,9 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         };
       }
       
+      // Format Flow address to ensure it has the correct format (0x prefix)
+      const formattedAddress = params.address.startsWith('0x') ? params.address : `0x${params.address}`;
+      
       // Cadence script for registering an artist
       const cadence = `
         import FlowArtistManager from ${this.contractAddress}
@@ -257,7 +278,7 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         transaction(artistId: String, address: Address, optimismAddress: String?) {
           prepare(signer: AuthAccount) {
             FlowArtistManager.registerArtist(
-              artistId: artistId,
+              id: artistId,
               address: address,
               optimismAddress: optimismAddress
             )
@@ -272,8 +293,8 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         cadence,
         args: (arg: any, t: any) => [
           arg(params.artistId, t.String),
-          arg(params.address, t.Address),
-          arg(params.optimismAddress || null, t.Optional(t.String)),
+          arg(formattedAddress, t.Address),
+          arg(params.optimismAddress || null, t.Optional(t.String))
         ],
         payer: fcl.authz,
         proposer: fcl.authz,
@@ -295,8 +316,7 @@ export class FlowArtistFundActionProvider implements ActionProvider {
           transactionId: txId,
           status: txStatus.status,
           artistId: params.artistId,
-          address: params.address,
-          optimismAddress: params.optimismAddress,
+          address: formattedAddress,
         },
       };
     } catch (error) {
@@ -311,12 +331,7 @@ export class FlowArtistFundActionProvider implements ActionProvider {
   /**
    * Initiate a cross-chain transaction to Optimism
    */
-  async flowInitiateCrossChainTransaction(params: { 
-    artistId: string; 
-    amount: string; 
-    targetChain: string; 
-    targetAddress: string 
-  }): Promise<ActionProviderResult> {
+  async flowInitiateCrossChainTransaction(params: { artistId: string; amount: string; targetChain: string; targetAddress: string }): Promise<ActionProviderResult> {
     try {
       console.log(`Initiating cross-chain transaction for artist ${params.artistId} with amount ${params.amount} FLOW to ${params.targetChain} address ${params.targetAddress}`);
       
@@ -329,13 +344,13 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         };
       }
       
-      // Cadence script for initiating a cross-chain transaction
+      // Cadence script for initiating cross-chain transaction
       const cadence = `
         import FlowArtistManager from ${this.contractAddress}
         
         transaction(artistId: String, amount: UFix64, targetChain: String, targetAddress: String) {
           prepare(signer: AuthAccount) {
-            let txId = FlowArtistManager.initiateCrossChainTransaction(
+            FlowArtistManager.initiateCrossChainTransaction(
               artistId: artistId,
               amount: amount,
               targetChain: targetChain,
@@ -354,7 +369,7 @@ export class FlowArtistFundActionProvider implements ActionProvider {
           arg(params.artistId, t.String),
           arg(params.amount, t.UFix64),
           arg(params.targetChain, t.String),
-          arg(params.targetAddress, t.String),
+          arg(params.targetAddress, t.String)
         ],
         payer: fcl.authz,
         proposer: fcl.authz,

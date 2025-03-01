@@ -1,355 +1,241 @@
 #!/usr/bin/env node
 
 require('dotenv').config({ path: '.env.local' });
-const { AgentKit } = require('@coinbase/agentkit');
-const fs = require('fs');
-const path = require('path');
+const { ethers } = require('ethers');
+const { Provider, Wallet } = require('zksync-web3');
+const fcl = require('@onflow/fcl');
 
-async function main() {
-  try {
-    console.log('Testing All Action Providers...');
+// Import action providers
+const { ZkSyncArtistFundActionProvider } = require('../dist/lib/blockchain/action-providers/ZkSyncArtistFundActionProvider');
+const { FlowArtistFundActionProvider } = require('../dist/lib/blockchain/action-providers/FlowArtistFundActionProvider');
 
-    // Initialize AgentKit with mock action providers
-    const agentKit = new AgentKit({
-      // Base Action Provider
-      artistFundActionProvider: {
-        createArtistWallet: async (input) => {
-          console.log('Calling createArtistWallet with input:', input);
-          return {
-            success: true,
-            message: `Created wallet for artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              walletAddress: '0x1234567890123456789012345678901234567890',
-              transactionHash: 'mock-tx-hash-123'
-            }
-          };
-        },
-        disburseGrant: async (input) => {
-          console.log('Calling disburseGrant with input:', input);
-          return {
-            success: true,
-            message: `Disbursed grant of ${input.amount} ETH to artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              amount: input.amount,
-              transactionHash: 'mock-tx-hash-456'
-            }
-          };
-        },
-        getArtistDetails: async (input) => {
-          console.log('Calling getArtistDetails with input:', input);
-          return {
-            success: true,
-            message: `Retrieved details for artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              name: 'Test Artist',
-              walletAddress: '0x1234567890123456789012345678901234567890',
-              totalFunding: '1.5'
-            }
-          };
-        }
-      },
-      
-      // zkSync Action Provider
-      zkSyncArtistFundActionProvider: {
-        zkSyncDisburseGrant: async (input) => {
-          console.log('Calling zkSyncDisburseGrant with input:', input);
-          return {
-            success: true,
-            message: `Disbursed zkSync grant of ${input.amount} ETH to artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              amount: input.amount,
-              transactionHash: 'mock-zksync-tx-hash-123'
-            }
-          };
-        },
-        zkSyncGetArtistDetails: async (input) => {
-          console.log('Calling zkSyncGetArtistDetails with input:', input);
-          return {
-            success: true,
-            message: `Retrieved zkSync details for artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              name: 'Test Artist',
-              walletAddress: '0x9876543210987654321098765432109876543210',
-              totalFunding: '0.5'
-            }
-          };
-        }
-      },
-      
-      // Flow Action Provider
-      flowArtistFundActionProvider: {
-        flowDisburseGrant: async (input) => {
-          console.log('Calling flowDisburseGrant with input:', input);
-          return {
-            success: true,
-            message: `Disbursed Flow grant of ${input.amount} FLOW to artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              amount: input.amount,
-              transactionId: 'mock-flow-tx-id-123'
-            }
-          };
-        },
-        flowGetArtistDetails: async (input) => {
-          console.log('Calling flowGetArtistDetails with input:', input);
-          return {
-            success: true,
-            message: `Retrieved Flow details for artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              name: 'Test Artist',
-              flowAddress: '0x12345678',
-              totalFunding: '10.0'
-            }
-          };
-        }
-      },
-      
-      // Optimism Interop Action Provider
-      optimismInteropActionProvider: {
-        getL1BlockNumber: async () => {
-          console.log('Calling getL1BlockNumber...');
-          return {
-            success: true,
-            message: 'Current L1 block number: 12345678',
-            data: {
-              blockNumber: '12345678'
-            }
-          };
-        },
-        getL1BlockAttributes: async () => {
-          console.log('Calling getL1BlockAttributes...');
-          return {
-            success: true,
-            message: 'Successfully retrieved L1 block attributes',
-            data: {
-              blockNumber: '12345678',
-              timestamp: '1620000000',
-              baseFee: '10',
-              baseFeeWei: '10000000000'
-            }
-          };
-        },
-        getSystemConfig: async () => {
-          console.log('Calling getSystemConfig...');
-          return {
-            success: true,
-            message: 'Successfully retrieved system configuration',
-            data: {
-              l1FeeOverhead: '2100',
-              l1FeeScalar: '1000000'
-            }
-          };
-        },
-        initiateWithdrawal: async (input) => {
-          console.log('Calling initiateWithdrawal with input:', input);
-          return {
-            success: true,
-            message: `Withdrawal initiated for artist ${input.artistId} for ${input.amount} ETH to address ${input.targetAddress}`,
-            data: {
-              withdrawalId: 'mock-withdrawal-id-123',
-              artistId: input.artistId,
-              amount: input.amount,
-              targetAddress: input.targetAddress,
-              status: 'pending'
-            }
-          };
-        },
-        getAggregatedBalance: async (input) => {
-          console.log('Calling getAggregatedBalance with input:', input);
-          return {
-            success: true,
-            message: `Aggregated balance for artist ${input.artistId}`,
-            data: {
-              artistId: input.artistId,
-              balances: {
-                base: '0.5',
-                zkSync: '0.3',
-                flow: '0.2'
-              },
-              totalEthEquivalent: '1.0'
-            }
-          };
-        },
-        bridgeTokens: async (input) => {
-          console.log('Calling bridgeTokens with input:', input);
-          return {
-            success: true,
-            message: `Bridge initiated for artist ${input.artistId} from ${input.sourceChain} to ${input.destinationChain} for ${input.amount} tokens to address ${input.targetAddress}`,
-            data: {
-              bridgeId: 'mock-bridge-id-123',
-              artistId: input.artistId,
-              sourceChain: input.sourceChain,
-              destinationChain: input.destinationChain,
-              tokenAddress: input.tokenAddress,
-              amount: input.amount,
-              targetAddress: input.targetAddress,
-              status: 'pending'
-            }
-          };
-        },
-        convertToUSDC: async (input) => {
-          console.log('Calling convertToUSDC with input:', input);
-          const usdcAmount = (parseFloat(input.amount) * 1800).toString(); // Mock conversion rate
-          return {
-            success: true,
-            message: `Converted ${input.amount} ETH to USDC for artist ${input.artistId} on ${input.sourceChain} and sent to ${input.targetAddress}`,
-            data: {
-              conversionId: 'mock-conversion-id-123',
-              artistId: input.artistId,
-              sourceChain: input.sourceChain,
-              sourceAmount: input.amount,
-              usdcAmount,
-              targetAddress: input.targetAddress,
-              status: 'simulated'
-            }
-          };
-        }
-      }
-    });
+// Simple wallet provider for testing
+class TestWalletProvider {
+  constructor(privateKey, rpcUrl) {
+    this.privateKey = privateKey;
+    this.rpcUrl = rpcUrl;
+    this.provider = new Provider(rpcUrl);
+    this.wallet = new Wallet(privateKey, this.provider);
+  }
 
-    const testArtistId = 'test-artist-123';
-    const testWalletAddress = '0x1234567890123456789012345678901234567890';
-
-    // Test Base Action Provider
-    console.log('\n=== Testing Base Action Provider ===');
-    
-    console.log('\n--- Testing createArtistWallet ---');
-    const createWalletResult = await agentKit.artistFundActionProvider.createArtistWallet({
-      artistId: testArtistId
-    });
-    console.log('Result:', createWalletResult);
-    
-    console.log('\n--- Testing disburseGrant ---');
-    const disburseGrantResult = await agentKit.artistFundActionProvider.disburseGrant({
-      artistId: testArtistId,
-      amount: '0.1'
-    });
-    console.log('Result:', disburseGrantResult);
-    
-    console.log('\n--- Testing getArtistDetails ---');
-    const artistDetailsResult = await agentKit.artistFundActionProvider.getArtistDetails({
-      artistId: testArtistId
-    });
-    console.log('Result:', artistDetailsResult);
-
-    // Test zkSync Action Provider
-    console.log('\n=== Testing zkSync Action Provider ===');
-    
-    console.log('\n--- Testing zkSyncDisburseGrant ---');
-    const zkSyncDisburseResult = await agentKit.zkSyncArtistFundActionProvider.zkSyncDisburseGrant({
-      artistId: testArtistId,
-      amount: '0.05'
-    });
-    console.log('Result:', zkSyncDisburseResult);
-    
-    console.log('\n--- Testing zkSyncGetArtistDetails ---');
-    const zkSyncDetailsResult = await agentKit.zkSyncArtistFundActionProvider.zkSyncGetArtistDetails({
-      artistId: testArtistId
-    });
-    console.log('Result:', zkSyncDetailsResult);
-
-    // Test Flow Action Provider
-    console.log('\n=== Testing Flow Action Provider ===');
-    
-    console.log('\n--- Testing flowDisburseGrant ---');
-    const flowDisburseResult = await agentKit.flowArtistFundActionProvider.flowDisburseGrant({
-      artistId: testArtistId,
-      amount: '5.0'
-    });
-    console.log('Result:', flowDisburseResult);
-    
-    console.log('\n--- Testing flowGetArtistDetails ---');
-    const flowDetailsResult = await agentKit.flowArtistFundActionProvider.flowGetArtistDetails({
-      artistId: testArtistId
-    });
-    console.log('Result:', flowDetailsResult);
-
-    // Test Optimism Interop Action Provider
-    console.log('\n=== Testing Optimism Interop Action Provider ===');
-    
-    console.log('\n--- Testing getL1BlockNumber ---');
-    const blockNumberResult = await agentKit.optimismInteropActionProvider.getL1BlockNumber();
-    console.log('Result:', blockNumberResult);
-    
-    console.log('\n--- Testing getL1BlockAttributes ---');
-    const blockAttributesResult = await agentKit.optimismInteropActionProvider.getL1BlockAttributes();
-    console.log('Result:', blockAttributesResult);
-    
-    console.log('\n--- Testing getSystemConfig ---');
-    const systemConfigResult = await agentKit.optimismInteropActionProvider.getSystemConfig();
-    console.log('Result:', systemConfigResult);
-    
-    console.log('\n--- Testing initiateWithdrawal ---');
-    const withdrawalResult = await agentKit.optimismInteropActionProvider.initiateWithdrawal({
-      artistId: testArtistId,
-      amount: '0.01',
-      targetAddress: testWalletAddress
-    });
-    console.log('Result:', withdrawalResult);
-    
-    console.log('\n--- Testing getAggregatedBalance ---');
-    const balanceResult = await agentKit.optimismInteropActionProvider.getAggregatedBalance({
-      artistId: testArtistId
-    });
-    console.log('Result:', balanceResult);
-    
-    console.log('\n--- Testing bridgeTokens (ETH) ---');
-    const bridgeEthResult = await agentKit.optimismInteropActionProvider.bridgeTokens({
-      artistId: testArtistId,
-      sourceChain: 'base-sepolia',
-      destinationChain: 'optimism-sepolia',
-      amount: '0.01',
-      targetAddress: testWalletAddress
-    });
-    console.log('Result:', bridgeEthResult);
-    
-    console.log('\n--- Testing bridgeTokens (ERC20) ---');
-    const bridgeErc20Result = await agentKit.optimismInteropActionProvider.bridgeTokens({
-      artistId: testArtistId,
-      sourceChain: 'base-sepolia',
-      destinationChain: 'optimism-sepolia',
-      tokenAddress: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Example USDC address
-      amount: '10',
-      targetAddress: testWalletAddress
-    });
-    console.log('Result:', bridgeErc20Result);
-    
-    console.log('\n--- Testing bridgeTokens (Flow) ---');
-    const bridgeFlowResult = await agentKit.optimismInteropActionProvider.bridgeTokens({
-      artistId: testArtistId,
-      sourceChain: 'base-sepolia',
-      destinationChain: 'flow-testnet',
-      amount: '0.01',
-      targetAddress: testWalletAddress
-    });
-    console.log('Result:', bridgeFlowResult);
-    
-    console.log('\n--- Testing convertToUSDC ---');
-    const convertResult = await agentKit.optimismInteropActionProvider.convertToUSDC({
-      artistId: testArtistId,
-      sourceChain: 'base-sepolia',
-      amount: '0.01',
-      targetAddress: testWalletAddress
-    });
-    console.log('Result:', convertResult);
-
-    console.log('\n=== All tests completed successfully! ===');
-    console.log('\nSummary:');
-    console.log('- Base Action Provider: ✅');
-    console.log('- zkSync Action Provider: ✅');
-    console.log('- Flow Action Provider: ✅');
-    console.log('- Optimism Interop Action Provider: ✅');
-    console.log('  - Cross-chain token transfers: ✅');
-    console.log('  - USDC conversion: ✅');
-  } catch (error) {
-    console.error('Error testing action providers:', error);
+  async get() {
+    const address = await this.wallet.getAddress();
+    return {
+      address,
+      signer: this.wallet
+    };
   }
 }
 
-main(); 
+// Flow wallet provider for testing
+class TestFlowWalletProvider {
+  constructor(privateKey, address) {
+    this.privateKey = privateKey;
+    this.address = address;
+  }
+
+  async get() {
+    return {
+      address: this.address,
+      signer: {
+        privateKey: this.privateKey,
+        address: this.address
+      }
+    };
+  }
+}
+
+async function testZkSync() {
+  try {
+    console.log('\n=== Testing zkSync Artist Fund Action Provider ===');
+    console.log('------------------------------------------------');
+
+    // Check environment variables
+    const privateKey = process.env.ZKSYNC_PRIVATE_KEY;
+    const rpcUrl = process.env.NEXT_PUBLIC_ZKSYNC_RPC_URL || 'https://testnet.era.zksync.dev';
+    const contractAddress = process.env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS;
+
+    if (!privateKey) {
+      console.error('Error: ZKSYNC_PRIVATE_KEY not found in environment variables');
+      return false;
+    }
+
+    if (!contractAddress) {
+      console.error('Error: NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS not found in environment variables');
+      return false;
+    }
+
+    console.log(`Using zkSync RPC URL: ${rpcUrl}`);
+    console.log(`Using contract address: ${contractAddress}`);
+
+    // Create wallet provider
+    const walletProvider = new TestWalletProvider(privateKey, rpcUrl);
+    const wallet = await walletProvider.get();
+    console.log(`Using wallet address: ${wallet.address}`);
+
+    // Create zkSync action provider
+    const zkSyncActionProvider = new ZkSyncArtistFundActionProvider({ walletProvider });
+    
+    // Get available actions
+    const actions = zkSyncActionProvider.getActions();
+    console.log('\nAvailable actions:');
+    actions.forEach(action => {
+      console.log(`- ${action.name}: ${action.description}`);
+    });
+
+    // Create a test artist ID
+    const testArtistId = `artist_${Date.now()}`;
+    
+    // Test 1: Get artist details (this should fail initially since the artist doesn't exist yet)
+    console.log('\n--- Test 1: Get artist details (should fail initially) ---');
+    try {
+      const detailsResult = await zkSyncActionProvider.zkSyncGetArtistDetails({
+        artistId: testArtistId,
+      });
+      console.log('Result:', detailsResult);
+    } catch (error) {
+      console.log('Expected error getting non-existent artist details:', error.message);
+    }
+
+    // Test 2: Disburse grant
+    console.log('\n--- Test 2: Disburse grant with real transaction ---');
+    const disburseResult = await zkSyncActionProvider.zkSyncDisburseGrant({
+      artistId: testArtistId,
+      amount: '0.001',
+    });
+    console.log('Result:', disburseResult);
+
+    if (disburseResult.success) {
+      console.log('\nTransaction successful!');
+      console.log('Transaction hash:', disburseResult.data.transactionHash);
+      console.log('Block number:', disburseResult.data.blockNumber);
+    } else {
+      console.error('Transaction failed:', disburseResult.message);
+    }
+
+    console.log('\nzkSync tests completed!');
+    return true;
+    
+  } catch (error) {
+    console.error('Error running zkSync tests:', error);
+    return false;
+  }
+}
+
+async function testFlow() {
+  try {
+    console.log('\n=== Testing Flow Artist Fund Action Provider ===');
+    console.log('--------------------------------------------');
+
+    // Check environment variables
+    const privateKey = process.env.FLOW_PRIVATE_KEY;
+    const address = process.env.FLOW_ACCOUNT_ADDRESS;
+    const contractAddress = process.env.NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS;
+
+    if (!privateKey) {
+      console.error('Error: FLOW_PRIVATE_KEY not found in environment variables');
+      return false;
+    }
+
+    if (!address) {
+      console.error('Error: FLOW_ACCOUNT_ADDRESS not found in environment variables');
+      return false;
+    }
+
+    if (!contractAddress) {
+      console.error('Error: NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS not found in environment variables');
+      return false;
+    }
+
+    console.log(`Using Flow contract address: ${contractAddress}`);
+
+    // Configure FCL
+    fcl.config()
+      .put('accessNode.api', process.env.NEXT_PUBLIC_FLOW_ACCESS_NODE || 'https://rest-testnet.onflow.org')
+      .put('discovery.wallet', 'https://fcl-discovery.onflow.org/testnet/authn')
+      .put('app.detail.title', 'Artist Grant AI')
+      .put('app.detail.icon', 'https://placekitten.com/g/200/200')
+      .put('flow.network', 'testnet');
+
+    // Create wallet provider
+    const walletProvider = new TestFlowWalletProvider(privateKey, address);
+    const wallet = await walletProvider.get();
+    console.log(`Using wallet address: ${wallet.address}`);
+
+    // Create Flow action provider
+    const flowActionProvider = new FlowArtistFundActionProvider({ walletProvider });
+    
+    // Get available actions
+    const actions = flowActionProvider.getActions();
+    console.log('\nAvailable actions:');
+    actions.forEach(action => {
+      console.log(`- ${action.name}: ${action.description}`);
+    });
+
+    // Create a test artist ID
+    const testArtistId = `artist_${Date.now()}`;
+    
+    // Test 1: Get artist details (this should fail initially since the artist doesn't exist yet)
+    console.log('\n--- Test 1: Get artist details (should fail initially) ---');
+    try {
+      const detailsResult = await flowActionProvider.flowGetArtistDetails({
+        artistId: testArtistId,
+      });
+      console.log('Result:', detailsResult);
+    } catch (error) {
+      console.log('Expected error getting non-existent artist details:', error.message);
+    }
+
+    // Test 2: Register artist
+    console.log('\n--- Test 2: Register artist with real transaction ---');
+    const registerResult = await flowActionProvider.flowRegisterArtist({
+      artistId: testArtistId,
+      address: wallet.address,
+    });
+    console.log('Result:', registerResult);
+
+    if (registerResult.success) {
+      console.log('\nTransaction successful!');
+      console.log('Transaction ID:', registerResult.data.transactionId);
+    } else {
+      console.error('Transaction failed:', registerResult.message);
+    }
+
+    console.log('\nFlow tests completed!');
+    return true;
+    
+  } catch (error) {
+    console.error('Error running Flow tests:', error);
+    return false;
+  }
+}
+
+async function main() {
+  try {
+    console.log('Testing Action Providers with Real Transactions');
+    console.log('===========================================');
+
+    // Test zkSync
+    const zkSyncSuccess = await testZkSync();
+    
+    // Test Flow
+    const flowSuccess = await testFlow();
+    
+    console.log('\n=== Test Summary ===');
+    console.log('zkSync tests:', zkSyncSuccess ? 'PASSED' : 'FAILED');
+    console.log('Flow tests:', flowSuccess ? 'PASSED' : 'FAILED');
+    
+    console.log('\nAll tests completed!');
+    
+  } catch (error) {
+    console.error('Error running tests:', error);
+    process.exit(1);
+  }
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  }); 

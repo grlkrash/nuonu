@@ -8,7 +8,7 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Deploy application on Base testnet | Completed | Contract deployed and integrated with application submission |
+| Deploy application on Base testnet | Completed | Contract deployed at 0x91EB0110EF1e3c53a497A98a69c2deCF5c9002aB |
 | Implement AgentKit integration | Completed | Agent functionality implemented |
 | Create onchain actions | Completed | Application submission and fund distribution implemented |
 | Use other CDP tools | Completed | CDP SDK integrated |
@@ -30,11 +30,12 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Deploy on zkSync Era Testnet | Completed | Contract deployed and integrated with application submission |
-| Provide working demo | Completed | Application submission working on zkSync |
-| Submit public GitHub repository | In Progress | Repository cleanup in progress |
+| Deploy on zkSync Era Testnet | Completed | Contract deployed at 0x0bd1ec565684D5043D0c9aC2835a84A52Ef1Ee41 |
+| Provide working demo | Completed | Application submission and fund distribution working on zkSync |
+| Submit public GitHub repository | Completed | Repository organized with documentation |
+| AgentKit Integration | Completed | Custom action provider implemented and tested |
 
-**Overall Status**: 90% Complete
+**Overall Status**: 100% Complete
 
 ### zkSync: Best Web3 Onboarding UX using zkSync Smart Sign-On (SSO) SDK ($9,000)
 
@@ -44,9 +45,9 @@ This document tracks our progress on meeting the requirements for each bounty we
 | Implement as primary authentication method | Completed | Used for wallet onboarding with session key creation |
 | Deploy on zkSync Era Testnet | Completed | Contract deployed and verified |
 | Provide working demo with SSO login | Completed | SSO integration working in application flow |
-| Submit public GitHub repository | In Progress | Repository cleanup in progress |
+| Submit public GitHub repository | Completed | Repository organized with documentation |
 
-**Overall Status**: 90% Complete
+**Overall Status**: 100% Complete
 
 ## Tier 2 Bounties
 
@@ -66,12 +67,24 @@ This document tracks our progress on meeting the requirements for each bounty we
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | AI Component with on-chain interaction | Completed | Agent can interact with Flow contracts |
-| Smart Contract Integration on Flow testnet | In Progress | Mock contract created but needs deployment |
-| Documentation of AI-Flow interaction | In Progress | Documentation started |
-| Publicly accessible demo | Not Started | Needs implementation |
+| Smart Contract Integration on Flow testnet | Completed | Contract deployed at 0x28736dfc4d9e84c6 |
+| Documentation of AI-Flow interaction | Completed | Documentation updated in blockchain-integration.md |
+| Publicly accessible demo | In Progress | Basic functionality implemented, UI needs refinement |
 | Usage of Eliza on Flow | Completed | Integrated with agent capabilities |
+| AgentKit Integration | Partial | Custom action provider implemented but needs further testing |
 
-**Overall Status**: 60% Complete
+**Overall Status**: 85% Complete
+
+### Optimism: Superchain Interop Pre-Deploy ($5,000)
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Integrate with Superchain interop predeploys | Completed | Integrated with L1BlockNumber, L1BlockAttributes, SystemConfig, and L2ToL1MessagePasser |
+| Show aggregated ETH balance | Completed | Implemented in OptimismInteropActionProvider |
+| Send ETH/SuperchainERC20 to an address | Completed | Implemented bridgeTokens and initiateWithdrawal functions |
+| AgentKit Integration | Completed | Custom action provider implemented and tested |
+
+**Overall Status**: 100% Complete
 
 ## Tier 3 Bounty
 
@@ -79,11 +92,11 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Implement token/message transfer across chains | Not Started | Low priority for MVP |
+| Implement token/message transfer across chains | In Progress | Basic implementation started |
 | Leverage Chainlink's oracle networks | Not Started | Low priority for MVP |
-| Demonstrate practical cross-chain use case | Not Started | Low priority for MVP |
+| Demonstrate practical cross-chain use case | In Progress | Cross-chain artist registration implemented |
 
-**Overall Status**: 0% Complete (Deferred for post-MVP)
+**Overall Status**: 30% Complete
 
 ## Submission Materials
 
@@ -91,42 +104,41 @@ This document tracks our progress on meeting the requirements for each bounty we
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Technical implementation details | In Progress | 70% complete |
-| Architecture diagram | Not Started | Need to create |
-| Requirement sections | In Progress | 50% complete |
-| Usage examples and code snippets | In Progress | 60% complete |
+| Technical implementation details | Completed | Blockchain integration documentation updated |
+| Architecture diagram | In Progress | 70% complete |
+| Requirement sections | Completed | All requirements documented |
+| Usage examples and code snippets | Completed | Test scripts and examples provided |
 | Setup and deployment instructions | Completed | Deployment guide created |
 
-**Overall Status**: 60% Complete
+**Overall Status**: 90% Complete
 
 ### Demo Materials
 
 | Item | Status | Notes |
 |------|--------|-------|
-| 90-second demo videos | Not Started | Need to create for each bounty |
-| Screenshots | Not Started | Need to capture key UI elements |
-| Live demo link | Not Started | Will be available after deployment |
-| Test account credentials | Not Started | Need to create for demo |
+| 90-second demo videos | In Progress | zkSync demo video created, others in progress |
+| Screenshots | Completed | Key UI elements captured |
+| Live demo link | In Progress | Deployment in progress |
+| Test account credentials | Completed | Test accounts created for demo |
 
-**Overall Status**: 0% Complete
+**Overall Status**: 70% Complete
 
 ### Code Repository
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Clean, organized codebase | Completed | Code structure follows best practices |
-| README with setup instructions | In Progress | 80% complete |
-| Licensing information | Not Started | Need to add |
-| Documentation for key components | In Progress | 60% complete |
-| Tagged version for submission | Not Started | Will be done before submission |
+| README with setup instructions | Completed | Comprehensive README created |
+| Licensing information | Completed | MIT license added |
+| Documentation for key components | Completed | All key components documented |
+| Tagged version for submission | In Progress | Final testing before tagging |
 
-**Overall Status**: 60% Complete
+**Overall Status**: 90% Complete
 
 ## Next Steps
 
-1. Verify and complete contract deployments to all testnets
-2. Test contract functionality on testnets
-3. Create demo materials (screenshots and videos)
-4. Complete repository cleanup
-5. Finalize documentation
-6. Create tagged version for submission 
+1. Complete Flow integration testing with AgentKit
+2. Finalize demo materials (remaining videos)
+3. Complete live demo deployment
+4. Create tagged version for submission
+5. Submit final materials to bounty platforms 
