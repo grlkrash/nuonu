@@ -39,6 +39,7 @@ contract ArtistFundManager is Ownable, ReentrancyGuard {
     event FundsDistributed(string indexed artistId, address indexed wallet, uint256 amount);
     event CrossChainTransactionInitiated(uint256 indexed txId, string indexed artistId, uint256 amount, string targetChain, address targetAddress);
     event CrossChainTransactionUpdated(uint256 indexed txId, string status);
+    event ArtistOptimismAddressUpdated(string indexed artistId, address indexed optimismAddress);
 
     mapping(string => Artist) public artists;
     mapping(string => Grant) public grants;
@@ -74,6 +75,19 @@ contract ArtistFundManager is Ownable, ReentrancyGuard {
         artists[artistId] = Artist(artistId, wallet, address(0), true);
         
         emit ArtistRegistered(artistId, wallet, address(0));
+    }
+
+    function updateArtistOptimismAddress(string memory artistId, address optimismAddress) external onlyOwner {
+        require(artists[artistId].verified, "Artist not registered");
+        require(optimismAddress != address(0), "Invalid optimism address");
+        
+        // Update the optimism address
+        artists[artistId].optimismAddress = optimismAddress;
+        
+        // Map the optimism address to the artist ID
+        optimismAddressToArtistId[optimismAddress] = artistId;
+        
+        emit ArtistOptimismAddressUpdated(artistId, optimismAddress);
     }
 
     function createGrant(string memory grantId, string memory title, uint256 amount) external payable {

@@ -72,14 +72,14 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
     Counters.Counter private _crossChainTxIds;
 
     Counters.Counter private _grantIds;
-
+    
     /**
      * @dev Constructor sets the owner to the deployer of the contract
      */
     constructor() {
         // The Ownable constructor automatically sets msg.sender as owner
     }
-
+    
     /**
      * @dev Modifier to restrict functions to the artist or their session keys
      * @param artistId The unique identifier for the artist
@@ -104,7 +104,7 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
         require(isAuthorized, "Not authorized");
         _;
     }
-
+    
     /**
      * @dev Register an artist with their wallet address and optional Optimism address
      * @param artistId The unique identifier for the artist
@@ -290,7 +290,7 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
         require(crossChainTransactions[txId].id == txId, "Transaction does not exist");
         return crossChainTransactions[txId];
     }
-
+    
     /**
      * @dev Add a session key for an artist
      * @param artistId The unique identifier for the artist
@@ -310,7 +310,7 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
         sessionKeys.push(sessionKey);
         emit SessionKeyAdded(artistId, sessionKey);
     }
-
+    
     /**
      * @dev Remove a session key for an artist
      * @param artistId The unique identifier for the artist
@@ -333,7 +333,7 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
         
         revert("Session key not found");
     }
-
+    
     /**
      * @dev Get the application details
      * @param applicationId The unique identifier for the application
@@ -360,7 +360,7 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
     function getGrant(string memory grantId) external view returns (Grant memory) {
         return grants[grantId];
     }
-
+    
     /**
      * @dev Get the pending funds for an artist
      * @param artistId The unique identifier for the artist
@@ -369,7 +369,7 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
     function getPendingFunds(string memory artistId) external view returns (uint256) {
         return pendingFunds[artistId];
     }
-
+    
     /**
      * @dev Get the session keys for an artist
      * @param artistId The unique identifier for the artist
@@ -378,7 +378,7 @@ contract ZkSyncArtistManager is Ownable, ReentrancyGuard {
     function getSessionKeys(string memory artistId) external view returns (address[] memory) {
         return artistSessionKeys[artistId];
     }
-
+    
     /**
      * @dev Receive function to accept ETH
      */

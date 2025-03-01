@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/sonia/Desktop/nuonu/src/contracts/base/ArtistFundManager.sol": {
-      "lastModificationDate": 1740802517665,
-      "contentHash": "a8810a0dba5abf63415487ce841df0d1",
+      "lastModificationDate": 1740803267949,
+      "contentHash": "0dd2ca2e08e5beb4762a76f05052a13d",
       "sourceName": "src/contracts/base/ArtistFundManager.sol",
       "solcConfig": {
         "version": "0.8.20",

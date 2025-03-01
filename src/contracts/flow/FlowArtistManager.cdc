@@ -80,9 +80,9 @@ pub contract FlowArtistManager {
         targetAddress: String
     )
     pub event CrossChainTransactionStatusUpdated(id: String, status: String)
-    
-    init() {
-        self.artists = {}
+            
+            init() {
+                self.artists = {}
         self.grants = {}
         self.grantApplications = {}
         self.pendingFunds = {}
@@ -272,8 +272,8 @@ pub contract FlowArtistManager {
     
     // View functions
     pub fun getArtist(artistId: String): Artist? {
-        return self.artists[artistId]
-    }
+                return self.artists[artistId]
+            }
     
     pub fun getGrant(grantId: String): Grant? {
         return self.grants[grantId]
@@ -301,6 +301,6 @@ pub contract FlowArtistManager {
         }
         
         return transactions
-    }
-}
+            }
+        }
       

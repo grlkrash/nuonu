@@ -101,9 +101,20 @@ async function main() {
   
   // Update the artist with optimism address
   console.log("\nUpdating artist with optimism address...");
-  const updateTx = await contract.registerArtist(artistId, wallet.address, optimismAddress);
-  await updateTx.wait();
-  console.log(`Artist updated with optimism address: ${optimismAddress}`);
+  try {
+    // Check if the contract has an updateArtistOptimismAddress function
+    if (contract.functions.updateArtistOptimismAddress) {
+      const updateTx = await contract.updateArtistOptimismAddress(artistId, optimismAddress);
+      await updateTx.wait();
+      console.log(`Artist updated with optimism address: ${optimismAddress}`);
+    } else {
+      console.log("updateArtistOptimismAddress function not found. Skipping optimism address update.");
+      console.log("Will continue with the rest of the script...");
+    }
+  } catch (error) {
+    console.log("Error updating artist optimism address:", error.message);
+    console.log("Continuing with the rest of the script...");
+  }
   
   // Create a test grant
   console.log("\nCreating test grant...");
@@ -210,8 +221,8 @@ async function main() {
   
   // Update transaction status
   console.log("\nUpdating transaction status to 'completed'...");
-  const updateTx = await contract.updateCrossChainTransactionStatus(txId, "completed");
-  await updateTx.wait();
+  const statusUpdateTx = await contract.updateCrossChainTransactionStatus(txId, "completed");
+  await statusUpdateTx.wait();
   
   // Get updated transaction details
   const updatedTx = await contract.getCrossChainTransaction(txId);
