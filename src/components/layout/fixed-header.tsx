@@ -1,16 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Menu } from 'lucide-react'
 import { SignInButton } from '@/components/auth/sign-in-button'
-import { useRouter, usePathname } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { getCurrentUser } from '@/lib/supabase/auth'
+import { User } from '@supabase/supabase-js'
 
 interface HeaderProps {
   scrolled?: boolean;
@@ -20,10 +19,9 @@ export function FixedHeader({ scrolled = true }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [internalScrolled, setInternalScrolled] = useState(scrolled)
   const router = useRouter()
-  const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  
+
   useEffect(() => {
     // If scrolled is provided as a prop, use it
     // Otherwise, detect scroll position internally
@@ -41,59 +39,25 @@ export function FixedHeader({ scrolled = true }: HeaderProps) {
       return () => window.removeEventListener('scroll', handleScroll)
     }
   }, [scrolled])
-  
+
   useEffect(() => {
-    const getUser = async () => {
+    async function loadUser() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        console.log('Header - User:', user ? 'Authenticated' : 'Not authenticated')
-        setUser(user)
+        const currentUser = await getCurrentUser()
+        setUser(currentUser)
       } catch (error) {
-        console.error('Error getting user:', error)
+        console.error('Error loading user:', error)
       } finally {
         setIsLoading(false)
       }
     }
     
-    getUser()
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        console.log('Header - Auth state changed:', session ? 'Authenticated' : 'Not authenticated')
-        setUser(session?.user ?? null)
-      }
-    )
-    
-    return () => {
-      subscription.unsubscribe()
-    }
+    loadUser()
   }, [])
 
   const handleLinkClick = (href: string) => {
     setIsMenuOpen(false)
-    
-    // Check if this is a protected route and we have a user
-    const isProtectedRoute = href.startsWith('/dashboard') || 
-                            href.startsWith('/profile') || 
-                            href.startsWith('/applications')
-    
-    if (isProtectedRoute && !user) {
-      // If trying to access a protected route without being logged in,
-      // redirect to sign in with the intended destination
-      const redirectUrl = `/signin?redirect=${encodeURIComponent(href)}`
-      console.log('Header - Redirecting to sign in with redirect:', redirectUrl)
-      router.push(redirectUrl)
-    } else {
-      // Otherwise, proceed with navigation
-      console.log('Header - Navigating to:', href)
-      router.push(href)
-      
-      // Force a refresh to ensure the page gets the latest session state
-      setTimeout(() => {
-        console.log('Header - Refreshing router')
-        router.refresh()
-      }, 100)
-    }
+    router.push(href)
   }
 
   return (
@@ -155,6 +119,11 @@ export function FixedHeader({ scrolled = true }: HeaderProps) {
                 <li>
                   <button onClick={() => handleLinkClick("/funds")} className="text-white hover:underline">
                     My Funds
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => handleLinkClick("/opportunities")} className="text-white hover:underline">
+                    Opportunities
                   </button>
                 </li>
               </>

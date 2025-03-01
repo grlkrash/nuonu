@@ -47,6 +47,15 @@ export function MobileNav({ items, children }: MobileNavProps) {
             Funds & Wallet
           </Link>
           <Link
+            href="/opportunities"
+            className={cn(
+              "flex w-full items-center rounded-md p-2 text-sm font-medium hover:underline",
+              pathname === "/opportunities" ? "text-foreground" : "text-foreground/60"
+            )}
+          >
+            Opportunities
+          </Link>
+          <Link
             href="/docs"
             className={cn(
               "flex w-full items-center rounded-md p-2 text-sm font-medium hover:underline",

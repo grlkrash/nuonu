@@ -9,8 +9,12 @@ import { WalletDashboard } from "@/components/blockchain/wallet-dashboard"
 import { WithdrawalInterface } from "@/components/blockchain/withdrawal-interface"
 import { WalletConnection } from "@/components/blockchain/wallet-connection"
 import { BalanceAggregator } from "@/components/blockchain/balance-aggregator"
+import { SimulatedTokenTransfer } from "@/components/demo/SimulatedTokenTransfer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
+import { SimulatedGrantDistribution } from "@/components/demo/SimulatedGrantDistribution"
+import { SimulatedZkSyncInteraction } from "@/components/demo/SimulatedZkSyncInteraction"
+import { WalletConnectionSSO } from "@/components/wallet/wallet-connection-sso"
 
 interface Fund {
   id: number
@@ -250,11 +254,14 @@ export default function FundsPage() {
         </p>
 
         <Tabs defaultValue="balances" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-7 mb-8">
             <TabsTrigger value="balances">Balances</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+            <TabsTrigger value="send">Send</TabsTrigger>
             <TabsTrigger value="connect">Connect Wallets</TabsTrigger>
+            <TabsTrigger value="grants">Grant Distribution</TabsTrigger>
+            <TabsTrigger value="zksync">zkSync Interaction</TabsTrigger>
           </TabsList>
           
           <TabsContent value="balances">
@@ -274,9 +281,35 @@ export default function FundsPage() {
             <WithdrawalInterface balance={walletData.balance} onWithdraw={handleWithdraw} />
           </TabsContent>
           
-          <TabsContent value="connect">
+          <TabsContent value="send">
             <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-              <WalletConnection onConnect={handleConnectWallet} isConnecting={isConnecting} />
+              <SimulatedTokenTransfer defaultChain="base" />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="connect" className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+              <WalletConnectionSSO />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="grants" className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+              <h2 className="text-xl font-semibold mb-4">Grant Distribution</h2>
+              <p className="text-gray-400 mb-4">
+                This is a simulation of how grants are distributed to artists using Base AgentKit and the ArtistFundManager contract.
+              </p>
+              <SimulatedGrantDistribution />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="zksync" className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+              <h2 className="text-xl font-semibold mb-4">zkSync Smart Contract Interaction</h2>
+              <p className="text-gray-400 mb-4">
+                This is a simulation of how artists interact with smart contracts on zkSync using session keys.
+              </p>
+              <SimulatedZkSyncInteraction />
             </div>
           </TabsContent>
         </Tabs>

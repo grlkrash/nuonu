@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getApplicationsByUserId } from '@/lib/services/applications'
 import { getCurrentUser } from '@/lib/auth'
 import { getProfileById } from '@/lib/services/profiles'
@@ -8,6 +9,8 @@ import { OpportunityCard } from '@/components/opportunities/opportunity-card'
 import { SimpleWalletConnect } from '@/components/blockchain/simple-wallet-connect'
 import { Button } from '@/components/ui/button'
 import { FixedHeader } from '@/components/layout/fixed-header'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Wallet } from "lucide-react"
 
 export const metadata = {
   title: 'nuonu - Dashboard',
@@ -216,7 +219,7 @@ export default async function DashboardPage({
                 )}
                 
                 <div className="mt-6 text-center">
-                  <Link href="/grants">
+                  <Link href="/opportunities">
                     <Button className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-4 py-2">
                       View All Opportunities
                     </Button>
@@ -248,31 +251,22 @@ export default async function DashboardPage({
                         <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             application.status === 'submitted' ? 'bg-green-900 text-green-300' :
-                            application.status === 'draft' ? 'bg-gray-700 text-gray-300' :
-                            application.status === 'rejected' ? 'bg-red-900 text-red-300' :
-                            'bg-blue-900 text-blue-300'
+                            application.status === 'pending' ? 'bg-yellow-900 text-yellow-300' :
+                            application.status === 'approved' ? 'bg-blue-900 text-blue-300' :
+                            'bg-red-900 text-red-300'
                           }`}>
                             {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                           </span>
                         </td>
                         <td className="py-3 px-4">
                           <Link href={`/dashboard/applications/${application.id}`}>
-                            <Button className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-3 py-1 text-xs">
-                              View Details
-                            </Button>
+                            <Button variant="outline" size="sm">View</Button>
                           </Link>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-              <div className="mt-6 text-center">
-                <Link href="/dashboard/applications">
-                  <Button className="bg-transparent text-white border border-white hover:bg-white hover:text-black rounded-xl px-4 py-2">
-                    View All Applications
-                  </Button>
-                </Link>
               </div>
             </div>
           )}

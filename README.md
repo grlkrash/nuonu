@@ -1,288 +1,107 @@
-# Artist Grant AI Agent
+# Nuonu - Artist Grant Platform
 
-A comprehensive platform that helps artists discover grant opportunities, jobs, gigs, and other creative opportunities. It automates the application process for web3 grants, DAO proposals, and bounties via Bountycaster, and manages fund distribution using blockchain technology.
-
-## Project Overview
-
-The Artist Grant AI Agent is designed to simplify the process of finding and applying for funding opportunities for artists. It leverages AI to match artists with relevant opportunities based on their profile, portfolio, and career stage, and facilitates fund distribution through blockchain technology.
+Nuonu is a platform that connects artists with grant opportunities and simplifies the application process using AI and blockchain technology.
 
 ## Features
 
-- **AI-Powered Opportunity Discovery**: Find grants, jobs, and gigs tailored to your artistic profile
-- **AI Application Generation**: Automatically generate grant applications based on artist profiles and opportunity details
-- **Portfolio Management**: Upload and showcase your artistic work
-- **Multi-Chain Wallet Integration**: Connect wallets across Base, zkSync, and Flow blockchains
-- **Fund Distribution**: Receive grant funds directly through secure blockchain transactions
-- **Application Automation**: Streamline the application process with AI assistance
-- **Autonomous Agent**: AI agent that can discover, match, apply for, and monitor opportunities without human intervention
+- **Smart Sign-On**: Secure authentication using zkSync Smart Sign-On
+- **Grant Discovery**: Find relevant grant opportunities with AI-powered matching
+- **Auto-Apply**: Automatically generate and submit grant applications with AI
+- **Multi-Chain Wallet**: Manage funds across multiple blockchains (Base, Optimism, zkSync)
+- **Grant Distribution**: Receive and manage grant funds through smart contracts
 
 ## Technology Stack
 
-- **Frontend**: NextJS, Tailwind CSS, React
-- **Backend**: Node.js, Express
-- **Database**: Supabase
-- **AI**: OpenAI API (GPT-3.5 Turbo)
-- **Blockchain**: 
-  - Base (Coinbase L2)
-  - zkSync Era (transaction layer and SSO SDK)
-  - Flow blockchain with Eliza OS
-  - Chainlink CCIP (if time permits)
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Next.js API Routes, Supabase
+- **Blockchain**: Base, Optimism, zkSync Era
+- **AI**: OpenAI, Coinbase AgentKit
 
-## Current Status
-
-The project is currently in MVP stage with the following components implemented:
-
-- ✅ User authentication and profile management
-- ✅ Artist onboarding questionnaire
-- ✅ Dashboard with opportunity recommendations
-- ✅ Multi-chain wallet integration
-- ✅ AI-powered opportunity matching
-- ✅ Application submission system
-- ✅ Autonomous AI agent for opportunity discovery
-- ✅ Eliza OS integration for Twitter opportunity search
-- 🔄 Smart contract deployment (in progress)
-- 🔄 Fund distribution system (in progress)
-- 🔄 Documentation and demo materials (in progress)
-
-## Next Steps
-
-1. Complete smart contract deployment to all testnets
-2. Finalize documentation for all bounties
-3. Create demo videos for each bounty
-4. Prepare GitHub repository for submission
-5. Implement any remaining features for bounty qualification
-
-## Smart Contracts
-
-The platform includes several smart contracts for blockchain functionality:
-
-- **FundDistribution.sol**: Manages grant distribution on Base blockchain
-- **ZkSyncArtistManager.sol**: Handles artist management and fund distribution on zkSync Era
-- **FlowArtistManager.cdc**: Manages artist profiles and fund distribution on Flow blockchain
-
-## Setup Instructions
+## Deployment to Vercel
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- npm (v9 or higher)
-- Supabase account
-- OpenAI API key
-- Hardhat for local blockchain development
+- A [Vercel](https://vercel.com) account
+- A [GitHub](https://github.com) account
 
-### Environment Setup
+### Steps to Deploy
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd artist-grant-ai-agent
-   ```
+1. **Push your code to GitHub**
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/yourusername/nuonu.git
+git push -u origin main
+```
 
-3. Create a `.env.local` file with the following variables:
-   ```
-   # API Keys
-   OPENAI_API_KEY=your_openai_api_key
-   ELIZA_API_KEY=your_eliza_api_key
-   
-   # Supabase
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_KEY=your_supabase_service_key
-   
-   # Blockchain Configuration
-   PRIVATE_KEY=your_private_key
-   
-   # Feature Flags
-   NEXT_PUBLIC_ENABLE_FUND_DISTRIBUTION=true
-   NEXT_PUBLIC_ENABLE_AUTO_APPLICATIONS=false
-   ```
+2. **Import your GitHub repository to Vercel**
 
-### Database Setup
+- Go to [Vercel Dashboard](https://vercel.com/dashboard)
+- Click "Add New" > "Project"
+- Select your GitHub repository
+- Configure the project:
+  - Framework Preset: Next.js
+  - Root Directory: ./
+  - Build Command: npm run build
+  - Output Directory: .next
 
-1. Set up the Supabase database by executing the SQL migration files in the Supabase SQL Editor in this order:
-   - `supabase/migrations/20230701000002_add_exec_sql_function.sql`
-   - `supabase/migrations/20230701000000_initial_schema.sql`
-   - `supabase/migrations/20230701000001_add_tags_to_opportunities.sql`
+3. **Configure Environment Variables**
 
-2. Set up the agent activities table:
-   ```bash
-   npm run setup-agent-db
-   ```
+Add the following environment variables in the Vercel project settings:
 
-### Smart Contract Deployment
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+OPENAI_API_KEY=your_openai_api_key
+NEXT_PUBLIC_APP_URL=your_vercel_deployment_url
+```
 
-#### Local Development
+4. **Deploy**
 
-1. Start a local Hardhat node:
-   ```bash
-   npx hardhat node
-   ```
+Click "Deploy" and wait for the build to complete.
 
-2. Deploy the FundDistribution contract:
-   ```bash
-   npx hardhat run scripts/deploy-local.js --network localhost
-   ```
+## Local Development
 
-3. Deploy the ZkSyncArtistManager contract:
-   ```bash
-   npx hardhat run scripts/deploy-zksync-local.js --network localhost
-   ```
+1. **Clone the repository**
 
-4. Update the `.env.local` file with the deployed contract addresses:
-   ```
-   NEXT_PUBLIC_ARTIST_FUND_MANAGER_BASE=<fund_distribution_address>
-   NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=<zksync_artist_manager_address>
-   ```
+```bash
+git clone https://github.com/yourusername/nuonu.git
+cd nuonu
+```
 
-#### Testnet Deployment
+2. **Install dependencies**
 
-1. Deploy to Base Sepolia:
-   ```bash
-   npx hardhat run scripts/deploy-base.js --network baseSepolia
-   ```
+```bash
+npm install
+```
 
-2. Deploy to zkSync Era Testnet:
-   ```bash
-   npx hardhat run scripts/deploy-zksync.js --network zkSyncTestnet
-   ```
+3. **Set up environment variables**
 
-3. Deploy to Flow Testnet:
-   ```bash
-   npm run deploy:flow
-   ```
+Create a `.env.local` file in the root directory with the required environment variables.
 
-4. Update the `.env.local` file with the deployed contract addresses.
+4. **Run the development server**
 
-### Testing
+```bash
+npm run dev
+```
 
-1. Test the blockchain integration:
-   ```bash
-   npm run test:blockchain-integration
-   ```
+5. **Open in browser**
 
-2. Test the zkSync SSO:
-   ```bash
-   npm run test:zksync-sso
-   ```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-3. Run the autonomous agent for a specific artist:
-   ```bash
-   npm run run-agent <artist_id>
-   ```
+## Demo Simulations
 
-### Running the Application
+The platform includes several simulation components to demonstrate key functionality:
 
-1. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-2. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Documentation
-
-For more detailed information, please refer to the following documentation:
-
-- [Deployment Guide](docs/deployment-guide.md): Instructions for deploying the application
-- [Test Plan](docs/test-plan.md): Comprehensive test plan for the application
-- [Bounty Status](docs/bounty-status.md): Current status of bounty qualification
-- [Blockchain Integration](docs/blockchain-integration.md): Details on blockchain integration
-- [AI Agent](docs/ai-agent.md): Information about the AI agent implementation
-
-## Key Components
-
-### AI Opportunity Finder
-
-The AI Opportunity Finder component helps artists discover relevant opportunities based on their profile, interests, and career stage. It uses OpenAI to analyze opportunities and match them with artist profiles.
-
-### Autonomous AI Agent
-
-The Autonomous AI Agent can perform the following tasks without human intervention:
-
-1. **Opportunity Discovery**: Automatically searches for new opportunities using Eliza OS Twitter integration
-2. **Opportunity Matching**: Matches opportunities with artist profiles based on skills, interests, and career stage
-3. **Application Generation**: Creates tailored applications for high-match opportunities
-4. **Application Submission**: Submits applications on behalf of the artist
-5. **Status Monitoring**: Tracks application status and provides updates
-
-The agent can be run manually or set to run automatically on a schedule.
-
-### Artist Onboarding Wizard
-
-The Artist Onboarding Wizard guides users through the process of creating a comprehensive profile, including personal information, artistic discipline, portfolio, and wallet connection.
-
-### Multi-Chain Wallet Integration
-
-The wallet integration components provide a seamless experience for connecting to multiple blockchains:
-- Base (Coinbase L2)
-- zkSync Era (with session key support)
-- Flow blockchain
-
-### Fund Distribution System
-
-The Fund Distribution System enables secure and transparent grant allocation and distribution across multiple blockchains, with transaction tracking and verification.
-
-## Project Structure
-
-- `src/app`: Next.js app router pages
-  - `dashboard/`: User dashboard
-  - `dashboard/agent/`: AI agent dashboard
-  - `opportunities/`: Opportunity discovery
-  - `profile/`: User profile management
-  - `onboarding/`: Artist onboarding wizard
-  - `wallet/`: Wallet management
-  - `api/`: API routes
-- `src/components`: React components
-  - `blockchain/`: Blockchain-related components
-  - `dashboard/`: Dashboard components
-  - `opportunities/`: Opportunity-related components
-  - `profile/`: User profile components
-  - `ui/`: UI components
-- `src/lib`: Utility functions and services
-  - `blockchain/`: Blockchain utilities
-  - `services/`: Service functions
-    - `agent-activities.ts`: AI agent service
-    - `eliza-twitter.ts`: Eliza OS Twitter integration
-    - `ai-matching.ts`: AI opportunity matching
-  - `supabase/`: Supabase client and utilities
-- `src/contracts`: Smart contracts
-  - `base/`: Base blockchain contracts
-  - `FundDistribution.sol`: Main fund distribution contract
-  - `ZkSyncArtistManager.sol`: zkSync Era contract
-- `scripts`: Deployment and testing scripts
-  - `setup-agent-activities.js`: Script to set up agent activities table
-  - `run-autonomous-agent.js`: Script to run the autonomous agent
-- `supabase`: Database migrations and schema
-- `docs`: Project documentation
-
-## Bounty Submissions
-
-This project is targeting several hackathon bounties:
-
-1. **Base: AI-powered app on Base** - Leveraging Base blockchain for fund distribution
-2. **Coinbase Developer Platform: Most Innovative Use of AgentKit** - Using AgentKit for AI-powered opportunity matching
-3. **zkSync Era: Build an AI Agent on zkSync Era** - Implementing artist management on zkSync
-4. **zkSync: Best Web3 Onboarding UX using zkSync Smart Sign-On (SSO) SDK** - Enhancing onboarding with zkSync SSO
-5. **Flow: Best AI Agents** - Integrating with Flow blockchain and Eliza OS for artist management
-6. **Chainlink CCIP: Best use of Chainlink CCIP** - Enabling cross-chain fund distribution
+- **SimulatedZkSyncSSO**: Demonstrates the zkSync Smart Sign-On process
+- **SimulatedTokenTransfer**: Shows how to send tokens across different chains
+- **SimulatedGrantDistribution**: Demonstrates the grant award distribution process
+- **SimulatedZkSyncInteraction**: Shows interaction with zkSync smart contracts
+- **SimulatedAutoApply**: Demonstrates the AI-powered auto-apply feature
 
 ## License
 
-[MIT](LICENSE)
-
-## Acknowledgements
-
-- [Next.js](https://nextjs.org/)
-- [Supabase](https://supabase.io/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [OpenZeppelin](https://openzeppelin.com/)
-- [Base](https://base.org/)
-- [zkSync Era](https://zksync.io/)
-- [Flow](https://flow.com/)
-- [Eliza OS](https://eliza.com/)
-- [Chainlink](https://chain.link/)
+MIT

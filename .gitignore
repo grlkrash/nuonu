@@ -56,3 +56,6 @@ next-env.d.ts
 
 # Cache
 .cache
+
+# Wallet data
+wallet-data.json

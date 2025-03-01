@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Wallet } from 'lucide-react'
-import { ZkSyncWalletConnect } from './zksync-wallet-connect'
+import { SimulatedZkSyncSSO } from '@/components/demo/SimulatedZkSyncSSO'
 
 interface WalletModalProps {
   trigger?: React.ReactNode
@@ -38,7 +38,7 @@ export function WalletModal({ trigger }: WalletModalProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <ZkSyncWalletConnect />
+          <SimulatedZkSyncSSO />
         </div>
       </DialogContent>
     </Dialog>

@@ -37,6 +37,15 @@ export function MainNav() {
           Funds & Wallet
         </Link>
         <Link
+          href="/opportunities"
+          className={cn(
+            "transition-colors hover:text-foreground/80",
+            pathname === "/opportunities" ? "text-foreground" : "text-foreground/60"
+          )}
+        >
+          Opportunities
+        </Link>
+        <Link
           href="/docs"
           className={cn(
             "transition-colors hover:text-foreground/80",

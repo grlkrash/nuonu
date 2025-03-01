@@ -154,7 +154,7 @@ export function LandingHeader({ scrolled = false }: LandingHeaderProps) {
         </div>
       </div>
       {isMenuOpen && (
-        <nav className="container mx-auto px-4 py-2 bg-black bg-opacity-90 backdrop-blur-md border-t border-white">
+        <nav className="container mx-auto px-4 py-2 bg-black border-t border-white">
           <ul className="space-y-2">
             <li>
               <button onClick={() => handleLinkClick("/")} className="text-white hover:underline">
@@ -164,6 +164,11 @@ export function LandingHeader({ scrolled = false }: LandingHeaderProps) {
             <li>
               <button onClick={() => handleLinkClick("/about")} className="text-white hover:underline">
                 About nuonu
+              </button>
+            </li>
+            <li>
+              <button onClick={() => handleLinkClick("/funds")} className="text-white hover:underline">
+                Funds
               </button>
             </li>
             {user && (
@@ -179,8 +184,8 @@ export function LandingHeader({ scrolled = false }: LandingHeaderProps) {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => handleLinkClick("/funds")} className="text-white hover:underline">
-                    My Funds
+                  <button onClick={() => handleLinkClick("/opportunities")} className="text-white hover:underline">
+                    Opportunities
                   </button>
                 </li>
               </>

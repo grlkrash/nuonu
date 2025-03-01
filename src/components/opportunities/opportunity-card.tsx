@@ -159,7 +159,7 @@ export function OpportunityCard({
         </Button>
         
         <Button variant="outline" size="sm" asChild>
-          <Link href={`/opportunities/${opportunity.id}/apply`}>Apply Now</Link>
+          <Link href={`/opportunities?selected=${opportunity.id}`}>Apply Now</Link>
         </Button>
       </CardFooter>
     </Card>

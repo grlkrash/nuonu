@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase/client"
-import { ZkSyncWalletConnect } from "@/components/blockchain/zksync-wallet-connect"
+import { SimulatedZkSyncSSO } from "@/components/demo/SimulatedZkSyncSSO"
 
 interface SignInModalProps {
   isOpen: boolean
@@ -133,7 +133,7 @@ export function SignInModal({ isOpen, onClose, method }: SignInModalProps) {
         )}
         {method === "wallet" && (
           <div>
-            <ZkSyncWalletConnect />
+            <SimulatedZkSyncSSO />
           </div>
         )}
       </DialogContent>

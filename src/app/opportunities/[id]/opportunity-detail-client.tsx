@@ -8,6 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/use-toast'
+import { SimulatedAutoApply } from '@/components/demo/SimulatedAutoApply'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Calendar, MapPin, Globe, Clock, DollarSign, Tag } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 interface OpportunityDetailClientProps {
   opportunity: any
@@ -25,6 +31,9 @@ export default function OpportunityDetailClient({
   const [profileInsights, setProfileInsights] = useState<string | null>(null)
   const [isLoadingInsights, setIsLoadingInsights] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
+  const [isApplying, setIsApplying] = useState(false)
+  const [showAutoApplyDemo, setShowAutoApplyDemo] = useState(false)
   
   // Fetch profile insights when component mounts if user is logged in
   useEffect(() => {
@@ -169,6 +178,40 @@ export default function OpportunityDetailClient({
               <p className="whitespace-pre-line">{opportunity.organization_description}</p>
             </div>
           </div>
+        </div>
+
+        {/* Application Actions */}
+        <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+          <h2 className="text-xl font-semibold mb-4">Apply for this Opportunity</h2>
+          
+          <div className="flex flex-col md:flex-row gap-4">
+            <Button
+              onClick={() => router.push(`/opportunities/${opportunity.id}/apply`)}
+              className="bg-white text-black hover:bg-gray-200 rounded-xl px-6 py-3"
+              disabled={isApplying}
+            >
+              Apply Manually
+            </Button>
+            
+            <Button
+              onClick={() => setShowAutoApplyDemo(true)}
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-black rounded-xl px-6 py-3"
+              disabled={isApplying}
+            >
+              Auto-Apply with AI
+            </Button>
+          </div>
+          
+          {showAutoApplyDemo && (
+            <div className="mt-6">
+              <h3 className="text-lg font-medium mb-4">Auto-Apply Demonstration</h3>
+              <p className="text-gray-400 mb-4">
+                This is a simulation of how the AI-powered auto-apply feature works to automatically generate and submit grant applications.
+              </p>
+              <SimulatedAutoApply opportunityId={opportunity.id} artistId={user?.id || "artist_demo"} />
+            </div>
+          )}
         </div>
 
         {!user && opportunity.application_url && (
