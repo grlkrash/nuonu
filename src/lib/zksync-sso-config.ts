@@ -1,7 +1,7 @@
-import { zksyncSsoConnector, callPolicy } from "zksync-sso/connector"
-import { zksyncSepoliaTestnet } from "viem/chains"
-import { createConfig, http } from "@wagmi/core"
-import { parseEther } from "viem"
+import { zksyncSsoConnector } from 'zksync-sso/connector'
+import { createConfig, http } from 'wagmi'
+import { parseEther } from 'viem'
+import { zksyncSepoliaTestnet } from 'viem/chains'
 import { env } from "@/lib/env"
 
 // Official contract addresses from zkSync documentation
@@ -13,22 +13,7 @@ const OFFICIAL_ZKSYNC_SSO_CONTRACT = {
 // Chain configuration matching official docs
 const sepoliaChain = {
   ...zksyncSepoliaTestnet,
-  id: 300,
-  name: 'zkSync Sepolia',
-  network: 'zksync-sepolia',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'Ether',
-    symbol: 'ETH',
-  },
-  rpcUrls: {
-    default: { http: ['https://sepolia.era.zksync.dev'] },
-    public: { http: ['https://sepolia.era.zksync.dev'] },
-  },
-  blockExplorers: {
-    default: { name: 'Explorer', url: 'https://sepolia.explorer.zksync.io' },
-  },
-  testnet: true,
+  id: Number(process.env.NEXT_PUBLIC_ZKSYNC_CHAIN_ID || zksyncSepoliaTestnet.id),
 }
 
 // Get network from env or default to sepolia
@@ -95,37 +80,91 @@ const storage = {
   }
 }
 
-// Create the zkSync SSO connector with official configuration
-export const ssoConnector = zksyncSsoConnector({
-  chains: [sepoliaChain],
-  options: {
-    shimDisconnect: true,
-  },
-  session: {
+export const getZkSyncSSOConfig = () => {
+  const contractAddress = process.env.NEXT_PUBLIC_ZKSYNC_SSO_CONTRACT_ADDRESS;
+  const authServerUrl = process.env.NEXT_PUBLIC_ZKSYNC_SSO_AUTH_SERVER_URL;
+  const chainId = process.env.NEXT_PUBLIC_ZKSYNC_CHAIN_ID;
+
+  if (!contractAddress) {
+    console.error("Missing NEXT_PUBLIC_ZKSYNC_SSO_CONTRACT_ADDRESS");
+    throw new Error("Missing ZKSYNC_SSO_CONTRACT_ADDRESS");
+  }
+
+  if (!authServerUrl) {
+    console.error("Missing NEXT_PUBLIC_ZKSYNC_SSO_AUTH_SERVER_URL");
+    throw new Error("Missing ZKSYNC_SSO_AUTH_SERVER_URL");
+  }
+
+  if (!chainId) {
+    console.error("Missing NEXT_PUBLIC_ZKSYNC_CHAIN_ID");
+    throw new Error("Missing ZKSYNC_CHAIN_ID");
+  }
+
+  const parsedChainId = parseInt(chainId, 10);
+
+  if (isNaN(parsedChainId)) {
+    console.error("Invalid NEXT_PUBLIC_ZKSYNC_CHAIN_ID");
+    throw new Error("Invalid ZKSYNC_CHAIN_ID");
+  }
+
+  console.log("ZkSync SSO Config:", {
+    contractAddress,
+    authServerUrl,
+    chainId: parsedChainId,
+  });
+
+  const sessionConfig = {
     expiry: "1 day",
     feeLimit: parseEther("0.1"),
-  }
-})
+    transfers: [
+      {
+        // Allow transfers to any address with a value limit of 0.01 ETH
+        to: "0x0000000000000000000000000000000000000000", // Zero address as a placeholder
+        valueLimit: parseEther("0.01"),
+      },
+    ],
+  };
 
-// Log the exact configuration for debugging
-console.log('zkSync SSO connector initialized with configuration:', {
-  session: {
-    expiry: "1 day",
-    feeLimit: parseEther("0.1").toString()
-  }
-})
+  console.log("Session config:", sessionConfig);
 
-// Create the wagmi config with the required client property
+  return {
+    contractAddress,
+    authServerUrl,
+    chainId: parsedChainId,
+    sessionConfig,
+    debug: true,
+  };
+};
+
+export const getZkSyncSSOConnector = () => {
+  const config = getZkSyncSSOConfig();
+  
+  console.log('Creating zkSync SSO connector with config:', config);
+  
+  return zksyncSsoConnector({
+    contractAddress: config.contractAddress,
+    authServerUrl: config.authServerUrl,
+    chains: [sepoliaChain],
+    options: {
+      shimDisconnect: true,
+      debug: config.debug,
+    },
+    session: config.sessionConfig,
+  });
+};
+
 export const wagmiConfig = createConfig({
-  connectors: [ssoConnector],
+  connectors: [getZkSyncSSOConnector()],
   chains: [sepoliaChain],
   transports: {
     [sepoliaChain.id]: http(sepoliaChain.rpcUrls.default.http[0])
   },
 })
 
+console.log('wagmiConfig created with zkSync SSO connector')
+
 // Helper function to handle zkSync SSO errors (to be used in components)
-export function handleZkSyncError(error: any) {
+export function handleZkSyncSSOError(error: any) {
   console.error('zkSync SSO error:', error)
   
   // Log specific error types for better debugging
@@ -191,6 +230,4 @@ export function handleZkSyncError(error: any) {
   
   // Default error message
   return errorMessage || 'Unknown error occurred'
-}
-
-console.log('wagmiConfig created with zkSync SSO connector') 
+} 

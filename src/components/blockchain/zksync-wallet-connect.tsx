@@ -7,7 +7,7 @@ import { Loader2, Wallet } from 'lucide-react'
 import { supabase } from '../../lib/supabase/client'
 import { connect, disconnect } from '@wagmi/core'
 import { zksyncSepoliaTestnet } from 'viem/chains'
-import { ssoConnector, wagmiConfig, handleZkSyncError } from '../../lib/zksync-sso-config'
+import { getZkSyncSSOConnector, wagmiConfig, handleZkSyncSSOError } from '../../lib/zksync-sso-config'
 import { useToast } from '@/components/ui/use-toast'
 import { env } from '@/lib/env'
 
@@ -121,11 +121,26 @@ export function ZkSyncWalletConnect() {
     setError(null)
 
     try {
-      // Step 1: Preserve Supabase auth state
+      // Step 1: Verify browser compatibility first
+      if (!window.isSecureContext) {
+        throw new Error('Browser is not in a secure context. Please use HTTPS or localhost.')
+      }
+      
+      if (!('credentials' in navigator)) {
+        throw new Error('Browser does not support WebAuthn/Passkeys required for zkSync SSO')
+      }
+      
+      console.log('Browser compatibility check passed')
+      
+      // Step 2: Check for existing Supabase session
+      const { data: sessionData } = await supabase.auth.getSession()
+      console.log('Supabase session check:', sessionData.session ? 'Session exists' : 'No session')
+      
+      // Step 3: Preserve Supabase auth state
       const authToken = localStorage.getItem('supabase.auth.token')
       const authRefreshToken = localStorage.getItem('supabase.auth.refreshToken')
       
-      // Step 2: Disconnect existing wallet connections
+      // Step 4: Disconnect existing wallet connections
       try {
         await disconnect(wagmiConfig)
         console.log('Disconnected existing wallet connections')
@@ -133,7 +148,7 @@ export function ZkSyncWalletConnect() {
         console.log('No existing connections to disconnect')
       }
       
-      // Step 3: Clear only wallet-related storage
+      // Step 5: Clear only wallet-related storage
       const walletKeys = ['walletAddress', 'wagmi', 'walletconnect', 'zksync-sso']
       for (const key of walletKeys) {
         for (let i = 0; i < localStorage.length; i++) {
@@ -145,13 +160,13 @@ export function ZkSyncWalletConnect() {
         }
       }
       
-      // Step 4: Clear wallet-related cookies
+      // Step 6: Clear wallet-related cookies
       const cookiesToClear = ['zksync-sso-code-verifier', 'zksync-sso-state', 'wallet-address']
       cookiesToClear.forEach(name => {
         document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`
       })
       
-      // Step 5: Restore Supabase auth state
+      // Step 7: Restore Supabase auth state
       if (authToken) {
         localStorage.setItem('supabase.auth.token', authToken)
         console.log('Restored Supabase auth token')
@@ -161,119 +176,124 @@ export function ZkSyncWalletConnect() {
         console.log('Restored Supabase refresh token')
       }
       
-      // Step 6: Verify browser compatibility
-      if (!window.isSecureContext) {
-        throw new Error('Browser is not in a secure context. Please use HTTPS or localhost.')
-      }
-      
-      if (!('credentials' in navigator)) {
-        throw new Error('Browser does not support WebAuthn/Passkeys required for zkSync SSO')
-      }
-      
-      // Step 7: Connect to zkSync SSO
+      // Step 8: Connect to zkSync SSO with enhanced error logging
       console.log('Connecting to zkSync SSO...')
-      const { accounts } = await connect(wagmiConfig, {
-        connector: ssoConnector,
-        chainId: zksyncSepoliaTestnet.id,
-      })
+      console.log('Using contract address:', env.NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS)
+      console.log('Using RPC URL:', env.NEXT_PUBLIC_ZKSYNC_RPC_URL)
       
-      if (!accounts?.length) {
-        throw new Error('No accounts returned from zkSync SSO connection')
-      }
-      
-      const address = accounts[0]
-      console.log('Connected with address:', address)
-      
-      // Step 8: Store wallet address
-      localStorage.setItem('walletAddress', address)
-      document.cookie = `wallet-address=${address}; path=/; max-age=604800; SameSite=Lax; Secure`
-      
-      // Step 9: Update UI state
-      setWallet({
-        address,
-        isConnected: true,
-        isConnecting: false,
-      })
-      
-      // Step 10: Handle Supabase authentication with retries
-      let retryCount = 0
-      const maxRetries = 3
-      
-      while (retryCount < maxRetries) {
-        try {
-          const email = `${address.toLowerCase()}@wallet.zksync`
-          const password = `${address.toLowerCase()}-${address.slice(2, 10)}-recovery`
-          
-          console.log('Attempting Supabase authentication...')
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          })
-          
-          if (signInError) {
-            console.log('Creating new account...')
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      try {
+        const { accounts } = await connect(wagmiConfig, {
+          connector: getZkSyncSSOConnector(),
+          chainId: zksyncSepoliaTestnet.id,
+        })
+        
+        if (!accounts?.length) {
+          throw new Error('No accounts returned from zkSync SSO connection')
+        }
+        
+        const address = accounts[0]
+        console.log('Connected with address:', address)
+        
+        // Step 9: Store wallet address
+        localStorage.setItem('walletAddress', address)
+        document.cookie = `wallet-address=${address}; path=/; max-age=604800; SameSite=Lax; Secure`
+        
+        // Step 10: Update UI state
+        setWallet({
+          address,
+          isConnected: true,
+          isConnecting: false,
+        })
+        
+        // Step 11: Handle Supabase authentication with retries
+        let retryCount = 0
+        const maxRetries = 3
+        
+        while (retryCount < maxRetries) {
+          try {
+            const email = `${address.toLowerCase()}@wallet.zksync`
+            const password = `${address.toLowerCase()}-${address.slice(2, 10)}-recovery`
+            
+            console.log('Attempting Supabase authentication...')
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
               email,
               password,
-              options: {
-                data: { wallet_address: address },
-                emailRedirectTo: `${window.location.origin}/auth/callback?skip_confirmation=true`
-              },
             })
             
-            if (signUpError) throw signUpError
-            
-            // Verify session storage
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            const session = await supabase.auth.getSession()
-            if (!session.data.session) {
-              throw new Error('Session not created after signup')
-            }
-            
-            console.log('New account created, redirecting to onboarding')
-            router.push('/onboarding')
-            break
-          } else {
-            // Verify session storage
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            const session = await supabase.auth.getSession()
-            if (!session.data.session) {
-              throw new Error('Session not created after signin')
-            }
-            
-            // Update wallet address if needed
-            if (!signInData.user?.user_metadata?.wallet_address || 
-                signInData.user.user_metadata.wallet_address !== address) {
-              await supabase.auth.updateUser({
-                data: { wallet_address: address }
+            if (signInError) {
+              console.log('Creating new account...')
+              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                  data: { wallet_address: address },
+                  emailRedirectTo: `${window.location.origin}/auth/callback?skip_confirmation=true`
+                },
               })
+              
+              if (signUpError) throw signUpError
+              
+              // Verify session storage
+              await new Promise(resolve => setTimeout(resolve, 1000))
+              const session = await supabase.auth.getSession()
+              if (!session.data.session) {
+                throw new Error('Session not created after signup')
+              }
+              
+              console.log('New account created, redirecting to onboarding')
+              router.push('/onboarding')
+              break
+            } else {
+              // Verify session storage
+              await new Promise(resolve => setTimeout(resolve, 1000))
+              const session = await supabase.auth.getSession()
+              if (!session.data.session) {
+                throw new Error('Session not created after signin')
+              }
+              
+              // Update wallet address if needed
+              if (!signInData.user?.user_metadata?.wallet_address || 
+                  signInData.user.user_metadata.wallet_address !== address) {
+                await supabase.auth.updateUser({
+                  data: { wallet_address: address }
+                })
+              }
+              
+              console.log('Authentication successful, redirecting to dashboard')
+              router.push('/dashboard')
+              break
+            }
+          } catch (error) {
+            console.error(`Authentication attempt ${retryCount + 1} failed:`, error)
+            retryCount++
+            
+            if (retryCount === maxRetries) {
+              toast({
+                title: "Authentication Error",
+                description: "Failed to authenticate. Please try again.",
+                variant: "destructive"
+              })
+              throw error
             }
             
-            console.log('Authentication successful, redirecting to dashboard')
-            router.push('/dashboard')
-            break
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)))
           }
-        } catch (error) {
-          console.error(`Authentication attempt ${retryCount + 1} failed:`, error)
-          retryCount++
-          
-          if (retryCount === maxRetries) {
-            toast({
-              title: "Authentication Error",
-              description: "Failed to authenticate. Please try again.",
-              variant: "destructive"
-            })
-            throw error
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)))
         }
+        
+        toast({
+          title: "Connected Successfully",
+          description: "Wallet connected and authenticated.",
+        })
+      } catch (connectError) {
+        console.error('zkSync SSO connection error:', connectError)
+        console.log('Browser details:', navigator.userAgent)
+        console.log('WebAuthn support:', 'credentials' in navigator)
+        console.log('Secure context:', window.isSecureContext)
+        
+        // Use our detailed error handler
+        const errorMessage = handleZkSyncSSOError(connectError)
+        throw new Error(errorMessage)
       }
-      
-      toast({
-        title: "Connected Successfully",
-        description: "Wallet connected and authenticated.",
-      })
       
     } catch (error) {
       console.error('Connection error:', error)
@@ -288,33 +308,14 @@ export function ZkSyncWalletConnect() {
         isConnecting: false,
       })
       
-      // Handle specific errors
-      if (error instanceof Error) {
-        if (error.message.includes('User rejected')) {
-          toast({
-            title: "Connection Cancelled",
-            description: "You cancelled the connection request.",
-            variant: "destructive"
-          })
-        } else if (error.message.includes('session')) {
-          toast({
-            title: "Session Error",
-            description: "Failed to create session. Please try again.",
-            variant: "destructive"
-          })
-          
-          // Clear session storage and try to recover
-          localStorage.removeItem('supabase.auth.token')
-          localStorage.removeItem('supabase.auth.refreshToken')
-          await supabase.auth.signOut()
-        } else {
-          toast({
-            title: "Connection Error",
-            description: error.message,
-            variant: "destructive"
-          })
-        }
-      }
+      // Handle specific errors with our error handler
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      
+      toast({
+        title: "Connection Error",
+        description: errorMessage,
+        variant: "destructive"
+      })
     }
   }
 
