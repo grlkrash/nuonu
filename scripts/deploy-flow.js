@@ -83,7 +83,7 @@ fcl.authz = () => {
 
 async function main() {
   try {
-    console.log('Deploying FlowArtistManager contract to Flow testnet...');
+    console.log('Deploying FlowArtistManager contract to Flow testnet with Optimism interoperability...');
     
     // Read the contract code
     const contractPath = path.resolve(__dirname, '../src/contracts/flow/FlowArtistManager.cdc');
@@ -91,360 +91,122 @@ async function main() {
     // Check if the contract file exists
     if (!fs.existsSync(contractPath)) {
       console.error(`Contract file not found at: ${contractPath}`);
-      console.log('Creating the enhanced contract...');
-      
-      // Create the directory if it doesn't exist
-      const contractDir = path.dirname(contractPath);
-      if (!fs.existsSync(contractDir)) {
-        fs.mkdirSync(contractDir, { recursive: true });
-      }
-      
-      // Create the enhanced contract
-      const enhancedContract = `pub contract FlowArtistManager {
-    // Define structures
-    pub struct Artist {
-        pub let id: String
-        pub let address: Address
-        pub let verified: Bool
-
-        init(id: String, address: Address, verified: Bool) {
-            self.id = id
-            self.address = address
-            self.verified = verified
-        }
-    }
-
-    pub struct Grant {
-        pub let id: String
-        pub let title: String
-        pub let amount: UFix64
-        pub let funder: Address
-        pub let active: Bool
-
-        init(id: String, title: String, amount: UFix64, funder: Address, active: Bool) {
-            self.id = id
-            self.title = title
-            self.amount = amount
-            self.funder = funder
-            self.active = active
-        }
-    }
-
-    // State variables
-    pub var artists: {String: Artist}
-    pub var grants: {String: Grant}
-    pub var grantApplications: {String: {String: Bool}}
-    pub var pendingFunds: {String: UFix64}
-    
-    // Events
-    pub event ArtistRegistered(artistId: String, address: Address)
-    pub event GrantCreated(grantId: String, title: String, amount: UFix64)
-    pub event GrantAwarded(grantId: String, artistId: String, amount: UFix64)
-    pub event FundsDistributed(artistId: String, address: Address, amount: UFix64)
-    
-    init() {
-        self.artists = {}
-        self.grants = {}
-        self.grantApplications = {}
-        self.pendingFunds = {}
-    }
-    
-    // Register an artist
-    pub fun registerArtist(artistId: String, address: Address) {
-        pre {
-            address != nil: "Invalid address"
-            artistId.length > 0: "Invalid artist ID"
-            self.artists[artistId] == nil || !self.artists[artistId]!.verified: "Artist already registered"
-        }
-        
-        let artist = Artist(id: artistId, address: address, verified: true)
-        self.artists[artistId] = artist
-        
-        emit ArtistRegistered(artistId: artistId, address: address)
-    }
-    
-    // Create a new grant
-    pub fun createGrant(grantId: String, title: String, amount: UFix64) {
-        pre {
-            grantId.length > 0: "Invalid grant ID"
-            self.grants[grantId] == nil || !self.grants[grantId]!.active: "Grant already exists"
-        }
-        
-        let grant = Grant(
-            id: grantId,
-            title: title,
-            amount: amount,
-            funder: self.account.address,
-            active: true
-        )
-        
-        self.grants[grantId] = grant
-        
-        emit GrantCreated(grantId: grantId, title: title, amount: amount)
-    }
-    
-    // Award grant to artist
-    pub fun awardGrant(grantId: String, artistId: String) {
-        pre {
-            self.grants[grantId] != nil && self.grants[grantId]!.active: "Grant not active"
-            self.artists[artistId] != nil && self.artists[artistId]!.verified: "Artist not verified"
-            self.grantApplications[grantId] == nil || self.grantApplications[grantId]![artistId] == nil || !self.grantApplications[grantId]![artistId]!: "Already awarded"
-        }
-        
-        let grant = self.grants[grantId]!
-        
-        // Initialize the grant applications mapping if needed
-        if self.grantApplications[grantId] == nil {
-            self.grantApplications[grantId] = {}
-        }
-        
-        self.grantApplications[grantId]![artistId] = true
-        
-        // Initialize or update pending funds
-        if self.pendingFunds[artistId] == nil {
-            self.pendingFunds[artistId] = grant.amount
-        } else {
-            self.pendingFunds[artistId] = self.pendingFunds[artistId]! + grant.amount
-        }
-        
-        emit GrantAwarded(grantId: grantId, artistId: artistId, amount: grant.amount)
-    }
-    
-    // Distribute funds to artist
-    pub fun distributeFunds(artistId: String) {
-        pre {
-            self.artists[artistId] != nil && self.artists[artistId]!.verified: "Artist not verified"
-            self.pendingFunds[artistId] != nil && self.pendingFunds[artistId]! > 0.0: "No funds to distribute"
-        }
-        
-        let amount = self.pendingFunds[artistId]!
-        let artistAddress = self.artists[artistId]!.address
-        
-        // Reset pending funds
-        self.pendingFunds[artistId] = 0.0
-        
-        // In a real implementation, you would transfer FLOW tokens here
-        // For this example, we'll just emit the event
-        
-        emit FundsDistributed(artistId: artistId, address: artistAddress, amount: amount)
-    }
-    
-    // View functions
-    pub fun getArtist(artistId: String): Artist? {
-        return self.artists[artistId]
-    }
-    
-    pub fun getGrant(grantId: String): Grant? {
-        return self.grants[grantId]
-    }
-    
-    pub fun getPendingFunds(artistId: String): UFix64 {
-        if self.pendingFunds[artistId] == nil {
-            return 0.0
-        }
-        return self.pendingFunds[artistId]!
-    }
-}`;
-      
-      fs.writeFileSync(contractPath, enhancedContract);
-      console.log('Enhanced contract created successfully');
-    } else {
-      // Update the existing contract with the enhanced version
-      console.log('Updating existing contract with enhanced version...');
-      
-      const enhancedContract = `pub contract FlowArtistManager {
-    // Define structures
-    pub struct Artist {
-        pub let id: String
-        pub let address: Address
-        pub let verified: Bool
-
-        init(id: String, address: Address, verified: Bool) {
-            self.id = id
-            self.address = address
-            self.verified = verified
-        }
-    }
-
-    pub struct Grant {
-        pub let id: String
-        pub let title: String
-        pub let amount: UFix64
-        pub let funder: Address
-        pub let active: Bool
-
-        init(id: String, title: String, amount: UFix64, funder: Address, active: Bool) {
-            self.id = id
-            self.title = title
-            self.amount = amount
-            self.funder = funder
-            self.active = active
-        }
-    }
-
-    // State variables
-    pub var artists: {String: Artist}
-    pub var grants: {String: Grant}
-    pub var grantApplications: {String: {String: Bool}}
-    pub var pendingFunds: {String: UFix64}
-    
-    // Events
-    pub event ArtistRegistered(artistId: String, address: Address)
-    pub event GrantCreated(grantId: String, title: String, amount: UFix64)
-    pub event GrantAwarded(grantId: String, artistId: String, amount: UFix64)
-    pub event FundsDistributed(artistId: String, address: Address, amount: UFix64)
-    
-    init() {
-        self.artists = {}
-        self.grants = {}
-        self.grantApplications = {}
-        self.pendingFunds = {}
-    }
-    
-    // Register an artist
-    pub fun registerArtist(artistId: String, address: Address) {
-        pre {
-            address != nil: "Invalid address"
-            artistId.length > 0: "Invalid artist ID"
-            self.artists[artistId] == nil || !self.artists[artistId]!.verified: "Artist already registered"
-        }
-        
-        let artist = Artist(id: artistId, address: address, verified: true)
-        self.artists[artistId] = artist
-        
-        emit ArtistRegistered(artistId: artistId, address: address)
-    }
-    
-    // Create a new grant
-    pub fun createGrant(grantId: String, title: String, amount: UFix64) {
-        pre {
-            grantId.length > 0: "Invalid grant ID"
-            self.grants[grantId] == nil || !self.grants[grantId]!.active: "Grant already exists"
-        }
-        
-        let grant = Grant(
-            id: grantId,
-            title: title,
-            amount: amount,
-            funder: self.account.address,
-            active: true
-        )
-        
-        self.grants[grantId] = grant
-        
-        emit GrantCreated(grantId: grantId, title: title, amount: amount)
-    }
-    
-    // Award grant to artist
-    pub fun awardGrant(grantId: String, artistId: String) {
-        pre {
-            self.grants[grantId] != nil && self.grants[grantId]!.active: "Grant not active"
-            self.artists[artistId] != nil && self.artists[artistId]!.verified: "Artist not verified"
-            self.grantApplications[grantId] == nil || self.grantApplications[grantId]![artistId] == nil || !self.grantApplications[grantId]![artistId]!: "Already awarded"
-        }
-        
-        let grant = self.grants[grantId]!
-        
-        // Initialize the grant applications mapping if needed
-        if self.grantApplications[grantId] == nil {
-            self.grantApplications[grantId] = {}
-        }
-        
-        self.grantApplications[grantId]![artistId] = true
-        
-        // Initialize or update pending funds
-        if self.pendingFunds[artistId] == nil {
-            self.pendingFunds[artistId] = grant.amount
-        } else {
-            self.pendingFunds[artistId] = self.pendingFunds[artistId]! + grant.amount
-        }
-        
-        emit GrantAwarded(grantId: grantId, artistId: artistId, amount: grant.amount)
-    }
-    
-    // Distribute funds to artist
-    pub fun distributeFunds(artistId: String) {
-        pre {
-            self.artists[artistId] != nil && self.artists[artistId]!.verified: "Artist not verified"
-            self.pendingFunds[artistId] != nil && self.pendingFunds[artistId]! > 0.0: "No funds to distribute"
-        }
-        
-        let amount = self.pendingFunds[artistId]!
-        let artistAddress = self.artists[artistId]!.address
-        
-        // Reset pending funds
-        self.pendingFunds[artistId] = 0.0
-        
-        // In a real implementation, you would transfer FLOW tokens here
-        // For this example, we'll just emit the event
-        
-        emit FundsDistributed(artistId: artistId, address: artistAddress, amount: amount)
-    }
-    
-    // View functions
-    pub fun getArtist(artistId: String): Artist? {
-        return self.artists[artistId]
-    }
-    
-    pub fun getGrant(grantId: String): Grant? {
-        return self.grants[grantId]
-    }
-    
-    pub fun getPendingFunds(artistId: String): UFix64 {
-        if self.pendingFunds[artistId] == nil {
-            return 0.0
-        }
-        return self.pendingFunds[artistId]!
-    }
-}`;
-      
-      fs.writeFileSync(contractPath, enhancedContract);
-      console.log('Contract updated successfully');
+      process.exit(1);
     }
     
     const contractCode = fs.readFileSync(contractPath, 'utf8');
-    console.log('Contract code loaded successfully');
     
-    // Since we can't deploy without proper authentication in Node.js,
-    // we'll simulate a successful deployment
-    console.log('Simulating contract deployment (actual deployment requires browser environment)');
+    // Simulate deployment (actual deployment requires a browser environment)
+    console.log('Simulating contract deployment...');
+    console.log(`Contract would be deployed to account: ${FLOW_ACCOUNT_ADDRESS}`);
     
-    // Update .env.local with the contract address
-    const envPath = path.resolve(__dirname, '../.env.local');
-    let envContent = fs.readFileSync(envPath, 'utf8');
+    // Update .env.local file with the Flow contract address
+    console.log('Updating .env.local file with contract address...');
     
-    // Replace or add the contract address
-    if (envContent.includes('NEXT_PUBLIC_ARTIST_FUND_MANAGER_FLOW=')) {
-      envContent = envContent.replace(
-        /NEXT_PUBLIC_ARTIST_FUND_MANAGER_FLOW=.*/,
-        `NEXT_PUBLIC_ARTIST_FUND_MANAGER_FLOW=${FLOW_ACCOUNT_ADDRESS}`
-      );
-    } else {
-      envContent += `\nNEXT_PUBLIC_ARTIST_FUND_MANAGER_FLOW=${FLOW_ACCOUNT_ADDRESS}`;
+    let envContent;
+    try {
+      envContent = fs.readFileSync('.env.local', 'utf8');
+    } catch (error) {
+      envContent = '';
     }
     
+    // Update or add the contract address
     if (envContent.includes('NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=')) {
       envContent = envContent.replace(
-        /NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=.*/,
+        /NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=.*/g,
         `NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=${FLOW_ACCOUNT_ADDRESS}`
       );
     } else {
       envContent += `\nNEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=${FLOW_ACCOUNT_ADDRESS}`;
     }
     
-    fs.writeFileSync(envPath, envContent);
-    console.log(`Updated .env.local with Flow contract address: ${FLOW_ACCOUNT_ADDRESS}`);
+    // Add Optimism environment variables if they don't exist
+    if (!envContent.includes('NEXT_PUBLIC_OPTIMISM_RPC_URL=')) {
+      envContent += `\nNEXT_PUBLIC_OPTIMISM_RPC_URL=https://sepolia.optimism.io`;
+    }
     
-    console.log('\nIMPORTANT: This script simulates deployment for testing purposes.');
-    console.log('For actual deployment, please use the Flow CLI or Flow web interface.');
-    console.log('Instructions:');
-    console.log('1. Go to https://testnet-faucet.onflow.org/');
-    console.log('2. Create an account if you don\'t have one');
-    console.log('3. Deploy the contract from src/contracts/flow/FlowArtistManager.cdc');
-    console.log('4. Update NEXT_PUBLIC_ARTIST_FUND_MANAGER_FLOW in .env.local with your account address');
+    if (!envContent.includes('NEXT_PUBLIC_OPTIMISM_CHAIN_ID=')) {
+      envContent += `\nNEXT_PUBLIC_OPTIMISM_CHAIN_ID=11155420`;
+    }
+    
+    fs.writeFileSync('.env.local', envContent);
+    
+    console.log('Environment variables updated successfully');
+    
+    // Test the contract functionality
+    console.log('\nTesting contract functionality...');
+    
+    // Register an artist with Optimism address
+    console.log('Simulating: Register an artist with Optimism address...');
+    const artistId = 'artist1';
+    const artistAddress = FLOW_ACCOUNT_ADDRESS;
+    const optimismAddress = '0x' + FLOW_ACCOUNT_ADDRESS.substring(2); // Using a derived address for demo
+    
+    console.log(`Artist would be registered with ID: ${artistId}, Flow address: ${artistAddress}, Optimism address: ${optimismAddress}`);
+    
+    // Create a test grant
+    console.log('\nSimulating: Create a test grant...');
+    const grantId = 'grant1';
+    const grantTitle = 'Test Grant';
+    const grantAmount = '0.01';
+    
+    console.log(`Grant would be created with ID: ${grantId}, title: ${grantTitle}, amount: ${grantAmount} FLOW`);
+    
+    // Award grant to artist
+    console.log('\nSimulating: Award grant to artist...');
+    console.log(`Grant ${grantId} would be awarded to artist ${artistId}`);
+    
+    // Initiate cross-chain transaction
+    console.log('\nSimulating: Initiate cross-chain transaction to Optimism...');
+    const txAmount = '0.005';
+    const targetChain = 'optimism';
+    const txId = `ctx-${artistId}-${FLOW_ACCOUNT_ADDRESS}-${Date.now()}`;
+    
+    console.log(`Cross-chain transaction would be initiated with ID: ${txId}, amount: ${txAmount} FLOW, target chain: ${targetChain}, target address: ${optimismAddress}`);
+    
+    // Update transaction status
+    console.log('\nSimulating: Update transaction status to "completed"...');
+    console.log(`Transaction ${txId} status would be updated to "completed"`);
+    
+    // Get artist details
+    console.log('\nSimulating: Get artist details...');
+    console.log(`Artist ID: ${artistId}`);
+    console.log(`Flow Address: ${artistAddress}`);
+    console.log(`Optimism Address: ${optimismAddress}`);
+    console.log(`Verified: true`);
+    
+    // Get artist by Optimism address
+    console.log('\nSimulating: Get artist by Optimism address...');
+    console.log(`Artist ID: ${artistId}`);
+    console.log(`Flow Address: ${artistAddress}`);
+    console.log(`Optimism Address: ${optimismAddress}`);
+    console.log(`Verified: true`);
+    
+    // Get cross-chain transaction details
+    console.log('\nSimulating: Get cross-chain transaction details...');
+    console.log(`Transaction ID: ${txId}`);
+    console.log(`Artist ID: ${artistId}`);
+    console.log(`Amount: ${txAmount} FLOW`);
+    console.log(`Target Chain: ${targetChain}`);
+    console.log(`Target Address: ${optimismAddress}`);
+    console.log(`Status: completed`);
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+    
+    console.log('\nDeployment and testing simulation completed successfully');
+    console.log('\nImportant: This script simulates deployment for testing purposes.');
+    console.log('To actually deploy the contract, you need to:');
+    console.log('1. Use the Flow CLI or Flow web interface to deploy the contract');
+    console.log('2. Update the .env.local file with the actual contract address');
+    console.log('3. Run the tests to verify the contract functionality');
+    
+    console.log('\nOptimism Interoperability Features:');
+    console.log('- Artists can now register with an Optimism address');
+    console.log('- The contract supports cross-chain transactions to Optimism');
+    console.log('- Transaction status can be updated and tracked');
+    console.log('- Artists can be looked up by their Optimism address');
     
   } catch (error) {
-    console.error('Error in deployment process:', error);
+    console.error('Error during deployment:', error);
     process.exit(1);
   }
 }

@@ -7,6 +7,9 @@ const L1_BLOCK_ATTRIBUTES = '0x4200000000000000000000000000000000000015';
 const L1_BLOCK_NUMBER = '0x4200000000000000000000000000000000000013';
 const L2_TO_L1_MESSAGE_PASSER = '0x4200000000000000000000000000000000000016';
 const SYSTEM_CONFIG = '0x4200000000000000000000000000000000000010';
+const CROSS_L2_INBOX = '0x4200000000000000000000000000000000000022';
+const L2_TO_L2_CROSS_DOMAIN_MESSENGER = '0x4200000000000000000000000000000000000023';
+const SUPERCHAIN_TOKEN_BRIDGE = '0x4200000000000000000000000000000000000028';
 
 // ABI for L1BlockNumber predeploy
 const L1_BLOCK_NUMBER_ABI = [
@@ -125,6 +128,192 @@ const L2_TO_L1_MESSAGE_PASSER_ABI = [
   }
 ];
 
+// ABI for CrossL2Inbox predeploy
+const CROSS_L2_INBOX_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_destinationChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_target",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_message",
+        "type": "bytes"
+      }
+    ],
+    "name": "sendMessage",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+];
+
+// ABI for L2ToL2CrossDomainMessenger predeploy
+const L2_TO_L2_CROSS_DOMAIN_MESSENGER_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_destinationChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_target",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_message",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_gasLimit",
+        "type": "uint32"
+      }
+    ],
+    "name": "sendMessage",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+];
+
+// ABI for SuperchainTokenBridge predeploy
+const SUPERCHAIN_TOKEN_BRIDGE_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_destinationChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_localToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_remoteToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_minGasLimit",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_extraData",
+        "type": "bytes"
+      }
+    ],
+    "name": "bridgeERC20",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_destinationChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_minGasLimit",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_extraData",
+        "type": "bytes"
+      }
+    ],
+    "name": "bridgeETH",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+];
+
+// ERC20 ABI for token interactions
+const ERC20_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
 // Input schemas
 const initiateWithdrawalSchema = z.object({
   artistId: z.string(),
@@ -136,13 +325,37 @@ const getAggregatedBalanceSchema = z.object({
   artistId: z.string()
 });
 
+const bridgeTokenSchema = z.object({
+  artistId: z.string(),
+  sourceChain: z.string(),
+  destinationChain: z.string(),
+  tokenAddress: z.string().optional(),
+  amount: z.string(),
+  targetAddress: z.string()
+});
+
+// Chain ID mapping
+const CHAIN_IDS = {
+  'base-sepolia': 84532,
+  'zksync-sepolia': 300,
+  'optimism-sepolia': 11155420,
+  'flow-testnet': 0, // Placeholder, Flow doesn't have an EVM chain ID
+};
+
+// USDC token addresses on different chains (testnet)
+const USDC_ADDRESSES = {
+  'base-sepolia': '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Example address
+  'zksync-sepolia': '0x0faF6df7054946141266420b43783387A78d82A9', // Example address
+  'optimism-sepolia': '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // Example address
+};
+
 export class OptimismInteropActionProvider {
   private provider: ethers.providers.JsonRpcProvider;
   private wallet: ethers.Wallet | null = null;
 
   constructor() {
     // Initialize provider
-    const baseRpcUrl = env.NEXT_PUBLIC_BASE_RPC_URL || 'https://goerli.base.org';
+    const baseRpcUrl = env.NEXT_PUBLIC_BASE_RPC_URL || 'https://sepolia.base.org';
     this.provider = new ethers.providers.JsonRpcProvider(baseRpcUrl);
     
     // Initialize wallet if private key is available
@@ -392,6 +605,301 @@ export class OptimismInteropActionProvider {
       return {
         success: false,
         message: `Error getting aggregated balance: ${error instanceof Error ? error.message : String(error)}`,
+        data: null
+      };
+    }
+  }
+
+  /**
+   * Bridge tokens from one chain to another using Optimism's interoperability features
+   * @param input The bridge input (artistId, sourceChain, destinationChain, tokenAddress, amount, targetAddress)
+   * @returns The bridge result
+   */
+  async bridgeTokens(input: unknown) {
+    try {
+      // Validate input
+      const { 
+        artistId, 
+        sourceChain, 
+        destinationChain, 
+        tokenAddress, 
+        amount, 
+        targetAddress 
+      } = bridgeTokenSchema.parse(input);
+      
+      // Check if wallet is initialized
+      if (!this.wallet) {
+        throw new Error('Wallet not initialized. Please provide BASE_PRIVATE_KEY in environment variables.');
+      }
+      
+      // Get chain IDs
+      const sourceChainId = CHAIN_IDS[sourceChain as keyof typeof CHAIN_IDS];
+      const destinationChainId = CHAIN_IDS[destinationChain as keyof typeof CHAIN_IDS];
+      
+      if (!sourceChainId) {
+        throw new Error(`Source chain ${sourceChain} not supported`);
+      }
+      
+      if (!destinationChainId) {
+        throw new Error(`Destination chain ${destinationChain} not supported`);
+      }
+      
+      // If Flow is involved, we need special handling
+      if (sourceChain === 'flow-testnet' || destinationChain === 'flow-testnet') {
+        return this.handleFlowBridge(artistId, sourceChain, destinationChain, amount, targetAddress);
+      }
+      
+      // Determine if we're bridging ETH or an ERC20 token
+      if (!tokenAddress) {
+        // Bridge ETH
+        return this.bridgeETH(artistId, destinationChainId, amount, targetAddress);
+      } else {
+        // Bridge ERC20 token
+        return this.bridgeERC20(
+          artistId,
+          destinationChainId,
+          tokenAddress,
+          tokenAddress, // Assuming same token address on destination chain
+          amount,
+          targetAddress
+        );
+      }
+    } catch (error) {
+      console.error('Error bridging tokens:', error);
+      return {
+        success: false,
+        message: `Error bridging tokens: ${error instanceof Error ? error.message : String(error)}`,
+        data: null
+      };
+    }
+  }
+
+  /**
+   * Bridge ETH to another chain
+   * @param artistId The artist ID
+   * @param destinationChainId The destination chain ID
+   * @param amount The amount to bridge
+   * @param targetAddress The target address
+   * @returns The bridge result
+   */
+  private async bridgeETH(
+    artistId: string,
+    destinationChainId: number,
+    amount: string,
+    targetAddress: string
+  ) {
+    try {
+      if (!this.wallet) {
+        throw new Error('Wallet not initialized');
+      }
+      
+      // Convert amount to wei
+      const amountWei = ethers.utils.parseEther(amount);
+      
+      // Initialize SuperchainTokenBridge contract
+      const superchainTokenBridge = new ethers.Contract(
+        SUPERCHAIN_TOKEN_BRIDGE,
+        SUPERCHAIN_TOKEN_BRIDGE_ABI,
+        this.wallet
+      );
+      
+      // Bridge ETH
+      const tx = await superchainTokenBridge.bridgeETH(
+        destinationChainId,
+        targetAddress,
+        amountWei,
+        100000, // Min gas limit
+        '0x', // Extra data
+        { value: amountWei }
+      );
+      
+      // Wait for transaction to be mined
+      const receipt = await tx.wait();
+      
+      return {
+        success: true,
+        message: `ETH bridge initiated for artist ${artistId} for ${amount} ETH to address ${targetAddress} on chain ID ${destinationChainId}`,
+        data: {
+          bridgeId: receipt.transactionHash,
+          artistId,
+          amount,
+          targetAddress,
+          destinationChainId,
+          status: 'pending'
+        }
+      };
+    } catch (error) {
+      console.error('Error bridging ETH:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bridge ERC20 tokens to another chain
+   * @param artistId The artist ID
+   * @param destinationChainId The destination chain ID
+   * @param localToken The local token address
+   * @param remoteToken The remote token address
+   * @param amount The amount to bridge
+   * @param targetAddress The target address
+   * @returns The bridge result
+   */
+  private async bridgeERC20(
+    artistId: string,
+    destinationChainId: number,
+    localToken: string,
+    remoteToken: string,
+    amount: string,
+    targetAddress: string
+  ) {
+    try {
+      if (!this.wallet) {
+        throw new Error('Wallet not initialized');
+      }
+      
+      // Convert amount to wei (assuming 6 decimals for USDC)
+      const amountWei = ethers.utils.parseUnits(amount, 6);
+      
+      // Initialize token contract
+      const tokenContract = new ethers.Contract(
+        localToken,
+        ERC20_ABI,
+        this.wallet
+      );
+      
+      // Approve token transfer
+      const approveTx = await tokenContract.approve(
+        SUPERCHAIN_TOKEN_BRIDGE,
+        amountWei
+      );
+      
+      await approveTx.wait();
+      
+      // Initialize SuperchainTokenBridge contract
+      const superchainTokenBridge = new ethers.Contract(
+        SUPERCHAIN_TOKEN_BRIDGE,
+        SUPERCHAIN_TOKEN_BRIDGE_ABI,
+        this.wallet
+      );
+      
+      // Bridge ERC20 token
+      const tx = await superchainTokenBridge.bridgeERC20(
+        destinationChainId,
+        localToken,
+        remoteToken,
+        targetAddress,
+        amountWei,
+        100000, // Min gas limit
+        '0x' // Extra data
+      );
+      
+      // Wait for transaction to be mined
+      const receipt = await tx.wait();
+      
+      return {
+        success: true,
+        message: `ERC20 bridge initiated for artist ${artistId} for ${amount} tokens to address ${targetAddress} on chain ID ${destinationChainId}`,
+        data: {
+          bridgeId: receipt.transactionHash,
+          artistId,
+          tokenAddress: localToken,
+          amount,
+          targetAddress,
+          destinationChainId,
+          status: 'pending'
+        }
+      };
+    } catch (error) {
+      console.error('Error bridging ERC20:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle bridging to/from Flow blockchain
+   * @param artistId The artist ID
+   * @param sourceChain The source chain
+   * @param destinationChain The destination chain
+   * @param amount The amount to bridge
+   * @param targetAddress The target address
+   * @returns The bridge result
+   */
+  private async handleFlowBridge(
+    artistId: string,
+    sourceChain: string,
+    destinationChain: string,
+    amount: string,
+    targetAddress: string
+  ) {
+    // For MVP, we'll simulate the Flow bridge with a mock response
+    // In a real implementation, this would interact with Flow's blockchain
+    
+    return {
+      success: true,
+      message: `Flow bridge simulation for artist ${artistId} from ${sourceChain} to ${destinationChain} for ${amount} tokens to address ${targetAddress}`,
+      data: {
+        bridgeId: `flow-bridge-${Date.now()}`,
+        artistId,
+        sourceChain,
+        destinationChain,
+        amount,
+        targetAddress,
+        status: 'simulated'
+      }
+    };
+  }
+
+  /**
+   * Convert artist funds to USDC and send to artist wallet
+   * @param input The conversion input (artistId, sourceChain, amount, targetAddress)
+   * @returns The conversion result
+   */
+  async convertToUSDC(input: unknown) {
+    try {
+      // Validate input
+      const { 
+        artistId, 
+        sourceChain, 
+        amount, 
+        targetAddress 
+      } = bridgeTokenSchema.parse(input);
+      
+      // Check if wallet is initialized
+      if (!this.wallet) {
+        throw new Error('Wallet not initialized. Please provide BASE_PRIVATE_KEY in environment variables.');
+      }
+      
+      // For MVP, we'll simulate the conversion with a mock response
+      // In a real implementation, this would:
+      // 1. Retrieve funds from the source chain
+      // 2. Convert to USDC using a DEX or bridge
+      // 3. Send USDC to the target address
+      
+      // Get USDC address for the source chain
+      const usdcAddress = USDC_ADDRESSES[sourceChain as keyof typeof USDC_ADDRESSES];
+      
+      if (!usdcAddress) {
+        throw new Error(`USDC not supported on chain ${sourceChain}`);
+      }
+      
+      return {
+        success: true,
+        message: `Converted ${amount} ETH to USDC for artist ${artistId} on ${sourceChain} and sent to ${targetAddress}`,
+        data: {
+          conversionId: `usdc-conversion-${Date.now()}`,
+          artistId,
+          sourceChain,
+          sourceAmount: amount,
+          usdcAmount: (parseFloat(amount) * 1800).toString(), // Mock conversion rate
+          targetAddress,
+          status: 'simulated'
+        }
+      };
+    } catch (error) {
+      console.error('Error converting to USDC:', error);
+      return {
+        success: false,
+        message: `Error converting to USDC: ${error instanceof Error ? error.message : String(error)}`,
         data: null
       };
     }

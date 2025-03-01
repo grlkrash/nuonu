@@ -1,137 +1,195 @@
 // scripts/deploy-zksync.js
-const hre = require("hardhat");
-const { Wallet, Provider } = require("zksync-web3");
-const { Deployer } = require("@matterlabs/hardhat-zksync-deploy");
-const fs = require("fs");
-const path = require("path");
+require('dotenv').config({ path: '.env.local' });
+const { Wallet, Provider, Contract, utils } = require('zksync-web3');
+const { ethers } = require('ethers');
+const fs = require('fs');
+const path = require('path');
+
+// ABI and bytecode for ZkSyncArtistManager contract
+const contractABI = require('../artifacts-zk/contracts/ZkSyncArtistManager.sol/ZkSyncArtistManager.json').abi;
+const contractBytecode = require('../artifacts-zk/contracts/ZkSyncArtistManager.sol/ZkSyncArtistManager.json').bytecode;
 
 async function main() {
-  console.log("Deploying ZkSyncArtistManager contract to zkSync Era Testnet...");
-
-  // Get network from hardhat config
-  const network = hre.network.name;
-  console.log(`Using network: ${network}`);
-
   try {
-    // Initialize the provider
-    const provider = new Provider("https://sepolia.era.zksync.dev");
-    console.log("Provider initialized");
+    console.log('Starting ZkSync deployment with Optimism interoperability...');
 
-    // Check if private key exists
-    const privateKey = process.env.ZKSYNC_PRIVATE_KEY;
-    if (!privateKey) {
-      throw new Error("ZKSYNC_PRIVATE_KEY not found in environment variables");
+    // Check if private key is available
+    if (!process.env.ZKSYNC_PRIVATE_KEY) {
+      throw new Error('ZKSYNC_PRIVATE_KEY environment variable is not set');
     }
 
-    // Log private key length and format (without exposing the key)
-    console.log(`Private key length: ${privateKey.length}`);
-    console.log(`Has 0x prefix: ${privateKey.startsWith("0x")}`);
+    // Initialize provider and wallet
+    const provider = new Provider(process.env.NEXT_PUBLIC_ZKSYNC_RPC_URL || 'https://sepolia.era.zksync.dev');
+    const wallet = new Wallet(process.env.ZKSYNC_PRIVATE_KEY, provider);
+    const deployer = wallet.address;
 
-    // Use private key as is - do not modify it
-    const wallet = new Wallet(privateKey, provider);
-    console.log(`Wallet initialized with address: ${wallet.address}`);
+    console.log(`Deployer address: ${deployer}`);
+    console.log(`Current network: ${await provider.getNetwork().then(network => network.name)}`);
     
-    // Initialize the deployer with the connected wallet
-    const deployer = new Deployer(hre, wallet);
-    console.log("Deployer initialized");
-    
-    // Load the artifact
-    const artifact = await deployer.loadArtifact("ZkSyncArtistManager");
-    console.log("Artifact loaded");
+    // Check balance
+    const balance = await provider.getBalance(deployer);
+    console.log(`Deployer balance: ${ethers.utils.formatEther(balance)} ETH`);
+
+    if (balance.eq(0)) {
+      throw new Error('Deployer has no balance. Please fund the account before deployment.');
+    }
     
     // Deploy the contract
-    console.log("Deploying contract...");
-    const zkSyncArtistManager = await deployer.deploy(artifact);
+    console.log('Deploying ZkSyncArtistManager contract...');
     
-    // Get the deployed contract address
-    const contractAddress = zkSyncArtistManager.address;
+    const factory = new ethers.ContractFactory(contractABI, contractBytecode, wallet);
+    const contract = await factory.deploy();
     
-    console.log(`ZkSyncArtistManager deployed to: ${contractAddress}`);
+    await contract.deployed();
     
-    // Update .env.local with the contract address
-    const envPath = path.resolve(__dirname, '../.env.local');
-    let envContent = fs.readFileSync(envPath, 'utf8');
+    console.log(`ZkSyncArtistManager deployed to: ${contract.address}`);
+
+    // Update .env.local file with the new contract address
+    const envFilePath = path.resolve(process.cwd(), '.env.local');
+    let envContent = '';
     
-    // Replace or add the contract address
-    if (envContent.includes('NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=')) {
-      envContent = envContent.replace(
-        /NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=.*/,
-        `NEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=${contractAddress}`
-      );
+    try {
+      envContent = fs.readFileSync(envFilePath, 'utf8');
+    } catch (error) {
+      console.log('No existing .env.local file, creating a new one.');
+    }
+
+    // Update or add the contract address
+    const addressRegex = /^NEXT_PUBLIC_ZKSYNC_ARTIST_MANAGER_ADDRESS=.*/m;
+    const newAddressLine = `NEXT_PUBLIC_ZKSYNC_ARTIST_MANAGER_ADDRESS=${contract.address}`;
+    
+    if (addressRegex.test(envContent)) {
+      envContent = envContent.replace(addressRegex, newAddressLine);
     } else {
-      envContent += `\nNEXT_PUBLIC_ZKSYNC_CONTRACT_ADDRESS=${contractAddress}`;
+      envContent += `\n${newAddressLine}`;
+    }
+
+    // Generate a session key for the contract
+    const sessionKey = ethers.Wallet.createRandom().privateKey;
+    const sessionKeyRegex = /^ZKSYNC_SESSION_KEY=.*/m;
+    const newSessionKeyLine = `ZKSYNC_SESSION_KEY=${sessionKey}`;
+    
+    if (sessionKeyRegex.test(envContent)) {
+      envContent = envContent.replace(sessionKeyRegex, newSessionKeyLine);
+    } else {
+      envContent += `\n${newSessionKeyLine}`;
     }
     
-    if (envContent.includes('NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=')) {
-      envContent = envContent.replace(
-        /NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=.*/,
-        `NEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=${contractAddress}`
-      );
-    } else {
-      envContent += `\nNEXT_PUBLIC_ARTIST_FUND_MANAGER_ZKSYNC=${contractAddress}`;
+    // Add Optimism-related environment variables if they don't exist
+    if (!envContent.includes('NEXT_PUBLIC_OPTIMISM_RPC_URL=')) {
+      envContent += `\nNEXT_PUBLIC_OPTIMISM_RPC_URL=https://sepolia.optimism.io`;
     }
     
-    fs.writeFileSync(envPath, envContent);
-    console.log(`Updated .env.local with zkSync contract address: ${contractAddress}`);
+    if (!envContent.includes('NEXT_PUBLIC_OPTIMISM_CHAIN_ID=')) {
+      envContent += `\nNEXT_PUBLIC_OPTIMISM_CHAIN_ID=11155420`;
+    }
+
+    // Write the updated content back to the file
+    fs.writeFileSync(envFilePath, envContent);
+    console.log('Updated .env.local file with new contract address, session key, and Optimism variables');
+
+    // Register the deployer as an artist with Optimism address
+    console.log('Registering deployer as an artist with Optimism address...');
+    const artistId = "deployer-artist";
+    const optimismAddress = deployer; // Using the same address for demo purposes
     
-    console.log("");
-    console.log("To verify the contract:");
-    console.log(`npx hardhat verify --network zkSyncTestnet ${contractAddress}`);
-    
-    // Register the deployer as an artist first
-    console.log("Registering deployer as artist...");
-    const registerTx = await zkSyncArtistManager.registerArtist("admin", wallet.address);
+    const registerTx = await contract.registerArtist(artistId, deployer, optimismAddress);
     await registerTx.wait();
-    console.log("Artist registered");
+    console.log(`Artist registered with ID: ${artistId}, wallet: ${deployer}, optimismAddress: ${optimismAddress}`);
     
     // Create a session key for the contract
-    console.log("Creating session key...");
+    console.log('Creating session key...');
+    const sessionWallet = new ethers.Wallet(sessionKey);
+    const sessionAddress = sessionWallet.address;
     
-    // Generate a new session key
-    const sessionKeyPrivate = Wallet.createRandom().privateKey;
-    const sessionKeyWallet = new Wallet(sessionKeyPrivate);
-    const sessionKeyAddress = sessionKeyWallet.address;
+    const addSessionTx = await contract.addSessionKey(artistId, sessionAddress);
+    await addSessionTx.wait();
+    console.log(`Session key created with address: ${sessionAddress}`);
+
+    // Create a test grant
+    console.log('Creating a test grant...');
+    const grantId = "grant-" + Date.now();
+    const grantTitle = "Test Grant";
+    const grantAmount = ethers.utils.parseEther('0.01');
     
-    // Register the session key with the contract
-    const addKeyTx = await zkSyncArtistManager.addSessionKey("admin", sessionKeyAddress);
-    await addKeyTx.wait();
+    const createGrantTx = await contract.createGrant(grantId, grantTitle, grantAmount, {
+      value: grantAmount
+    });
+    await createGrantTx.wait();
+    console.log(`Grant created with ID: ${grantId}, title: ${grantTitle}, amount: ${ethers.utils.formatEther(grantAmount)} ETH`);
     
-    console.log(`Session key created and registered: ${sessionKeyAddress}`);
-    console.log(`Session key private key (keep secure!): ${sessionKeyPrivate}`);
+    // Award grant to artist
+    console.log('Awarding grant to artist...');
+    const awardTx = await contract.awardGrant(grantId, artistId);
+    await awardTx.wait();
+    console.log(`Grant ${grantId} awarded to artist ${artistId}`);
+
+    // Initiate a test cross-chain transaction
+    console.log('Initiating a test cross-chain transaction...');
+    const txAmount = ethers.utils.parseEther('0.005');
+    const targetChain = "optimism";
     
-    // Update .env.local with the session key
-    if (envContent.includes('ZKSYNC_SESSION_KEY=')) {
-      envContent = envContent.replace(
-        /ZKSYNC_SESSION_KEY=.*/,
-        `ZKSYNC_SESSION_KEY=${sessionKeyPrivate}`
-      );
-    } else {
-      envContent += `\nZKSYNC_SESSION_KEY=${sessionKeyPrivate}`;
+    const initiateTx = await contract.initiateCrossChainTransaction(
+      artistId,
+      txAmount,
+      targetChain,
+      optimismAddress
+    );
+    const initiateTxReceipt = await initiateTx.wait();
+    
+    // Find the transaction ID from the event logs
+    let txId;
+    for (const event of initiateTxReceipt.events) {
+      if (event.event === "CrossChainTransactionInitiated") {
+        txId = event.args.txId.toString();
+        break;
+      }
     }
     
-    fs.writeFileSync(envPath, envContent);
-    console.log(`Updated .env.local with zkSync session key`);
+    console.log(`Cross-chain transaction initiated with ID: ${txId}, amount: ${ethers.utils.formatEther(txAmount)} ETH`);
+
+    // Get artist details
+    console.log('Getting artist details...');
+    const artist = await contract.getArtist(artistId);
+    console.log(`Artist ID: ${artist.id}`);
+    console.log(`Wallet: ${artist.wallet}`);
+    console.log(`Optimism Address: ${artist.optimismAddress}`);
+    console.log(`Verified: ${artist.verified}`);
     
-    // Create a test grant
-    console.log("Creating a test grant...");
-    const grantAmount = hre.ethers.utils.parseEther("0.01");
-    const createGrantTx = await zkSyncArtistManager.createGrant(
-      "test-grant-1",
-      "Test Grant",
-      grantAmount,
-      { value: grantAmount }
-    );
-    await createGrantTx.wait();
-    console.log(`Test grant created with amount: ${hre.ethers.utils.formatEther(grantAmount)} ETH`);
+    // Get cross-chain transaction details
+    console.log('Getting cross-chain transaction details...');
+    const tx = await contract.getCrossChainTransaction(txId);
+    console.log(`Transaction ID: ${tx.id}`);
+    console.log(`Artist ID: ${tx.artistId}`);
+    console.log(`Amount: ${ethers.utils.formatEther(tx.amount)} ETH`);
+    console.log(`Target Chain: ${tx.targetChain}`);
+    console.log(`Target Address: ${tx.targetAddress}`);
+    console.log(`Status: ${tx.status}`);
+    console.log(`Timestamp: ${new Date(tx.timestamp.toNumber() * 1000).toISOString()}`);
     
-    console.log("Deployment and setup completed successfully");
+    // Update transaction status
+    console.log('Updating transaction status to "completed"...');
+    const updateTx = await contract.updateCrossChainTransactionStatus(txId, "completed");
+    await updateTx.wait();
+    
+    // Get updated transaction details
+    const updatedTx = await contract.getCrossChainTransaction(txId);
+    console.log(`Updated Status: ${updatedTx.status}`);
+
+    console.log('ZkSync deployment with Optimism interoperability completed successfully!');
+    
+    console.log('\nOptimism Interoperability Features:');
+    console.log('- The contract now supports cross-chain transactions to Optimism');
+    console.log('- Artists can register with an Optimism address');
+    console.log('- Funds can be transferred from zkSync to Optimism using the initiateCrossChainTransaction function');
+    console.log('- Transaction status can be updated and tracked');
+    
   } catch (error) {
-    console.error("Deployment failed:", error);
-    throw error;
+    console.error('Error during deployment:', error);
+    process.exit(1);
   }
 }
 
-// Execute the deployment
 main()
   .then(() => process.exit(0))
   .catch((error) => {
