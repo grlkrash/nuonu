@@ -94,7 +94,9 @@ The Optimism Superchain interoperability integration is implemented with the fol
   - `L2ToL1MessagePasser` (0x4200000000000000000000000000000000000016)
   - `SuperchainTokenBridge` (0x4200000000000000000000000000000000000028)
 - **Action Provider**: `OptimismInteropActionProvider.ts` implements the AgentKit action provider interface
-- **Cross-Chain Operations**: Supports bridging tokens between Base and Optimism
+- **Blockchain Service**: `OptimismBlockchainService.ts` provides methods for interacting with Optimism predeploys
+- **UI Components**: `BalanceAggregator.tsx` and `WithdrawalInterface.tsx` provide user interfaces for cross-chain operations
+- **Wallet Page**: `src/app/wallet/page.tsx` integrates all components into a comprehensive wallet dashboard
 
 The Optimism interop integration supports:
 - Retrieving L1 block information
@@ -102,6 +104,30 @@ The Optimism interop integration supports:
 - Initiating withdrawals from L2 to L1
 - Bridging tokens between chains
 - Viewing aggregated balances across chains
+- User-friendly interfaces for cross-chain operations
+
+### Key Features
+
+1. **Aggregated Balance View**
+   - View ETH balances across multiple chains (Optimism, Base)
+   - Calculate total value in USD
+   - Track balances in real-time
+
+2. **Cross-Chain Transfers**
+   - Bridge tokens between Optimism and other chains
+   - Select source and destination chains
+   - Specify amount and recipient address
+   - View transaction status
+
+3. **L2 to L1 Withdrawals**
+   - Withdraw ETH from Optimism to Ethereum L1
+   - Specify withdrawal amount and recipient address
+   - Track withdrawal status
+
+4. **Transaction History**
+   - View history of cross-chain transactions
+   - Track deposits, withdrawals, and bridging operations
+   - Monitor transaction status
 
 ## Core Components
 
@@ -158,6 +184,19 @@ The Optimism interop integration supports:
    - Displays aggregated balances across multiple chains
    - Shows ETH and ERC20 token balances
    - Provides options for cross-chain transfers
+   - Implements Optimism Superchain interoperability features
+   - Supports bridging tokens between chains
+   - Enables withdrawals from L2 to L1
+
+6. **Withdrawal Interface** (`src/components/blockchain/withdrawal-interface.tsx`)
+   - Provides a simple interface for withdrawing funds
+   - Supports withdrawals to any wallet address
+   - Displays available balance and validates withdrawal amounts
+
+7. **Wallet Dashboard** (`src/components/blockchain/wallet-dashboard.tsx`)
+   - Displays wallet balance and transaction history
+   - Shows grant funds and their status
+   - Provides a comprehensive view of the user's financial activities
 
 ## Smart Contracts
 

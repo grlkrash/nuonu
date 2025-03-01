@@ -9,19 +9,29 @@ import { useTheme } from "next-themes"
 
 interface WithdrawalInterfaceProps {
   balance: number
-  onWithdraw?: (amount: string, address: string) => void
+  onWithdraw?: (amount: string, address: string) => Promise<void>
 }
 
 export function WithdrawalInterface({ balance, onWithdraw }: WithdrawalInterfaceProps) {
   const [amount, setAmount] = useState("")
   const [address, setAddress] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const { theme } = useTheme()
 
-  const handleWithdraw = () => {
-    console.log(`Withdrawing $${amount} to Coinbase wallet: ${address}`)
-    // Call the onWithdraw callback if provided
-    if (onWithdraw) {
-      onWithdraw(amount, address)
+  const handleWithdraw = async () => {
+    if (!amount || !address) return
+    
+    setIsLoading(true)
+    try {
+      if (onWithdraw) {
+        await onWithdraw(amount, address)
+      } else {
+        console.log(`Withdrawing $${amount} to wallet: ${address}`)
+      }
+    } catch (error) {
+      console.error("Withdrawal failed:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -54,23 +64,23 @@ export function WithdrawalInterface({ balance, onWithdraw }: WithdrawalInterface
           </div>
           <div className="space-y-2">
             <Label htmlFor="address" className={`lowercase ${textClass}`}>
-              coinbase wallet address
+              wallet address
             </Label>
             <Input
               id="address"
               type="text"
-              placeholder="enter coinbase wallet address"
+              placeholder="enter wallet address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               className={`lowercase ${inputClass}`}
             />
           </div>
           <Button 
-            type="submit"
+            type="submit" 
             className={`w-full lowercase ${buttonClass}`}
-            disabled={!amount || !address}
+            disabled={isLoading || !amount || !address}
           >
-            withdraw to coinbase wallet
+            {isLoading ? "processing..." : "withdraw to wallet"}
           </Button>
         </form>
       </CardContent>

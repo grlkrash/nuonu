@@ -27,21 +27,8 @@ const L1_BLOCK_NUMBER_ABI = [
   }
 ];
 
-// ABI for L1BlockAttributes predeploy
+// ABI for L1BlockAttributes predeploy - Updated with correct function signatures
 const L1_BLOCK_ATTRIBUTES_ABI = [
-  {
-    "inputs": [],
-    "name": "baseFee",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
   {
     "inputs": [],
     "name": "number",
@@ -67,11 +54,33 @@ const L1_BLOCK_ATTRIBUTES_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
-  }
-];
-
-// ABI for SystemConfig predeploy
-const SYSTEM_CONFIG_ABI = [
+  },
+  {
+    "inputs": [],
+    "name": "baseFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "batcherHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
   {
     "inputs": [],
     "name": "l1FeeOverhead",
@@ -93,6 +102,88 @@ const SYSTEM_CONFIG_ABI = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sequenceNumber",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+// ABI for SystemConfig predeploy - Updated with correct function signatures
+const SYSTEM_CONFIG_ABI = [
+  {
+    "inputs": [],
+    "name": "batcherHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "overhead",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "scalar",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "gasLimit",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unsafeBlockSigner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -172,6 +263,7 @@ async function main() {
     // Check environment variables
     const privateKey = process.env.PRIVATE_KEY;
     const rpcUrl = process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL || 'https://sepolia.optimism.io';
+    const baseRpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
 
     if (!privateKey) {
       console.error('Error: PRIVATE_KEY not found in environment variables');
@@ -215,15 +307,34 @@ async function main() {
         provider
       );
       
-      const [number, timestamp, baseFee] = await Promise.all([
-        l1BlockAttributesContract.number(),
-        l1BlockAttributesContract.timestamp(),
-        l1BlockAttributesContract.baseFee()
-      ]);
+      // Try each function individually to isolate any issues
+      try {
+        const number = await l1BlockAttributesContract.number();
+        console.log('L1 Block Number:', number.toString());
+      } catch (error) {
+        console.log('Could not get number:', error.message);
+      }
       
-      console.log('L1 Block Number:', number.toString());
-      console.log('L1 Block Timestamp:', timestamp.toString());
-      console.log('L1 Base Fee:', ethers.utils.formatUnits(baseFee, 'gwei'), 'gwei');
+      try {
+        const timestamp = await l1BlockAttributesContract.timestamp();
+        console.log('L1 Block Timestamp:', timestamp.toString());
+      } catch (error) {
+        console.log('Could not get timestamp:', error.message);
+      }
+      
+      try {
+        const baseFee = await l1BlockAttributesContract.baseFee();
+        console.log('L1 Base Fee:', ethers.utils.formatUnits(baseFee, 'gwei'), 'gwei');
+      } catch (error) {
+        console.log('Could not get baseFee:', error.message);
+      }
+      
+      try {
+        const sequenceNumber = await l1BlockAttributesContract.sequenceNumber();
+        console.log('Sequence Number:', sequenceNumber.toString());
+      } catch (error) {
+        console.log('Could not get sequenceNumber:', error.message);
+      }
     } catch (error) {
       console.error('Error getting L1 Block Attributes:', error.message);
     }
@@ -237,13 +348,34 @@ async function main() {
         provider
       );
       
-      const [l1FeeOverhead, l1FeeScalar] = await Promise.all([
-        systemConfigContract.l1FeeOverhead(),
-        systemConfigContract.l1FeeScalar()
-      ]);
+      // Try each function individually to isolate any issues
+      try {
+        const overhead = await systemConfigContract.overhead();
+        console.log('Overhead:', overhead.toString());
+      } catch (error) {
+        console.log('Could not get overhead:', error.message);
+      }
       
-      console.log('L1 Fee Overhead:', l1FeeOverhead.toString());
-      console.log('L1 Fee Scalar:', l1FeeScalar.toString());
+      try {
+        const scalar = await systemConfigContract.scalar();
+        console.log('Scalar:', scalar.toString());
+      } catch (error) {
+        console.log('Could not get scalar:', error.message);
+      }
+      
+      try {
+        const gasLimit = await systemConfigContract.gasLimit();
+        console.log('Gas Limit:', gasLimit.toString());
+      } catch (error) {
+        console.log('Could not get gasLimit:', error.message);
+      }
+      
+      try {
+        const batcherHash = await systemConfigContract.batcherHash();
+        console.log('Batcher Hash:', batcherHash);
+      } catch (error) {
+        console.log('Could not get batcherHash:', error.message);
+      }
     } catch (error) {
       console.error('Error getting System Config:', error.message);
     }
@@ -253,54 +385,60 @@ async function main() {
     try {
       const balance = await provider.getBalance(address);
       console.log('ETH Balance:', ethers.utils.formatEther(balance), 'ETH');
+      
+      // If Base RPC URL is available, get balance on Base too
+      if (baseRpcUrl) {
+        try {
+          const baseProvider = new ethers.providers.JsonRpcProvider(baseRpcUrl);
+          const baseBalance = await baseProvider.getBalance(address);
+          console.log('Base ETH Balance:', ethers.utils.formatEther(baseBalance), 'ETH');
+        } catch (error) {
+          console.error('Error getting Base ETH Balance:', error.message);
+        }
+      }
     } catch (error) {
       console.error('Error getting ETH Balance:', error.message);
     }
 
-    // Test 5: Initiate Withdrawal (small amount)
-    console.log('\n--- Test 5: Initiate Withdrawal ---');
+    // Test 5: Simulate Withdrawal (don't actually send a transaction)
+    console.log('\n--- Test 5: Simulate Withdrawal ---');
     try {
-      // Only execute if balance is sufficient
-      const balance = await provider.getBalance(address);
+      // Get the contract interface
+      const l2ToL1MessagePasserContract = new ethers.Contract(
+        L2_TO_L1_MESSAGE_PASSER,
+        L2_TO_L1_MESSAGE_PASSER_ABI,
+        wallet
+      );
+      
+      // Prepare withdrawal parameters
+      const targetAddress = address;
+      const gasLimit = 100000;
+      const data = '0x'; // Empty data for ETH transfer
       const withdrawAmount = ethers.utils.parseEther('0.001'); // 0.001 ETH
       
-      if (balance.lt(withdrawAmount.add(ethers.utils.parseEther('0.001')))) {
-        console.log('Insufficient balance for withdrawal test, skipping...');
-      } else {
-        const l2ToL1MessagePasserContract = new ethers.Contract(
-          L2_TO_L1_MESSAGE_PASSER,
-          L2_TO_L1_MESSAGE_PASSER_ABI,
-          wallet
-        );
-        
-        // Prepare withdrawal parameters
-        const targetAddress = address;
-        const gasLimit = 100000;
-        const data = '0x'; // Empty data for ETH transfer
-        
-        // Execute withdrawal
-        const tx = await l2ToL1MessagePasserContract.initiateWithdrawal(
+      // Estimate gas for the transaction
+      try {
+        const gasEstimate = await l2ToL1MessagePasserContract.estimateGas.initiateWithdrawal(
           targetAddress,
           gasLimit,
           data,
           { value: withdrawAmount }
         );
         
-        console.log('Withdrawal transaction submitted:', tx.hash);
-        
-        // Wait for transaction confirmation
-        const receipt = await tx.wait();
-        console.log('Withdrawal transaction confirmed!');
-        console.log('Transaction hash:', receipt.transactionHash);
-        console.log('Block number:', receipt.blockNumber);
+        console.log('Withdrawal gas estimate:', gasEstimate.toString());
+        console.log('Simulation successful!');
+        console.log('Would withdraw 0.001 ETH to L1');
+      } catch (error) {
+        console.error('Error estimating gas for withdrawal:', error.message);
       }
     } catch (error) {
-      console.error('Error initiating withdrawal:', error.message);
+      console.error('Error simulating withdrawal:', error.message);
     }
 
-    // Test 6: Bridge ETH (simulation only)
-    console.log('\n--- Test 6: Bridge ETH (Simulation) ---');
+    // Test 6: Simulate Bridge ETH
+    console.log('\n--- Test 6: Simulate Bridge ETH ---');
     try {
+      // Get the contract interface
       const superchainTokenBridgeContract = new ethers.Contract(
         SUPERCHAIN_TOKEN_BRIDGE,
         SUPERCHAIN_TOKEN_BRIDGE_ABI,
@@ -315,18 +453,22 @@ async function main() {
       const extraData = '0x';
       
       // Estimate gas for the transaction
-      const gasEstimate = await superchainTokenBridgeContract.estimateGas.bridgeETH(
-        destinationChainId,
-        toAddress,
-        amount,
-        minGasLimit,
-        extraData,
-        { value: amount }
-      );
-      
-      console.log('Bridge ETH gas estimate:', gasEstimate.toString());
-      console.log('Simulation successful!');
-      console.log('Would bridge 0.001 ETH to Sepolia');
+      try {
+        const gasEstimate = await superchainTokenBridgeContract.estimateGas.bridgeETH(
+          destinationChainId,
+          toAddress,
+          amount,
+          minGasLimit,
+          extraData,
+          { value: amount }
+        );
+        
+        console.log('Bridge ETH gas estimate:', gasEstimate.toString());
+        console.log('Simulation successful!');
+        console.log('Would bridge 0.001 ETH to Sepolia');
+      } catch (error) {
+        console.error('Error estimating gas for ETH bridge:', error.message);
+      }
     } catch (error) {
       console.error('Error simulating ETH bridge:', error.message);
     }
@@ -339,10 +481,13 @@ async function main() {
       
       // Get balance on Base (if RPC URL is available)
       let baseBalance = ethers.BigNumber.from(0);
-      const baseRpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL;
       if (baseRpcUrl) {
-        const baseProvider = new ethers.providers.JsonRpcProvider(baseRpcUrl);
-        baseBalance = await baseProvider.getBalance(address);
+        try {
+          const baseProvider = new ethers.providers.JsonRpcProvider(baseRpcUrl);
+          baseBalance = await baseProvider.getBalance(address);
+        } catch (error) {
+          console.error('Error getting Base balance:', error.message);
+        }
       }
       
       // Calculate total ETH equivalent

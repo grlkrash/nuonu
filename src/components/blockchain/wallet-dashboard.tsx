@@ -50,34 +50,30 @@ export function WalletDashboard({ data }: WalletDashboardProps) {
           <CardTitle className={`lowercase ${textClass}`}>transaction history</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className={`lowercase ${textClass}`}>type</TableHead>
-                <TableHead className={`lowercase ${textClass}`}>amount</TableHead>
-                <TableHead className={`lowercase ${textClass}`}>from/to</TableHead>
-                <TableHead className={`lowercase ${textClass}`}>date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.transactions.length > 0 ? (
-                data.transactions.map((tx) => (
+          {data.transactions.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className={`lowercase ${textClass}`}>type</TableHead>
+                  <TableHead className={`lowercase ${textClass}`}>amount</TableHead>
+                  <TableHead className={`lowercase ${textClass}`}>from/to</TableHead>
+                  <TableHead className={`lowercase ${textClass}`}>date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.transactions.map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell className={`lowercase ${textClass}`}>{tx.type}</TableCell>
                     <TableCell className={textClass}>{formatUSD(tx.amount)}</TableCell>
                     <TableCell className={`lowercase ${textClass}`}>{tx.from || tx.to}</TableCell>
                     <TableCell className={textClass}>{tx.date}</TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className={`text-center py-4 ${textClass}`}>
-                    No transactions yet
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className={`text-center py-4 ${textClass}`}>No transactions yet</div>
+          )}
         </CardContent>
       </Card>
 
@@ -86,32 +82,28 @@ export function WalletDashboard({ data }: WalletDashboardProps) {
           <CardTitle className={`lowercase ${textClass}`}>grant funds</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className={`lowercase ${textClass}`}>grant</TableHead>
-                <TableHead className={`lowercase ${textClass}`}>amount</TableHead>
-                <TableHead className={`lowercase ${textClass}`}>status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.grants.length > 0 ? (
-                data.grants.map((grant) => (
+          {data.grants.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className={`lowercase ${textClass}`}>grant</TableHead>
+                  <TableHead className={`lowercase ${textClass}`}>amount</TableHead>
+                  <TableHead className={`lowercase ${textClass}`}>status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.grants.map((grant) => (
                   <TableRow key={grant.id}>
                     <TableCell className={`lowercase ${textClass}`}>{grant.name}</TableCell>
                     <TableCell className={textClass}>{formatUSD(grant.amount)}</TableCell>
                     <TableCell className={`lowercase ${textClass}`}>{grant.status}</TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className={`text-center py-4 ${textClass}`}>
-                    No grants yet
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className={`text-center py-4 ${textClass}`}>No grants yet</div>
+          )}
         </CardContent>
       </Card>
     </div>

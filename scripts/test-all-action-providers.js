@@ -20,7 +20,7 @@ class TestWalletProvider {
 
   async get() {
     const address = await this.wallet.getAddress();
-    return {
+          return {
       address,
       signer: this.wallet
     };
@@ -35,15 +35,15 @@ class TestFlowWalletProvider {
   }
 
   async get() {
-    return {
+          return {
       address: this.address,
       signer: {
         privateKey: this.privateKey,
         address: this.address
+            }
+          };
+        }
       }
-    };
-  }
-}
 
 async function testZkSync() {
   try {

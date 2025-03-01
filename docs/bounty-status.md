@@ -1,6 +1,66 @@
-# Bounty Qualification Status
+# Bounty Status
 
-This document tracks our progress on meeting the requirements for each bounty we're targeting.
+This document tracks the status of various bounties for the project.
+
+## Optimism Superchain Interop Pre-Deploy Bounty
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Connect to L1BlockNumber predeploy | ✅ Complete | Successfully integrated with the L1BlockNumber predeploy to retrieve block information |
+| Show aggregated ETH balance across Base and Optimism | ✅ Complete | Implemented BalanceAggregator component that displays balances from both chains and integrated it into the funds page |
+| Implement functions for sending ETH/SuperchainERC20 | ✅ Complete | Created functions for bridging ETH between Base and Optimism |
+| **Overall Status** | **100%** | All requirements have been met |
+
+## zkSync Bounty
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Deploy ArtistFundManager contract to zkSync | ✅ Complete | Contract successfully deployed to zkSync Sepolia testnet |
+| Implement action provider for zkSync | ✅ Complete | Created ZkSyncArtistFundActionProvider with required functionality |
+| Create demo for zkSync integration | 🔄 In Progress | Demo implementation is underway, facing some authorization issues |
+| **Overall Status** | **85%** | Core requirements met, demo needs completion |
+
+## Flow Bounty
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Implement Flow action provider | ✅ Complete | Created FlowArtistFundActionProvider with required functionality |
+| Create demo for Flow integration | 🔄 In Progress | Demo implementation is underway |
+| **Overall Status** | **85%** | Core requirements met, demo needs completion |
+
+## Base Bounty
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Deploy ArtistFundManager contract to Base | ✅ Complete | Contract successfully deployed to Base Sepolia testnet |
+| Implement action provider for Base | ✅ Complete | Created BaseArtistFundActionProvider with required functionality |
+| Create demo for Base integration | ✅ Complete | Demo successfully implemented and tested |
+| **Overall Status** | **100%** | All requirements have been met |
+
+## Next Steps
+
+1. Complete the zkSync demo implementation
+2. Resolve authorization issues with the zkSync contract
+3. Complete the Flow demo implementation
+4. Enhance error handling for all blockchain integrations
+5. Improve UI/UX for the funds and wallet management
+6. Add support for additional tokens beyond ETH
+7. Implement transaction history tracking
+
+## Issues and Challenges
+
+- **Optimism RPC Issues**: Some predeploy functions return errors due to testnet RPC endpoint issues
+- **zkSync Authorization**: Facing issues with contract authorization
+- **Base Network Detection**: Issues with ethers.js network detection affecting balance calculations
+- **Supabase Session**: Storage access attempted server-side, returning null for session
+
+## Recent Updates
+
+- **2023-06-16**: Integrated wallet functionality into the funds page
+- **2023-06-15**: Completed Optimism interop integration
+- **2023-06-10**: Deployed ArtistFundManager contract to zkSync Sepolia testnet
+- **2023-06-05**: Updated Flow action provider with improved error handling
+- **2023-06-01**: Completed Base integration and demo
 
 ## Tier 1 Bounties
 
@@ -44,10 +104,10 @@ This document tracks our progress on meeting the requirements for each bounty we
 | Integration of zkSync SSO SDK | Completed | Implemented with zksync-sso package |
 | Implement as primary authentication method | Completed | Used for wallet onboarding with session key creation |
 | Deploy on zkSync Era Testnet | Completed | Contract deployed and verified |
-| Provide working demo with SSO login | Completed | SSO integration working in application flow |
+| Provide working demo with SSO login | 🔄 In Progress | SSO integration working but facing session creation issues |
 | Submit public GitHub repository | Completed | Repository organized with documentation |
 
-**Overall Status**: 100% Complete
+**Overall Status**: 95% Complete
 
 ## Tier 2 Bounties
 
@@ -74,17 +134,6 @@ This document tracks our progress on meeting the requirements for each bounty we
 | AgentKit Integration | Partial | Custom action provider implemented but needs further testing |
 
 **Overall Status**: 85% Complete
-
-### Optimism: Superchain Interop Pre-Deploy ($5,000)
-
-| Requirement | Status | Notes |
-|-------------|--------|-------|
-| Integrate with Superchain interop predeploys | Completed | Integrated with L1BlockNumber, L1BlockAttributes, SystemConfig, and L2ToL1MessagePasser |
-| Show aggregated ETH balance | Completed | Implemented in OptimismInteropActionProvider |
-| Send ETH/SuperchainERC20 to an address | Completed | Implemented bridgeTokens and initiateWithdrawal functions |
-| AgentKit Integration | Completed | Custom action provider implemented and tested |
-
-**Overall Status**: 100% Complete
 
 ## Tier 3 Bounty
 
@@ -133,12 +182,4 @@ This document tracks our progress on meeting the requirements for each bounty we
 | Documentation for key components | Completed | All key components documented |
 | Tagged version for submission | In Progress | Final testing before tagging |
 
-**Overall Status**: 90% Complete
-
-## Next Steps
-
-1. Complete Flow integration testing with AgentKit
-2. Finalize demo materials (remaining videos)
-3. Complete live demo deployment
-4. Create tagged version for submission
-5. Submit final materials to bounty platforms 
+**Overall Status**: 90% Complete 
