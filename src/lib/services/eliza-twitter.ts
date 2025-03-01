@@ -9,12 +9,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-// Import the Eliza Twitter package
-// Note: This is a placeholder import - replace with the actual import when available
-import { ElizaTwitterClient } from '@plugin-twitter/eliza-twitter'
+// Mock implementation of ElizaTwitterClient
+// This replaces the actual import from '@plugin-twitter/eliza-twitter'
+class MockElizaTwitterClient {
+  private apiKey: string;
 
-// Initialize the Eliza Twitter client
-const elizaTwitterClient = new ElizaTwitterClient({
+  constructor(config: { apiKey: string }) {
+    this.apiKey = config.apiKey;
+  }
+
+  async search({ query, limit }: { query: string, limit: number }) {
+    console.log('Using mock ElizaTwitterClient');
+    // Simulate an error to force fallback to OpenAI
+    throw new Error('Mock ElizaTwitterClient not implemented');
+  }
+}
+
+// Use the mock client instead of the real one
+const elizaTwitterClient = new MockElizaTwitterClient({
   apiKey: process.env.ELIZA_API_KEY || 'demo-key',
 })
 

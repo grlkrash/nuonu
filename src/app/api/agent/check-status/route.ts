@@ -1,48 +1,45 @@
 import { NextResponse } from 'next/server'
-import { checkApplicationStatus } from '@/lib/services/browser-base'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
-export async function POST(request: Request) {
+export async function GET() {
+  const supabase = createRouteHandlerClient({ cookies })
+  
   try {
-    // Verify authentication
-    const session = await getServerSession(authOptions)
-    if (!session || !session.user) {
+    // Get the current user
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
       return NextResponse.json(
-        { success: false, message: 'Authentication required' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
-
-    // Parse request body
-    const body = await request.json()
-    const { artistId, opportunityId, submissionId } = body
-
-    // Verify that the authenticated user is the artist
-    if (session.user.id !== artistId) {
+    
+    // Check if the user has an active agent
+    const { data: agentData, error: agentError } = await supabase
+      .from('agent_instances')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('status', 'active')
+      .single()
+    
+    if (agentError && agentError.code !== 'PGRST116') {
+      console.error('Error checking agent status:', agentError)
       return NextResponse.json(
-        { success: false, message: 'Unauthorized access' },
-        { status: 403 }
+        { error: 'Failed to check agent status' },
+        { status: 500 }
       )
     }
-
-    // Check the application status using Browser Base
-    const result = await checkApplicationStatus(
-      artistId,
-      opportunityId,
-      submissionId
-    )
-
-    // Return the result
-    return NextResponse.json(result)
+    
+    return NextResponse.json({
+      isRunning: !!agentData,
+      agentData: agentData || null
+    })
   } catch (error) {
-    console.error('Error in check-status API route:', error)
+    console.error('Error in agent status check:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        message: error instanceof Error ? error.message : 'An unexpected error occurred',
-        status: 'unknown'
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

@@ -7,16 +7,17 @@ import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
 import { Database } from '@/types/supabase';
 import { logAgentActivity, updateAgentActivityStatus } from './agent-activities';
-import { AgentKit, CdpWalletProvider } from '@coinbase/agentkit';
 import { 
+  AgentKit, 
+  CdpWalletProvider,
   cdpWalletActionProvider,
   cdpApiActionProvider,
   erc20ActionProvider,
   pythActionProvider,
   walletActionProvider,
   wethActionProvider
-} from '@coinbase/agentkit/providers';
-import { HumanMessage } from 'langchain/schema';
+} from '@coinbase/agentkit';
+import { HumanMessage } from '@langchain/core/messages';
 import { getLangChainTools, createReactAgent } from '@coinbase/agentkit-langchain';
 import { agentConfig, AGENT_ID } from '@/config/agent.config';
 import * as fs from 'fs';

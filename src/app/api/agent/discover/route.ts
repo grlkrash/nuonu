@@ -1,73 +1,86 @@
 import { NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { scrapeExternalOpportunities } from '@/lib/services/browser-base'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { logAgentActivity } from '@/lib/services/agent-activities'
 
 export async function POST(request: Request) {
+  const supabase = createRouteHandlerClient({ cookies })
+  
   try {
-    // Verify authentication
-    const session = await getServerSession(authOptions)
-    if (!session || !session.user) {
+    // Get the current user
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
       return NextResponse.json(
-        { success: false, message: 'Authentication required' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
-
+    
     // Parse request body
     const body = await request.json()
-    const { urls, artistId } = body
-
-    // Validate input
-    if (!urls || !Array.isArray(urls) || urls.length === 0) {
+    const { query, preferences } = body
+    
+    if (!query) {
       return NextResponse.json(
-        { success: false, message: 'Valid URLs array is required' },
+        { error: 'Query is required' },
         { status: 400 }
       )
     }
-
+    
+    // Log the discovery request
+    await supabase
+      .from('agent_activities')
+      .insert({
+        user_id: session.user.id,
+        activity_type: 'discovery',
+        details: {
+          query,
+          preferences: preferences || {}
+        }
+      })
+    
     // Log the start of the discovery process
     await logAgentActivity({
-      artist_id: artistId || session.user.id,
-      activity_type: 'opportunity_discovery',
+      artist_id: session.user.id,
+      activity_type: 'discover_opportunities',
       status: 'in_progress',
       details: {
-        message: `Starting external opportunity discovery from ${urls.length} sources`,
+        message: `Starting external opportunity discovery`,
         source: 'browser_base'
       }
     })
 
     // Discover opportunities using Browser Base
-    const result = await scrapeExternalOpportunities(urls)
+    const result = await scrapeExternalOpportunities(query)
 
     // Log the completion of the discovery process
     await logAgentActivity({
-      artist_id: artistId || session.user.id,
-      activity_type: 'opportunity_discovery',
+      artist_id: session.user.id,
+      activity_type: 'discover_opportunities',
       status: 'completed',
       details: {
-        message: `Discovered ${result.opportunities.length} external opportunities`,
+        message: `Discovered ${result?.opportunities?.length || 0} external opportunities`,
         source: 'browser_base',
-        count: result.opportunities.length
+        count: result?.opportunities?.length || 0
       }
     })
 
     // Return the result
     return NextResponse.json({
       success: true,
-      opportunities: result.opportunities,
-      message: `Discovered ${result.opportunities.length} opportunities`
+      opportunities: result?.opportunities || [],
+      message: `Discovered ${result?.opportunities?.length || 0} opportunities`
     })
   } catch (error) {
-    console.error('Error in discover API route:', error)
+    console.error('Error in agent discovery:', error)
     
     // Log the error
     try {
-      const body = await request.json()
       await logAgentActivity({
-        artist_id: body.artistId || 'system',
-        activity_type: 'opportunity_discovery',
+        artist_id: 'system',
+        activity_type: 'discover_opportunities',
         status: 'failed',
         details: {
           message: error instanceof Error ? error.message : 'An unexpected error occurred',
@@ -79,10 +92,7 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json(
-      { 
-        success: false, 
-        message: error instanceof Error ? error.message : 'An unexpected error occurred' 
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

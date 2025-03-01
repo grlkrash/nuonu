@@ -135,7 +135,8 @@ export async function GET(request: Request) {
             // Redirect new users to onboarding
             if (!profileData) {
               console.log('New user detected, redirecting to onboarding')
-              redirect_to = '/onboarding'
+              const newUserRedirect = '/onboarding'
+              return NextResponse.redirect(`${requestUrl.origin}${newUserRedirect}`)
             }
           } else if (walletAddress && (!profileData.wallet_address || 
                      profileData.wallet_address !== walletAddress)) {

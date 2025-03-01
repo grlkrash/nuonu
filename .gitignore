@@ -59,3 +59,45 @@ next-env.d.ts
 
 # Wallet data
 wallet-data.json
+
+# Local env files
+.env*.local
+.env
+.env.development
+.env.production
+
+# Sensitive files
+*.pkey
+cdp_api_key.json
+cdp_credentials.json
+wallet_data.json
+wallet-data.json
+
+# Build artifacts
+dist/
+.next/
+out/
+build/
+
+# Cache
+.cache/
+cache/
+cache-zk/
+artifacts-zk/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

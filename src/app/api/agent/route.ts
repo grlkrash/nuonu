@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
-        return generateApplication(targetUserId, opportunityId)
+        return generateApplicationLocal(targetUserId, opportunityId)
       
       case 'submit_application':
         if (!applicationId) {
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
-        return submitApplication(targetUserId, applicationId)
+        return submitApplicationLocal(targetUserId, applicationId)
       
       case 'monitor_application':
         if (!applicationId) {
@@ -721,7 +721,7 @@ async function matchOpportunity(userId: string, opportunityId: string) {
 }
 
 // Handle the generate_application action
-async function generateApplication(userId: string, opportunityId: string) {
+async function generateApplicationLocal(userId: string, opportunityId: string) {
   try {
     // Validate parameters
     if (!opportunityId) {
@@ -884,7 +884,7 @@ async function generateApplication(userId: string, opportunityId: string) {
 }
 
 // Handle the submit_application action
-async function submitApplication(userId: string, applicationId: string) {
+async function submitApplicationLocal(userId: string, applicationId: string) {
   try {
     // Validate parameters
     if (!applicationId) {
@@ -1050,61 +1050,62 @@ async function monitorApplication(userId: string, applicationId: string) {
 }
 
 // Handle the autonomous action
-async function runAutonomousAgent(userId: string) {
-  try {
-    // Create an activity record for this autonomous action
-    const { data: activity, error: activityError } = await supabase
-      .from('activities')
-      .insert({
-        user_id: userId,
-        activity_type: 'autonomous',
-        status: 'in_progress',
-        details: {
-          message: 'Autonomous agent started',
-          timestamp: new Date().toISOString()
-        }
-      })
-      .select()
-      .single()
-    
-    if (activityError) {
-      console.error('Error creating activity:', activityError)
-      return NextResponse.json(
-        { error: 'Failed to create activity', message: activityError.message },
-        { status: 500 }
-      )
-    }
-    
-    // Start the autonomous agent process asynchronously
-    // In a real implementation, this would be a background job
-    setTimeout(async () => {
-      try {
-        // Update the activity with success status
-        await supabase
-          .from('activities')
-          .update({
-            status: 'completed',
-            details: {
-              message: 'Autonomous agent completed successfully',
-              timestamp: new Date().toISOString()
-            }
-          })
-          .eq('id', activity.id)
-      } catch (error) {
-        console.error('Error updating activity:', error)
-      }
-    }, 10000)
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Autonomous agent started',
-      activityId: activity.id
-    })
-  } catch (error) {
-    console.error('Error in runAutonomousAgent:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'An unexpected error occurred' },
-      { status: 500 }
-    )
-  }
-} 
+// Remove the local implementation of runAutonomousAgent
+// async function runAutonomousAgent(userId: string) {
+//   try {
+//     // Create an activity record for this autonomous action
+//     const { data: activity, error: activityError } = await supabase
+//       .from('activities')
+//       .insert({
+//         user_id: userId,
+//         activity_type: 'autonomous',
+//         status: 'in_progress',
+//         details: {
+//           message: 'Running autonomous agent',
+//           timestamp: new Date().toISOString()
+//         }
+//       })
+//       .select()
+//       .single()
+//     
+//     if (activityError) {
+//       console.error('Error creating activity:', activityError)
+//       return NextResponse.json(
+//         { error: 'Failed to create activity', message: activityError.message },
+//         { status: 500 }
+//       )
+//     }
+//     
+//     // Start the autonomous agent process asynchronously
+//     // In a real implementation, this would be a background job
+//     setTimeout(async () => {
+//       try {
+//         // Update the activity with success status
+//         await supabase
+//           .from('activities')
+//           .update({
+//             status: 'completed',
+//             details: {
+//               message: 'Autonomous agent completed successfully',
+//               timestamp: new Date().toISOString()
+//             }
+//           })
+//           .eq('id', activity.id)
+//       } catch (error) {
+//         console.error('Error updating activity:', error)
+//       }
+//     }, 5000)
+//     
+//     return NextResponse.json({
+//       success: true,
+//       message: 'Autonomous agent started',
+//       activityId: activity.id
+//     })
+//   } catch (error) {
+//     console.error('Error in runAutonomousAgent:', error)
+//     return NextResponse.json(
+//       { error: 'Internal Server Error', message: 'An unexpected error occurred' },
+//       { status: 500 }
+//     )
+//   }
+// } 
