@@ -1,128 +1,147 @@
-# Flow Blockchain Integration for Artist Fund
+# Flow Blockchain Integration
 
-This repository contains the implementation of Flow blockchain integration for the Artist Fund platform, enabling artists to register, receive grants, and initiate cross-chain transactions to Optimism.
+This document provides an overview of the Flow blockchain integration for the Artist Fund platform. The integration enables artists to register, receive grants, and initiate cross-chain transactions between Flow and Optimism.
 
-## Quick Start
+## Components
+
+The Flow integration consists of the following components:
+
+1. **Flow Contract**: `FlowArtistManager.cdc` - A Cadence smart contract that manages artists, grants, and cross-chain transactions.
+2. **Flow Action Provider**: `FlowArtistFundActionProvider.ts` - An AgentKit action provider that enables AI agents to interact with the Flow blockchain.
+3. **Test Scripts**: Various scripts to test the Flow integration, including real transactions and AgentKit integration.
+4. **Documentation**: Comprehensive documentation for the Flow integration, including deployment instructions and usage guidelines.
+
+## Setup
 
 ### Prerequisites
 
-- Node.js v16+
-- Flow CLI (for deployment)
-- Flow testnet account
+- Flow CLI installed
+- Flow account with testnet FLOW tokens
+- Node.js and npm installed
 
-### Setup
+### Environment Variables
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd <repository-directory>
+Add the following environment variables to your `.env.local` file:
+
 ```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
-
-4. Edit `.env.local` with your Flow account details:
-```
+# Flow Configuration
 FLOW_ACCOUNT_ADDRESS=0x...
 FLOW_PRIVATE_KEY=...
-FLOW_CONTRACT_ADDRESS=0x... # Will be set after deployment
+NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=0x...
+NEXT_PUBLIC_FLOW_ACCESS_NODE=https://rest-testnet.onflow.org
+NEXT_PUBLIC_FLOW_WALLET_DISCOVERY=https://fcl-discovery.onflow.org/testnet/authn
 ```
 
-### Deployment
+## Deployment
 
-1. Prepare the Flow contract:
+### 1. Deploy the Flow Contract
+
+The `FlowArtistManager.cdc` contract can be deployed using the Flow CLI or Flow Port:
+
 ```bash
+# Prepare the contract for deployment
 node scripts/prepare-flow-contract.js
+
+# Deploy using Flow CLI
+flow project deploy --network=testnet
 ```
 
-2. Deploy the contract via Flow Port:
-   - Go to [Flow Port](https://testnet.flowscan.org/)
-   - Connect your wallet
-   - Navigate to "Deploy Contract"
-   - Upload the prepared contract from `src/contracts/flow/FlowArtistManager.cdc`
-   - Deploy the contract
+Alternatively, you can deploy the contract using Flow Port:
+1. Go to [Flow Port](https://testnet.flowscan.org/)
+2. Connect your wallet
+3. Navigate to the "Deploy Contract" section
+4. Upload the `FlowArtistManager.cdc` file
+5. Deploy the contract
 
-3. Update `.env.local` with the deployed contract address:
+### 2. Update Environment Variables
+
+After deploying the contract, update your `.env.local` file with the contract address:
+
 ```
-FLOW_CONTRACT_ADDRESS=0x...
+NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS=0x...
 ```
 
-### Testing
+## Testing
 
-Run the test scripts to verify the functionality:
+### Test Real Transactions
+
+To test real transactions with the Flow contract:
 
 ```bash
-# Test the Flow Artist Fund Action Provider
-node scripts/test-flow-artist-fund-action-provider.js
-
-# Test with contract integration
-node scripts/test-flow-artist-fund-action-provider-with-contract.js
-
-# Test Flow-Optimism interoperability
-node scripts/test-flow-optimism-interoperability.js
+node scripts/test-flow-real-transactions.js
 ```
 
-## Features
+This script will:
+1. Register an artist
+2. Get artist details
+3. Disburse a grant
+4. Initiate a cross-chain transaction
+5. Get cross-chain transactions for the artist
 
-- **Artist Registration**: Register artists with Flow and Optimism addresses
-- **Grant Management**: Create and disburse grants to artists
-- **Cross-Chain Transactions**: Initiate transactions from Flow to Optimism
-- **AgentKit Integration**: Enable AI agents to interact with the Flow blockchain
+### Test AgentKit Integration
 
-## Implementation Details
+To test the AgentKit integration with the Flow action provider:
 
-### Smart Contract
+```bash
+node scripts/test-flow-agentkit-integration.js
+```
 
-The `FlowArtistManager.cdc` contract is located at `src/contracts/flow/FlowArtistManager.cdc` and includes:
+This script will:
+1. Initialize AgentKit with the Flow wallet and action provider
+2. Register an artist using AgentKit
+3. Get artist details using AgentKit
+4. Disburse a grant using AgentKit
+5. Initiate a cross-chain transaction using AgentKit
 
-- Artist registration and verification
-- Grant creation and disbursement
-- Cross-chain transaction initiation and status tracking
+## Flow Action Provider
 
-### Action Provider
+The `FlowArtistFundActionProvider` provides the following actions:
 
-The `FlowArtistFundActionProvider` is implemented in `src/providers/flow/FlowArtistFundActionProvider.ts` and provides:
-
-- Methods for interacting with the Flow contract
-- Integration with AgentKit for AI agent access
+1. `flowRegisterArtist`: Register an artist with the Flow contract
+2. `flowGetArtistDetails`: Get details about an artist from the Flow contract
+3. `flowDisburseGrant`: Disburse funds to an artist from the Flow grant fund
+4. `flowInitiateCrossChainTransaction`: Initiate a cross-chain transaction to Optimism
 
 ## Cross-Chain Functionality
 
-The implementation supports cross-chain transactions from Flow to Optimism:
+The Flow integration supports cross-chain transactions to Optimism. The process works as follows:
 
-1. Artist registers on Flow with both Flow and Optimism addresses
-2. Grant is disbursed on Flow
-3. Cross-chain transaction is initiated on Flow
-4. Funds are received on Optimism
-
-## Documentation
-
-For detailed documentation, see:
-
-- [Flow Integration Guide](docs/FLOW-INTEGRATION.md)
-- [Flow Contract Documentation](docs/FLOW-CONTRACT.md)
-- [Cross-Chain Implementation](docs/CROSS-CHAIN.md)
+1. An artist is registered on Flow with an Optimism address
+2. A cross-chain transaction is initiated on Flow
+3. The transaction is recorded on the Flow blockchain
+4. A relayer (simulated in the current implementation) monitors for cross-chain transactions
+5. The relayer executes the corresponding transaction on Optimism
 
 ## Production Considerations
 
-For production deployment:
+For production use:
 
-1. Deploy the contract to Flow mainnet
-2. Implement proper key management and security
-3. Set up monitoring for cross-chain transactions
-4. Consider using a bridge service for production cross-chain transfers
+1. Deploy the `FlowArtistManager` contract to Flow mainnet
+2. Update the `.env.local` file with the mainnet contract address
+3. Implement proper key management and security
+4. Set up a secure relayer for cross-chain transactions
+5. Implement proper error handling and monitoring
 
-## Contributing
+## Additional Resources
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- [Flow Documentation](https://docs.onflow.org/)
+- [Cadence Documentation](https://docs.onflow.org/cadence/)
+- [Flow FCL Documentation](https://docs.onflow.org/fcl/)
+- [AgentKit Documentation](https://docs.agentkit.ai/)
 
-## License
+## Troubleshooting
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+### Common Issues
+
+1. **Authentication Errors**: Ensure your Flow account address and private key are correctly set in the `.env.local` file.
+2. **Contract Not Found**: Verify that the contract address is correctly set in the `NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS` environment variable.
+3. **Transaction Errors**: Check the transaction logs for specific error messages. Common issues include insufficient funds or incorrect parameters.
+
+### Getting Help
+
+If you encounter issues with the Flow integration, please:
+
+1. Check the Flow documentation
+2. Review the error messages in the console
+3. Verify your environment variables
+4. Contact the development team for assistance 

@@ -11,19 +11,26 @@ const path = require('path');
 fcl.config()
   .put('accessNode.api', process.env.NEXT_PUBLIC_FLOW_ACCESS_NODE || 'https://rest-testnet.onflow.org')
   .put('flow.network', 'testnet')
+  .put('discovery.wallet', process.env.NEXT_PUBLIC_FLOW_WALLET_DISCOVERY || 'https://fcl-discovery.onflow.org/testnet/authn')
   .put('app.detail.title', 'Artist Grant AI')
   .put('app.detail.icon', 'https://placekitten.com/g/200/200');
 
 // Flow account info
 const FLOW_ACCOUNT_ADDRESS = process.env.FLOW_ACCOUNT_ADDRESS;
+// Convert Ethereum-style address to Flow format if needed
+const formattedFlowAddress = FLOW_ACCOUNT_ADDRESS.startsWith('0x') && FLOW_ACCOUNT_ADDRESS.length > 18 
+  ? `0x${FLOW_ACCOUNT_ADDRESS.substring(2).slice(-16)}` 
+  : FLOW_ACCOUNT_ADDRESS;
 const FLOW_PRIVATE_KEY = process.env.FLOW_PRIVATE_KEY;
-const FLOW_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS || FLOW_ACCOUNT_ADDRESS;
+const FLOW_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS || '0x01cf0e2f2f715450';
 
 if (!FLOW_ACCOUNT_ADDRESS || !FLOW_PRIVATE_KEY) {
   console.error('Error: Flow account address or private key not found in environment variables');
   console.log('Please set FLOW_ACCOUNT_ADDRESS and FLOW_PRIVATE_KEY in .env.local');
   process.exit(1);
 }
+
+console.log(`Using Flow address: ${formattedFlowAddress}`);
 
 // Mock the browser environment for FCL
 global.window = {
@@ -70,37 +77,49 @@ fcl.config()
   .put('fcl.accountProof.resolver', async (data) => {
     const signature = signWithPrivateKey(data.message, FLOW_PRIVATE_KEY);
     return {
-      address: FLOW_ACCOUNT_ADDRESS,
+      address: formattedFlowAddress,
       keyId: 0,
       signature: signature
     };
   });
 
-// Real authentication with private key
-fcl.authenticate = async () => {
-  return {
-    addr: FLOW_ACCOUNT_ADDRESS,
-    loggedIn: true,
-    keyId: 0
-  };
-};
+// Set up custom authorization function
+const authorization = (account = {}) => {
+  // Get the current user
+  const addr = formattedFlowAddress;
+  const keyId = 0;
 
-// Real authorization with private key
-fcl.authz = () => {
   return {
-    addr: FLOW_ACCOUNT_ADDRESS,
-    keyId: 0,
+    ...account,
+    tempId: `${addr}-${keyId}`,
+    addr: addr,
+    keyId: keyId,
     signingFunction: async (signable) => {
-      // Sign the message with the private key
       const signature = signWithPrivateKey(signable.message, FLOW_PRIVATE_KEY);
       return {
-        addr: FLOW_ACCOUNT_ADDRESS,
-        keyId: 0,
-        signature: signature
+        addr,
+        keyId,
+        signature
       };
     }
   };
 };
+
+// Override FCL's authorization functions
+fcl.currentUser = () => {
+  return {
+    authorization,
+    snapshot: async () => {
+      return {
+        addr: formattedFlowAddress,
+        loggedIn: true,
+        keyId: 0
+      };
+    }
+  };
+};
+
+fcl.authz = authorization;
 
 async function main() {
   try {
@@ -115,11 +134,11 @@ async function main() {
     
     // Create a test artist ID
     const testArtistId = `artist-${Date.now()}`;
-    const testOptimismAddress = `0x${FLOW_ACCOUNT_ADDRESS.substring(2)}`;
+    const testOptimismAddress = `0x${formattedFlowAddress.substring(2)}`;
     
     // Test 1: Register an artist
     console.log('\n--- Test 1: Register an artist with real transaction ---');
-    console.log(`Registering artist ${testArtistId} with Flow address ${FLOW_ACCOUNT_ADDRESS} and Optimism address ${testOptimismAddress}`);
+    console.log(`Registering artist ${testArtistId} with Flow address ${formattedFlowAddress} and Optimism address ${testOptimismAddress}`);
     
     const registerCadence = `
       import FlowArtistManager from ${FLOW_CONTRACT_ADDRESS}
@@ -140,7 +159,7 @@ async function main() {
         cadence: registerCadence,
         args: (arg, t) => [
           arg(testArtistId, t.String),
-          arg(FLOW_ACCOUNT_ADDRESS, t.Address),
+          arg(formattedFlowAddress, t.Address),
           arg(testOptimismAddress, t.String)
         ],
         payer: fcl.authz,
@@ -171,7 +190,7 @@ async function main() {
     const getArtistCadence = `
       import FlowArtistManager from ${FLOW_CONTRACT_ADDRESS}
       
-      pub fun main(artistId: String): {String: String} {
+      access(all) fun main(artistId: String): {String: String} {
         let artist = FlowArtistManager.getArtist(id: artistId)
         
         let result: {String: String} = {}
@@ -303,7 +322,7 @@ async function main() {
     const getCrossChainTxsCadence = `
       import FlowArtistManager from ${FLOW_CONTRACT_ADDRESS}
       
-      pub fun main(artistId: String): [AnyStruct] {
+      access(all) fun main(artistId: String): [AnyStruct] {
         let transactions = FlowArtistManager.getArtistCrossChainTransactions(artistId: artistId)
         return transactions
       }

@@ -40,12 +40,19 @@ export class FlowArtistFundActionProvider implements ActionProvider {
     this.walletProvider = params.walletProvider;
     this.contractAddress = env.NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS || '';
     
+    console.log(`Initializing FlowArtistFundActionProvider with contract address: ${this.contractAddress}`);
+    
+    if (!this.contractAddress) {
+      console.warn('Flow contract address not found in environment variables. Please set NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS.');
+    }
+    
     // Configure FCL
     fcl.config()
       .put('accessNode.api', env.NEXT_PUBLIC_FLOW_ACCESS_NODE || 'https://rest-testnet.onflow.org')
       .put('discovery.wallet', env.NEXT_PUBLIC_FLOW_WALLET_DISCOVERY || 'https://fcl-discovery.onflow.org/testnet/authn')
       .put('app.detail.title', 'Artist Grant AI')
-      .put('app.detail.icon', 'https://placekitten.com/g/200/200');
+      .put('app.detail.icon', 'https://placekitten.com/g/200/200')
+      .put('flow.network', 'testnet');
   }
 
   /**
@@ -81,16 +88,37 @@ export class FlowArtistFundActionProvider implements ActionProvider {
   }
 
   /**
+   * Authenticate with Flow if not already authenticated
+   */
+  private async ensureAuthenticated(): Promise<boolean> {
+    const user = await fcl.currentUser().snapshot();
+    
+    if (!user.loggedIn) {
+      console.log('Flow wallet not authenticated, attempting to authenticate...');
+      try {
+        await fcl.authenticate();
+        const authenticatedUser = await fcl.currentUser().snapshot();
+        console.log(`Authenticated with Flow as: ${authenticatedUser.addr}`);
+        return true;
+      } catch (error) {
+        console.error('Failed to authenticate with Flow:', error);
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  /**
    * Disburse funds to an artist on Flow
    */
   async flowDisburseGrant(params: { artistId: string; amount: string }): Promise<ActionProviderResult> {
     try {
       console.log(`Disbursing grant to artist ${params.artistId} with amount ${params.amount} FLOW`);
       
-      // Check if Flow is configured
-      const user = await fcl.currentUser().snapshot();
-      
-      if (!user.loggedIn) {
+      // Ensure authenticated
+      const isAuthenticated = await this.ensureAuthenticated();
+      if (!isAuthenticated) {
         return {
           success: false,
           message: 'Flow wallet not authenticated',
@@ -101,32 +129,41 @@ export class FlowArtistFundActionProvider implements ActionProvider {
       const cadence = `
         import FlowArtistManager from ${this.contractAddress}
         
-        transaction(artistId: String) {
+        transaction(artistId: String, amount: UFix64) {
           prepare(signer: AuthAccount) {
-            let fundManager = signer.borrow<&FlowArtistManager.FundManager>(from: /storage/ArtistFundManager)
-              ?? panic("Could not borrow reference to the fund manager")
-            
-            fundManager.distributeFunds(artistId: artistId)
+            FlowArtistManager.disburseGrant(
+              artistId: artistId,
+              amount: amount
+            )
           }
         }
       `;
       
+      console.log('Executing disburse grant transaction...');
+      
       // Execute transaction
       const txId = await fcl.mutate({
         cadence,
-        args: (arg: any, t: any) => [arg(params.artistId, t.String)],
+        args: (arg: any, t: any) => [
+          arg(params.artistId, t.String),
+          arg(params.amount, t.UFix64)
+        ],
         payer: fcl.authz,
         proposer: fcl.authz,
         authorizations: [fcl.authz],
         limit: 1000,
       });
       
+      console.log(`Transaction submitted with ID: ${txId}`);
+      console.log('Waiting for transaction to be sealed...');
+      
       // Wait for transaction to be sealed
       const txStatus = await fcl.tx(txId).onceSealed();
+      console.log(`Transaction sealed with status: ${txStatus.status}`);
       
       return {
         success: true,
-        message: `Successfully disbursed funds to artist ${params.artistId} on Flow. Transaction ID: ${txId}`,
+        message: `Successfully disbursed ${params.amount} FLOW to artist ${params.artistId} on Flow. Transaction ID: ${txId}`,
         data: {
           transactionId: txId,
           status: txStatus.status,
@@ -153,7 +190,7 @@ export class FlowArtistFundActionProvider implements ActionProvider {
       const cadence = `
         import FlowArtistManager from ${this.contractAddress}
         
-        pub fun main(artistId: String): {String: AnyStruct} {
+        access(all) fun main(artistId: String): {String: AnyStruct} {
           let artist = FlowArtistManager.getArtist(id: artistId)
           
           let result: {String: AnyStruct} = {}
@@ -165,19 +202,23 @@ export class FlowArtistFundActionProvider implements ActionProvider {
             result["optimismAddress"] = artist.optimismAddress
           }
           
-          // Get pending funds
-          let pendingFunds = FlowArtistManager.getPendingFunds(artistId: artistId)
-          result["pendingFunds"] = pendingFunds
+          // Get total funding
+          let totalFunding = FlowArtistManager.getArtistTotalFunding(artistId: artistId)
+          result["totalFunding"] = totalFunding
           
           return result
         }
       `;
+      
+      console.log('Executing get artist details script...');
       
       // Execute script
       const result = await fcl.query({
         cadence,
         args: (arg: any, t: any) => [arg(params.artistId, t.String)],
       });
+      
+      console.log(`Retrieved artist details:`, result);
       
       return {
         success: true,
@@ -200,10 +241,9 @@ export class FlowArtistFundActionProvider implements ActionProvider {
     try {
       console.log(`Registering artist ${params.artistId} with Flow address ${params.address} and Optimism address ${params.optimismAddress}`);
       
-      // Check if Flow is configured
-      const user = await fcl.currentUser().snapshot();
-      
-      if (!user.loggedIn) {
+      // Ensure authenticated
+      const isAuthenticated = await this.ensureAuthenticated();
+      if (!isAuthenticated) {
         return {
           success: false,
           message: 'Flow wallet not authenticated',
@@ -225,6 +265,8 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         }
       `;
       
+      console.log('Executing register artist transaction...');
+      
       // Execute transaction
       const txId = await fcl.mutate({
         cadence,
@@ -239,8 +281,12 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         limit: 1000,
       });
       
+      console.log(`Transaction submitted with ID: ${txId}`);
+      console.log('Waiting for transaction to be sealed...');
+      
       // Wait for transaction to be sealed
       const txStatus = await fcl.tx(txId).onceSealed();
+      console.log(`Transaction sealed with status: ${txStatus.status}`);
       
       return {
         success: true,
@@ -274,10 +320,9 @@ export class FlowArtistFundActionProvider implements ActionProvider {
     try {
       console.log(`Initiating cross-chain transaction for artist ${params.artistId} with amount ${params.amount} FLOW to ${params.targetChain} address ${params.targetAddress}`);
       
-      // Check if Flow is configured
-      const user = await fcl.currentUser().snapshot();
-      
-      if (!user.loggedIn) {
+      // Ensure authenticated
+      const isAuthenticated = await this.ensureAuthenticated();
+      if (!isAuthenticated) {
         return {
           success: false,
           message: 'Flow wallet not authenticated',
@@ -300,6 +345,8 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         }
       `;
       
+      console.log('Executing initiate cross-chain transaction...');
+      
       // Execute transaction
       const txId = await fcl.mutate({
         cadence,
@@ -315,8 +362,12 @@ export class FlowArtistFundActionProvider implements ActionProvider {
         limit: 1000,
       });
       
+      console.log(`Transaction submitted with ID: ${txId}`);
+      console.log('Waiting for transaction to be sealed...');
+      
       // Wait for transaction to be sealed
       const txStatus = await fcl.tx(txId).onceSealed();
+      console.log(`Transaction sealed with status: ${txStatus.status}`);
       
       return {
         success: true,

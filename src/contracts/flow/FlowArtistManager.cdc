@@ -1,10 +1,10 @@
-pub contract FlowArtistManager {
+access(all) contract FlowArtistManager {
     // Define structures
-    pub struct Artist {
-        pub let id: String
-        pub let address: Address
-        pub let verified: Bool
-        pub let optimismAddress: String? // Added Optimism address for cross-chain functionality
+    access(all) struct Artist {
+        access(all) let id: String
+        access(all) let address: Address
+        access(all) let verified: Bool
+        access(all) let optimismAddress: String? // Added Optimism address for cross-chain functionality
 
         init(id: String, address: Address, verified: Bool, optimismAddress: String?) {
             self.id = id
@@ -14,12 +14,12 @@ pub contract FlowArtistManager {
         }
     }
 
-    pub struct Grant {
-        pub let id: String
-        pub let title: String
-        pub let amount: UFix64
-        pub let funder: Address
-        pub let active: Bool
+    access(all) struct Grant {
+        access(all) let id: String
+        access(all) let title: String
+        access(all) let amount: UFix64
+        access(all) let funder: Address
+        access(all) let active: Bool
 
         init(id: String, title: String, amount: UFix64, funder: Address, active: Bool) {
             self.id = id
@@ -31,14 +31,14 @@ pub contract FlowArtistManager {
     }
 
     // New struct for cross-chain transactions
-    pub struct CrossChainTransaction {
-        pub let id: String
-        pub let artistId: String
-        pub let amount: UFix64
-        pub let targetChain: String
-        pub let targetAddress: String
-        pub let status: String // "initiated", "completed", "failed"
-        pub let timestamp: UFix64
+    access(all) struct CrossChainTransaction {
+        access(all) let id: String
+        access(all) let artistId: String
+        access(all) let amount: UFix64
+        access(all) let targetChain: String
+        access(all) let targetAddress: String
+        access(all) let status: String // "initiated", "completed", "failed"
+        access(all) let timestamp: UFix64
 
         init(
             id: String,
@@ -60,29 +60,29 @@ pub contract FlowArtistManager {
     }
 
     // State variables
-    pub var artists: {String: Artist}
-    pub var grants: {String: Grant}
-    pub var grantApplications: {String: {String: Bool}}
-    pub var pendingFunds: {String: UFix64}
-    pub var crossChainTransactions: {String: CrossChainTransaction} // Added for cross-chain transactions
-    pub var optimismAddressToArtistId: {String: String} // Mapping from Optimism address to artist ID
+    access(all) var artists: {String: Artist}
+    access(all) var grants: {String: Grant}
+    access(all) var grantApplications: {String: {String: Bool}}
+    access(all) var pendingFunds: {String: UFix64}
+    access(all) var crossChainTransactions: {String: CrossChainTransaction} // Added for cross-chain transactions
+    access(all) var optimismAddressToArtistId: {String: String} // Mapping from Optimism address to artist ID
     
     // Events
-    pub event ArtistRegistered(artistId: String, address: Address, optimismAddress: String?)
-    pub event GrantCreated(grantId: String, title: String, amount: UFix64)
-    pub event GrantAwarded(grantId: String, artistId: String, amount: UFix64)
-    pub event FundsDistributed(artistId: String, address: Address, amount: UFix64)
-    pub event CrossChainTransactionInitiated(
+    access(all) event ArtistRegistered(artistId: String, address: Address, optimismAddress: String?)
+    access(all) event GrantCreated(grantId: String, title: String, amount: UFix64)
+    access(all) event GrantAwarded(grantId: String, artistId: String, amount: UFix64)
+    access(all) event FundsDistributed(artistId: String, address: Address, amount: UFix64)
+    access(all) event CrossChainTransactionInitiated(
         id: String,
         artistId: String,
         amount: UFix64,
         targetChain: String,
         targetAddress: String
     )
-    pub event CrossChainTransactionStatusUpdated(id: String, status: String)
+    access(all) event CrossChainTransactionStatusUpdated(id: String, status: String)
             
-            init() {
-                self.artists = {}
+    init() {
+        self.artists = {}
         self.grants = {}
         self.grantApplications = {}
         self.pendingFunds = {}
@@ -91,7 +91,7 @@ pub contract FlowArtistManager {
     }
     
     // Register an artist with optional Optimism address
-    pub fun registerArtist(artistId: String, address: Address, optimismAddress: String?) {
+    access(all) fun registerArtist(artistId: String, address: Address, optimismAddress: String?) {
         pre {
             address != nil: "Invalid address"
             artistId.length > 0: "Invalid artist ID"
@@ -110,12 +110,12 @@ pub contract FlowArtistManager {
     }
     
     // Backward compatibility for existing code
-    pub fun registerArtistLegacy(artistId: String, address: Address) {
+    access(all) fun registerArtistLegacy(artistId: String, address: Address) {
         self.registerArtist(artistId: artistId, address: address, optimismAddress: nil)
     }
     
     // Create a new grant
-    pub fun createGrant(grantId: String, title: String, amount: UFix64) {
+    access(all) fun createGrant(grantId: String, title: String, amount: UFix64) {
         pre {
             grantId.length > 0: "Invalid grant ID"
             self.grants[grantId] == nil || !self.grants[grantId]!.active: "Grant already exists"
@@ -135,7 +135,7 @@ pub contract FlowArtistManager {
     }
     
     // Award grant to artist
-    pub fun awardGrant(grantId: String, artistId: String) {
+    access(all) fun awardGrant(grantId: String, artistId: String) {
         pre {
             self.grants[grantId] != nil && self.grants[grantId]!.active: "Grant not active"
             self.artists[artistId] != nil && self.artists[artistId]!.verified: "Artist not verified"
@@ -162,7 +162,7 @@ pub contract FlowArtistManager {
     }
     
     // Distribute funds to artist
-    pub fun distributeFunds(artistId: String) {
+    access(all) fun distributeFunds(artistId: String) {
         pre {
             self.artists[artistId] != nil && self.artists[artistId]!.verified: "Artist not verified"
             self.pendingFunds[artistId] != nil && self.pendingFunds[artistId]! > 0.0: "No funds to distribute"
@@ -181,7 +181,7 @@ pub contract FlowArtistManager {
     }
     
     // Initiate a cross-chain transaction to Optimism
-    pub fun initiateCrossChainTransaction(
+    access(all) fun initiateCrossChainTransaction(
         artistId: String,
         amount: UFix64,
         targetChain: String,
@@ -226,7 +226,7 @@ pub contract FlowArtistManager {
     }
     
     // Update cross-chain transaction status
-    pub fun updateCrossChainTransactionStatus(txId: String, status: String) {
+    access(all) fun updateCrossChainTransactionStatus(txId: String, status: String) {
         pre {
             self.crossChainTransactions[txId] != nil: "Transaction not found"
             status.length > 0: "Invalid status"
@@ -262,7 +262,7 @@ pub contract FlowArtistManager {
     }
     
     // Get artist by Optimism address
-    pub fun getArtistByOptimismAddress(optimismAddress: String): Artist? {
+    access(all) fun getArtistByOptimismAddress(optimismAddress: String): Artist? {
         let artistId = self.optimismAddressToArtistId[optimismAddress]
         if artistId == nil {
             return nil
@@ -271,26 +271,26 @@ pub contract FlowArtistManager {
     }
     
     // View functions
-    pub fun getArtist(artistId: String): Artist? {
-                return self.artists[artistId]
-            }
+    access(all) fun getArtist(id: String): Artist? {
+        return self.artists[id]
+    }
     
-    pub fun getGrant(grantId: String): Grant? {
+    access(all) fun getGrant(grantId: String): Grant? {
         return self.grants[grantId]
     }
     
-    pub fun getPendingFunds(artistId: String): UFix64 {
+    access(all) fun getPendingFunds(artistId: String): UFix64 {
         if self.pendingFunds[artistId] == nil {
             return 0.0
         }
         return self.pendingFunds[artistId]!
     }
     
-    pub fun getCrossChainTransaction(txId: String): CrossChainTransaction? {
+    access(all) fun getCrossChainTransaction(txId: String): CrossChainTransaction? {
         return self.crossChainTransactions[txId]
     }
     
-    pub fun getArtistCrossChainTransactions(artistId: String): [CrossChainTransaction] {
+    access(all) fun getArtistCrossChainTransactions(artistId: String): [CrossChainTransaction] {
         let transactions: [CrossChainTransaction] = []
         
         for txId in self.crossChainTransactions.keys {
@@ -301,6 +301,6 @@ pub contract FlowArtistManager {
         }
         
         return transactions
-            }
-        }
+    }
+}
       
