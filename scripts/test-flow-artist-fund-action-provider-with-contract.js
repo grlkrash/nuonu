@@ -19,6 +19,9 @@ const FLOW_PRIVATE_KEY = process.env.FLOW_PRIVATE_KEY;
 const FLOW_PUBLIC_KEY = process.env.FLOW_PUBLIC_KEY;
 const FLOW_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_FLOW_ARTIST_MANAGER_ADDRESS || FLOW_ACCOUNT_ADDRESS;
 
+console.log(`Flow Contract Address: ${FLOW_CONTRACT_ADDRESS}`);
+console.log(`Using Flow contract address: ${FLOW_CONTRACT_ADDRESS}`);
+
 if (!FLOW_ACCOUNT_ADDRESS || !FLOW_PRIVATE_KEY) {
   console.error('Error: Flow account address or private key not found in environment variables');
   console.log('Please set FLOW_ACCOUNT_ADDRESS and FLOW_PRIVATE_KEY in .env.local');

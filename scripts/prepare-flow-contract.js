@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Flow account info
-const FLOW_ACCOUNT_ADDRESS = '0x4f6D0cA7E66D5e447862793F23904ba15F51f4De';
+const FLOW_ACCOUNT_ADDRESS = '0x28736dfc4d9e84c6';
 
 // if (!FLOW_ACCOUNT_ADDRESS) {
 //   console.error('Error: Flow account address not found in environment variables');

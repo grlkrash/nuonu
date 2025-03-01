@@ -149,7 +149,10 @@ access(all) contract FlowArtistManager {
             self.grantApplications[grantId] = {}
         }
         
-        self.grantApplications[grantId]![artistId] = true
+        // Create a temporary copy, modify it, and reassign
+        var applications = self.grantApplications[grantId]!
+        applications[artistId] = true
+        self.grantApplications[grantId] = applications
         
         // Initialize or update pending funds
         if self.pendingFunds[artistId] == nil {
