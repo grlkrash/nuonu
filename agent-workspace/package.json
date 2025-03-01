@@ -10,8 +10,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@coinbase/agentkit": "0.2.3",
-    "@coinbase/agentkit-langchain": "0.2.3",
+    "@coinbase/agentkit": "^0.2.3",
+    "@coinbase/agentkit-langchain": "^0.2.3",
     "ethers": "6.13.5"
   },
   "devDependencies": {

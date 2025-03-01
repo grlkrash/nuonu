@@ -19,6 +19,8 @@ import {
 import { HumanMessage } from 'langchain/schema';
 import { getLangChainTools, createReactAgent } from '@coinbase/agentkit-langchain';
 import { agentConfig, AGENT_ID } from '@/config/agent.config';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -30,35 +32,69 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
+// Define wallet data file path
+const WALLET_DATA_FILE = path.resolve(process.cwd(), agentConfig.persistence.walletDataFile);
+
 /**
  * Initialize AgentKit with the necessary configuration
  */
 export async function initializeAgentKit() {
   try {
-    const cdpConfig = {
-      apiKey: process.env.COINBASE_API_KEY,
-      apiSecret: process.env.COINBASE_API_SECRET,
-      ...agentConfig // Include our network and persistence settings
-    };
+    // Check for required environment variables
+    const apiKeyName = process.env.CDP_API_KEY_NAME || process.env.COINBASE_API_KEY;
+    const apiKeyPrivateKey = process.env.CDP_API_KEY_PRIVATE_KEY || process.env.COINBASE_API_SECRET;
+    const networkId = process.env.NETWORK_ID || 'base-sepolia';
     
-    if (!cdpConfig.apiKey || !cdpConfig.apiSecret) {
-      throw new Error('Missing CDP credentials');
+    if (!apiKeyName || !apiKeyPrivateKey) {
+      throw new Error('Missing CDP credentials. Please set CDP_API_KEY_NAME and CDP_API_KEY_PRIVATE_KEY environment variables.');
     }
     
-    const walletProvider = new CdpWalletProvider(cdpConfig);
+    // Read existing wallet data if available
+    let walletDataStr: string | undefined;
+    if (fs.existsSync(WALLET_DATA_FILE)) {
+      try {
+        walletDataStr = fs.readFileSync(WALLET_DATA_FILE, 'utf8');
+        console.log('Found existing wallet data');
+      } catch (error) {
+        console.error('Error reading wallet data:', error);
+      }
+    }
     
-    const agentkit = new AgentKit({
+    // Configure CDP Wallet Provider
+    const config = {
+      apiKeyName,
+      apiKeyPrivateKey: apiKeyPrivateKey.replace(/\\n/g, '\n'),
+      cdpWalletData: walletDataStr,
+      networkId,
+    };
+    
+    console.log(`Initializing CDP wallet provider for network: ${networkId}`);
+    const walletProvider = await CdpWalletProvider.configureWithWallet(config);
+    
+    // Initialize AgentKit with all required action providers
+    const agentkit = await AgentKit.from({
       walletProvider,
       actionProviders: [
-        cdpWalletActionProvider(),
-        cdpApiActionProvider(),
-        erc20ActionProvider(),
+        wethActionProvider(),
         pythActionProvider(),
         walletActionProvider(),
-        wethActionProvider(),
-      ]
+        erc20ActionProvider(),
+        cdpApiActionProvider({
+          apiKeyName,
+          apiKeyPrivateKey: apiKeyPrivateKey.replace(/\\n/g, '\n'),
+        }),
+        cdpWalletActionProvider({
+          apiKeyName,
+          apiKeyPrivateKey: apiKeyPrivateKey.replace(/\\n/g, '\n'),
+        }),
+      ],
     });
     
+    // Save wallet data for future use
+    const exportedWallet = await walletProvider.exportWallet();
+    fs.writeFileSync(WALLET_DATA_FILE, JSON.stringify(exportedWallet));
+    
+    console.log('AgentKit initialized successfully');
     return agentkit;
   } catch (error) {
     console.error('Error initializing AgentKit:', error);
@@ -82,21 +118,17 @@ export async function createArtistWallet(artistId: string) {
     // Initialize AgentKit
     const agentKit = await initializeAgentKit();
     
-    // Create wallet using CDP
-    const wallet = await agentKit.walletProvider.createWallet({
-      name: `Artist Wallet - ${artistId}`,
-      description: 'Wallet for managing artist grants and funds',
-    });
+    // Get wallet address from the provider
+    const address = agentKit.walletProvider.getAddress();
     
     // Store wallet address in database
     const { error } = await supabase
       .from('artist_wallets')
       .upsert({
         artist_id: artistId,
-        wallet_address: wallet.address,
+        wallet_address: address,
         blockchain: 'ethereum',
         created_at: new Date().toISOString(),
-        wallet_id: wallet.id, // Store CDP wallet ID
       });
     
     if (error) {
@@ -109,11 +141,10 @@ export async function createArtistWallet(artistId: string) {
     
     await updateAgentActivityStatus(activityId, 'completed', {
       message: 'Wallet created successfully',
-      wallet_address: wallet.address,
-      wallet_id: wallet.id,
+      wallet_address: address,
     });
     
-    return wallet.address;
+    return address;
   } catch (error) {
     console.error('Error creating artist wallet:', error);
     return null;
@@ -129,7 +160,7 @@ export async function getArtistWalletBalance(artistId: string) {
     // Get wallet address from database
     const { data: walletData, error: walletError } = await supabase
       .from('artist_wallets')
-      .select('wallet_address, wallet_id')
+      .select('wallet_address')
       .eq('artist_id', artistId)
       .single();
     
@@ -152,16 +183,12 @@ export async function getArtistWalletBalance(artistId: string) {
     const agentKit = await initializeAgentKit();
     
     // Get balance using CDP
-    const balance = await agentKit.walletProvider.getBalance({
-      walletId: walletData.wallet_id,
-      address: walletData.wallet_address,
-    });
+    const balance = await agentKit.walletProvider.getBalance();
     
     await updateAgentActivityStatus(activityId, 'completed', {
       message: 'Wallet balance retrieved successfully',
       wallet_address: walletData.wallet_address,
-      balance: balance.balance,
-      symbol: balance.symbol,
+      balance: balance.toString(),
     });
     
     return balance;
@@ -207,8 +234,8 @@ export async function runAgentWithAgentKit(artistId: string, instructions: strin
     const agentKit = await initializeAgentKit();
     
     // Create LangChain agent with AgentKit tools
-    const tools = getLangChainTools(agentKit);
-    const agent = await createReactAgent({
+    const tools = await getLangChainTools(agentKit);
+    const agent = createReactAgent({
       llm: openai,
       tools,
       systemMessage: `You are an AI agent for artist ${artistData.name}. You have access to blockchain capabilities through AgentKit.`,
@@ -246,7 +273,7 @@ export async function distributeFundsWithAgentKit(
     // Get wallet address from database
     const { data: walletData, error: walletError } = await supabase
       .from('artist_wallets')
-      .select('wallet_address, wallet_id')
+      .select('wallet_address')
       .eq('artist_id', artistId)
       .single();
     
@@ -272,10 +299,8 @@ export async function distributeFundsWithAgentKit(
     
     // Send transaction using CDP
     const tx = await agentKit.walletProvider.sendTransaction({
-      walletId: walletData.wallet_id,
       to: walletData.wallet_address,
       value: amount,
-      token,
     });
     
     await updateAgentActivityStatus(activityId, 'completed', {

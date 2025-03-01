@@ -1,74 +1,99 @@
 import { AgentKit, CdpWalletProvider } from '@coinbase/agentkit'
-import { 
-  cdpWalletActionProvider,
-  cdpApiActionProvider,
-  erc20ActionProvider,
-  pythActionProvider,
-  walletActionProvider,
-  wethActionProvider
-} from '@coinbase/agentkit/providers'
-import dotenv from 'dotenv'
+import * as dotenv from 'dotenv'
+import * as path from 'path'
+import * as fs from 'fs'
 
-dotenv.config()
+// Load environment from parent directory's .env.local
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') })
+
+// Define wallet data file path
+const WALLET_DATA_FILE = path.resolve(__dirname, './wallet_data.json')
 
 async function main() {
   try {
-    // Initialize CDP wallet provider
-    const cdpConfig = {
-      apiKey: process.env.COINBASE_API_KEY,
-      apiSecret: process.env.COINBASE_API_SECRET,
-      networks: {
-        base: {
-          chainId: '84532', // Base Sepolia
-          rpcUrl: 'https://sepolia.base.org',
-        }
-      },
-      persistence: {
-        walletDataFile: '.agent-wallet-data.json'
+    console.log('Initializing CDP wallet provider...')
+    
+    // Map our existing environment variables to the ones expected by AgentKit
+    if (process.env.COINBASE_API_KEY && !process.env.CDP_API_KEY_NAME) {
+      process.env.CDP_API_KEY_NAME = process.env.COINBASE_API_KEY;
+      console.log('Using COINBASE_API_KEY as CDP_API_KEY_NAME');
+    }
+    
+    if (process.env.COINBASE_API_SECRET && !process.env.CDP_API_KEY_PRIVATE_KEY) {
+      process.env.CDP_API_KEY_PRIVATE_KEY = process.env.COINBASE_API_SECRET;
+      console.log('Using COINBASE_API_SECRET as CDP_API_KEY_PRIVATE_KEY');
+    }
+    
+    // Read existing wallet data if available
+    let walletDataStr: string | undefined
+    if (fs.existsSync(WALLET_DATA_FILE)) {
+      try {
+        walletDataStr = fs.readFileSync(WALLET_DATA_FILE, 'utf8')
+        console.log('Found existing wallet data')
+      } catch (error) {
+        console.error('Error reading wallet data:', error)
       }
     }
     
-    if (!cdpConfig.apiKey || !cdpConfig.apiSecret) {
-      throw new Error('Missing CDP credentials')
+    // Get environment variables
+    const apiKeyName = process.env.CDP_API_KEY_NAME || ''
+    const apiKeyPrivate = process.env.CDP_API_KEY_PRIVATE_KEY || ''
+    
+    // Use the correct network ID from the environment or default to base-sepolia
+    const networkId = process.env.NETWORK_ID || 'base-sepolia'
+    
+    console.log('API Key Name:', apiKeyName)
+    console.log('API Key Private Key (first 10 chars):', apiKeyPrivate.substring(0, 10) + '...')
+    console.log('Network ID:', networkId)
+    console.log('Wallet Data exists:', !!walletDataStr)
+    
+    if (!apiKeyName || !apiKeyPrivate) {
+      throw new Error('Missing CDP credentials in .env.local')
     }
     
-    const walletProvider = new CdpWalletProvider(cdpConfig)
+    // Configure the wallet provider using CdpWalletProvider.configureWithWallet
+    console.log('Configuring CDP Wallet Provider...')
+    
+    // Create configuration object according to the documentation
+    const config = {
+      apiKeyName: apiKeyName,
+      apiKeyPrivateKey: apiKeyPrivate.replace(/\\n/g, '\n'),
+      networkId: networkId,
+      cdpWalletData: walletDataStr || undefined
+    }
+    
+    const walletProvider = await CdpWalletProvider.configureWithWallet(config)
     
     // Initialize AgentKit
-    const agentkit = new AgentKit({
+    const agentkit = await AgentKit.from({
       walletProvider,
-      actionProviders: [
-        cdpWalletActionProvider(),
-        cdpApiActionProvider(),
-        erc20ActionProvider(),
-        pythActionProvider(),
-        walletActionProvider(),
-        wethActionProvider(),
-      ]
     })
     
-    // Create wallet
-    const wallet = await agentkit.walletProvider.createWallet({
-      name: 'Artist Grant Agent',
-      description: 'Wallet for managing artist grants and funds',
-    })
+    // Get wallet address
+    const address = walletProvider.getAddress()
+    console.log(`Wallet address: ${address}`)
     
-    console.log('Agent wallet created:', {
-      address: wallet.address,
-      id: wallet.id
-    })
+    // Get wallet balance
+    console.log('Getting wallet balance...')
+    const balance = await walletProvider.getBalance()
+    console.log(`Wallet balance: ${balance} WEI`)
     
-    // Get balance
-    const balance = await agentkit.walletProvider.getBalance()
-    console.log('Wallet balance:', balance.toString())
+    // Export wallet data for future use
+    console.log('Exporting wallet data...')
+    const exportedWallet = await walletProvider.exportWallet()
+    fs.writeFileSync(WALLET_DATA_FILE, JSON.stringify(exportedWallet, null, 2))
+    console.log('Wallet data saved to:', WALLET_DATA_FILE)
     
-    return wallet
+    return {
+      address: address,
+      balance: balance.toString()
+    }
   } catch (error) {
-    console.error('Error initializing agent:', error)
+    console.error('Error initializing agent wallet:', error)
     throw error
   }
 }
 
 main()
-  .then(wallet => console.log('Success! Wallet:', wallet))
+  .then(result => console.log('Success!', result))
   .catch(error => console.error('Failed:', error)) 
