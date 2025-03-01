@@ -1,0 +1,133 @@
+{
+  "timestamp": "2025-03-01T04:54:49.871Z",
+  "stats": {
+    "totalGrants": 10,
+    "averageDescriptionLength": 989,
+    "categoryCounts": {
+      "bitcoin grants": 1,
+      "blockchain development": 4,
+      "blockchain grants": 2,
+      "blockchain infrastructure": 3
+    },
+    "amountRanges": {
+      "unknown": 1,
+      "lessThan10k": 8,
+      "between10kAnd50k": 0,
+      "between50kAnd100k": 0,
+      "between100kAnd250k": 0,
+      "moreThan250k": 1
+    }
+  },
+  "grants": [
+    {
+      "title": "Interlay Level-1 (Instagran...",
+      "amount": "Upto $10K",
+      "deadline": "Jan 22",
+      "description": "Interlay Grants ProgramProgram Overview & EligibilityThe program supports individual developers, teams, and researchers building open-source solutions for the Bitcoin ecosystem through Interlay & interBTC platform. Priority areas include Bitcoin integration, cross-chain solutions, infrastructure development, technical tools, and research initiatives.Grant Structure & RequirementsInstaGrants offer up to $10,000 with ongoing support, recognition badge, and network introductions. Projects must use Apache 2.0 license, focus on one grant at a time, and avoid token sales or illegal activities.Focus Areas & SupportDevelopment focuses on Bitcoin integration, cross-chain solutions, and infrastructure tools. Recipients receive email support, milestone feedback, expert evaluation, and community guidance throughout their project journey.Application & EvaluationThe process includes GitHub submission, committee review, approval, and milestone delivery. Projects are evaluated based on technical quality, longevity, team experience, documentation clarity, and innovation impact.For more information and to apply, visit the Interlay Grants Program.Got any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "bitcoin grants"
+      ],
+      "applicationUrl": null,
+      "link": "https://blockchaingrants.org/bitcoin-grants/interlay-level-1-instagrants"
+    },
+    {
+      "title": "Base Chain Grants",
+      "amount": "5 ETH",
+      "deadline": "Jan 22",
+      "description": "Base Builder GrantsProgram Essentials💰 Grant Size: 1-5 ETH🚀 Focus: Quick capital deployment👨‍💻 Target: Early-stage developersWho Should ApplyWeekend builders & hackersEarly prototype developersInnovation-focused teamsSolo developers with unique ideasEvaluation Criteria💡 Project Innovation🎯 Impact MetricsTechnical FocusDeveloper ToolsProtocol InnovationsUser Onboarding SolutionsPerformance OptimizationsApplication ProcessSelf-nomination via formTeam reviewImpact assessmentDirect engagementWhat Base Looks For📊 Measurable impact⚙️ Technical feasibility🔍 Clear problem-solution fit🚀 Growth potentialGot any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain development"
+      ],
+      "applicationUrl": "https://blockchaingrants.org/blockchain-development/base-chain-grants#18024434-237e-807a-b9f5-d9dc31eee16d",
+      "link": "https://blockchaingrants.org/blockchain-development/base-chain-grants"
+    },
+    {
+      "title": "Cudos Startup Grants",
+      "amount": "Upto $250K",
+      "deadline": "Jan 22",
+      "description": "Cudos Foundation Grant ProgramOverviewThe Cudos Foundation aims to drive network growth and decentralized compute innovation, focusing on expanding the Web3 ecosystem.Grant OpportunitiesWho Can ApplyDevelopers and startups building innovative Web3 solutionsCommunity-led initiatives fostering ecosystem growthKey Focus AreasGaming & Metaverse: Build immersive and interactive experiences.DeFi & Web3: Create decentralized financial tools and platforms.NFTs: Develop creative and practical NFT applications.Infrastructure & Tools: Enhance developer resources and network capabilities.Bridging & Oracles: Strengthen interoperability and data reliability.Developer HighlightsBuild and improve developer tools, libraries, and cloud infrastructure.Innovate with bridge solutions and oracle integrations.Advance decentralized compute and rendering technologies.Application ProcessSubmit a clear and concise proposal (1 week).Proposal reviewed by the foundation (2 weeks).Agreement finalized for selected projects (2 weeks).Payment initiated starting week 6.Submission GuidelinesTo apply, ensure your proposal:Clearly outlines deliverables, timelines, and objectives.Demonstrates innovation and long-term value.Is realistic with resource planning and project goals. Key RequirementsDeliverables should be detailed and achievable.Timelines must be realistic.Proposals should focus on innovative, impactful solutions.For more information or to apply, visit the Cudos Foundation Grant page.Got any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain development"
+      ],
+      "applicationUrl": "https://blockchaingrants.org/blockchain-development/cudos-startup-grants#18224434-237e-80fe-85d8-d9e154e34c4e",
+      "link": "https://blockchaingrants.org/blockchain-development/cudos-startup-grants"
+    },
+    {
+      "title": "Neo General Grants",
+      "amount": "Upto $100K",
+      "deadline": "Jan 21",
+      "description": "Neo General Grants ProgramFunding Structure💰 Range: $5,000 - $100,000⏱️ Duration: 6 months max📊 Evaluation: Project scope, complexity, ecosystem valuePriority Development AreasInfrastructureApplicationsEligibility & RequirementsAdvanced blockchain expertiseLong-term maintenance commitmentRegular progress reportingStrong technical backgroundApplication PackageTeam ProfileProject OverviewBenefitsDirect fundingTechnical guidanceCommunity accessBusiness development supportTimelineReview Process: ~1 monthGot any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain development"
+      ],
+      "applicationUrl": null,
+      "link": "https://blockchaingrants.org/blockchain-development/neo-general-grants"
+    },
+    {
+      "title": "VeChain General Grant",
+      "amount": "Up to $30,000",
+      "deadline": "Jan 22",
+      "description": "VeChain General Grant ProgramCurrent StatusNew applications now accepted at vechain.org/grant-program/ Special track available for VeChain-EasyA hackathon attendeesFunding StructureStandard Grant: Up to $30,000Hackathon Track: Up to $30,000 (Limited to 10 projects)Payment Method: USDCSelection: First-come, first-served basisFocus AreasDecentralized Applications (Gaming, DeFi, NFT)Development Tools & LibrariesInfrastructure ProjectsInteroperability SolutionsWallet IntegrationEnterprise ApplicationsResearch InitiativesEligibility CriteriaProjects must demonstrate:Well-researched background and technical basisProven team experienceDetailed technical specificationsPost-grant maintenance commitmentUnique value propositionEvaluation ProcessApplication submission via GitHubPreliminary review by evaluatorsCommittee review by five-member panelMilestone-based deliveryPayment disbursementLeadership StructureCommittee Co-Chairs:Peter Zhou (Chief Scientist)Dimitris Neocleous (UK/EU Ecosystem Manager)Core Representatives:Bin Qian (Lead Dev)Dyma Budorin (Hacken Foundation CEO)Jürgen Schouppe (Safe Haven CEO/CTO)Important RestrictionsNo previous successful token sale projectsNo gambling-related applicationsNo illicit trade activitiesNo criminal activitiesSupport ResourcesDeveloper Community: TelegramUpdates: VeChain Foundation TwitterDocumentation: Medium ChannelAdditional Support: Bug Bounty ProgramsGot any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain development"
+      ],
+      "applicationUrl": null,
+      "link": "https://blockchaingrants.org/blockchain-development/vechain-general-grant"
+    },
+    {
+      "title": "BNB Chain Grants",
+      "amount": "up to $200K",
+      "deadline": "Jan 22",
+      "description": "BNB Chain Developer GrantsProgram OverviewThe program offers up to $200K per project for open-source development on BNB Chain, with bi-monthly winner announcements. Focused on building essential infrastructure, DeFi protocols, and innovative solutions in GameFi and AI/DePin space.Technical Focus & RequirementsPriority Areas:Technical Specifications:Review ProcessThe evaluation consists of two main phases:Technical ScreeningFinal EvaluationSupport & BenefitsTechnical mentorship and integration supportSecurity audit assistanceMarketing exposure and PR supportEcosystem partnershipsNotable grantees: DappRadar, PancakeSwap, Nansen.ai, Dune, BalancerFor more information and to apply, visit the BNB Chain Developer Grants page.Got any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain grants"
+      ],
+      "applicationUrl": null,
+      "link": "https://blockchaingrants.org/blockchain-grants/bnb-chain-grants"
+    },
+    {
+      "title": "Mina Grants Program",
+      "amount": "$1",
+      "deadline": "Jan 22",
+      "description": "Failed to fetch post data, it seems like database had some syncing issue, contact support. We are a group of +12K readers - Find your group, work along side them join our discord. Let's build something fu**ing great, join a group of 12K web3 developers. Welcome! How can I assist you today? Let me help you find exactly what you're looking for.",
+      "categories": [
+        "blockchain grants"
+      ],
+      "applicationUrl": null,
+      "link": "https://blockchaingrants.org/blockchain-grants/mina-grants-program"
+    },
+    {
+      "title": "Conflux Grant",
+      "amount": "up to $50,000",
+      "deadline": "Jan 23",
+      "description": "Conflux Grant ProgramProgram OverviewTotal Fund: Over 2.4 Billion CFXGrant Tiers: Ranging from $5,000 to $50,000Support Includes: Financial aid in CFX, technical support, and ecosystem integrationGrant StructureTier 1 Grant ($5,000)Tier 2 Grant ($25,000)Tier 3 Grant ($50,000)Priority AreasDeFi protocols and applicationsNFT platforms and toolsCross-chain solutionsDeveloper infrastructureGaming and MetaverseEnterprise solutionsTechnical RequirementsBuilt on Conflux NetworkOpen-source codeSmart contract audit requiredTechnical documentationApplication ProcessSubmit proposal with technical specs and timelineReview process: 2-4 weeksMilestone-based funding (20/60/20 split)For more information and to apply, visit the Conflux Grant Program.Got any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain infrastructure"
+      ],
+      "applicationUrl": null,
+      "link": "https://blockchaingrants.org/blockchain-infrastructure/conflux-grant"
+    },
+    {
+      "title": "Cudos Startup Grants",
+      "amount": ", m",
+      "deadline": "Jan 21",
+      "description": "Cudos Foundation Grant ProgramOverviewFocus Areas: Developers, Startups, Community & EducationSupport Includes: Financial grants, mentorship opportunities, and ecosystem growth initiativesWhat is it?The Cudos Foundation Grant Program supports initiatives that drive the expansion of the Cudos network and decentralized compute platform. Through strategic funding and mentorship, the program empowers developers, entrepreneurs, and community leaders to contribute to the platform’s scalability and innovation.Grant CategoriesDevelopersStartupsCommunity & EducationKey FeaturesFunds talented teams aligned with Cudos' mission of borderless, scalable, and secure technology.Supports open innovation to foster technological advancement.Provides financial backing and future plans for mentorship.Aims to grow the Cudos ecosystem through collaborative, community-driven contributions.For more information and to apply, visit the Cudos Foundation Grant Program.Got any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain infrastructure"
+      ],
+      "applicationUrl": null,
+      "link": "https://blockchaingrants.org/blockchain-infrastructure/cudos-startup-grants"
+    },
+    {
+      "title": "Ethereum Foundation: Projec...",
+      "amount": "1Eth",
+      "deadline": "Jan 21",
+      "description": "Ethereum Foundation GrantsOverview:Ethereum Foundation ESP provides strategic funding and resources for developers, researchers, and community builders focused on strengthening Ethereum's infrastructure through open-source development.Program Areas:Infrastructure: Support for core protocol improvements and scaling solutions.Tooling: Development of essential developer tools and frameworks.Research: Academic and technical research advancing Ethereum technology.Community: Resources for education and ecosystem growth initiatives.Grant Support:Recipients receive direct funding, technical guidance, and ecosystem connections to maximize project impact and sustainable development.How to Apply:Submit Proposal: Detail your project's technical specifications and goals.Review Process: Technical evaluation and impact assessment.Implementation: Execute project with ongoing support and feedback.Reporting: Share progress and contribute to ecosystem knowledge.Eligibility:Open to developers, researchers, academics, and community organizers committed to open-source development and ecosystem growth.Get Started:Visit the Ethereum Foundation ESP Grants portal to begin your application process.Got any questions?Ask AIInstant Support in secsContact a SpecialistThis can take hours",
+      "categories": [
+        "blockchain infrastructure"
+      ],
+      "applicationUrl": "https://blockchaingrants.org/blockchain-infrastructure/ethereum-foundation-project-grant#18224434-237e-80fe-8739-c0ce99fc6ee6",
+      "link": "https://blockchaingrants.org/blockchain-infrastructure/ethereum-foundation-project-grant"
+    }
+  ]
+}
