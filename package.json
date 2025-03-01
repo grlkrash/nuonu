@@ -23,6 +23,7 @@
     "test:blockchain-integration": "node scripts/test-blockchain-integration.js",
     "test:flow-integration": "node scripts/test-flow-integration.js",
     "test:agentkit-integration": "node scripts/test-agentkit-integration.js",
+    "test:artist-fund-action": "node scripts/test-artist-fund-action-provider.js",
     "audit-dependencies": "node scripts/audit-dependencies.js",
     "audit-dependencies:interactive": "node scripts/audit-dependencies.js --interactive",
     "cleanup": "node scripts/cleanup-repo.js"
