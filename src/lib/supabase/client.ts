@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { env } from '@/lib/env'
 
+// Re-export createClient for use in other files
+export { createClient }
+
 // Get Supabase URL and anon key from environment variables
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -166,3 +169,31 @@ if (typeof window !== 'undefined') {
 
 // Export the type for use in other files
 export type SupabaseClient = typeof supabase 
+
+// Add logAgentActivity function
+export async function logAgentActivity(
+  artistId: string, 
+  activityType: string, 
+  status: 'in_progress' | 'completed' | 'failed', 
+  details: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('agent_activities')
+      .insert({
+        artist_id: artistId,
+        activity_type: activityType,
+        status,
+        details,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return { success: true, activity: data }
+  } catch (error) {
+    console.error('Error logging agent activity:', error)
+    return { success: false, error }
+  }
+} 
